@@ -161,7 +161,7 @@ def upload_candidate(fits_files, image_gif_directory):
 
 if __name__ == "__main__":
     loglevels = dict(DEBUG=logging.DEBUG, INFO=logging.INFO, WARNING=logging.WARNING)
-    parser = argparse.ArgumentParser(description="Upload a GLEAM transient candidate to the database.")
+    parser = argparse.ArgumentParser(description="Upload a transient candidate to the database.")
     parser.add_argument(
         "--data_directory",
         type=str,
