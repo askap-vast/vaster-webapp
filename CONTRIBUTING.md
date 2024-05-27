@@ -1,4 +1,4 @@
-# Contributing to the `GleamXGPMonitoring` project
+# Contributing to the `YWANG - VAST` project
 
 ## Development environment setup
 
@@ -7,18 +7,14 @@ Required:
 - docker
 - docker-compose
 
-Create your python environment with either:
+Create your python environment:
 
-- `conda create env --file environment_dev.yml`
 - `python -m venv env`, `source env/bin/activate`, `pip install -r requirements.txt -r requirements_dev.txt`
 
-### Running dev version with docker-compose
+### Running dev version with `docker compose`
 
 1. build the docker containers and run
-   - `docker-compose -f docker-compose-dev.yml up --build`
-2. run migrations, make admin account (in a separate term)
-   - `docker-compose exec web python manage.py migrate`
-   - `docker-compose exec web python manage.py createsuperuser --noinput`
+   - `docker compose up -d`
 
 In this development mode, changes to most of your files will be auto-reloaded by the Django StatReloader
 
