@@ -1,9 +1,12 @@
 # from mwa_trigger.parse_xml import parsed_VOEvent
+import os
+import re
 import csv
 import json
 import logging
 import random
 from datetime import datetime, timedelta
+from typing import List, Tuple
 
 import voeventdb.remote.apiv1 as apiv1
 import voeventparse
@@ -26,6 +29,18 @@ from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .utils import download_fits
+
+from django.http import HttpRequest
+from django.views.generic import TemplateView, View
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
+import base64
+from django.http import JsonResponse, HttpResponseForbidden
+
+
+from django.views.decorators.csrf import csrf_exempt
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 
 from django.shortcuts import render
 from .forms import RangeSliderForm
@@ -179,7 +194,7 @@ def cone_search_pulsars(request):
     )
 
 
-@login_required
+@login_required(login_url="/")
 def candidate_rating(request, id, arcmin=2):
     candidate = get_object_or_404(models.Candidate, id=id)
 
@@ -233,14 +248,15 @@ def voevent_view(request, id):
     return HttpResponse(xml_pretty_str, content_type="text/xml")
 
 
-@login_required
+@login_required(login_url="/")
 def token_manage(request):
     u = request.user
+    print("username: ", u)
     token = Token.objects.filter(user=u).first()
     return render(request, "candidate_app/token_manage.html", {"token": token})
 
 
-@login_required
+@login_required(login_url="/")
 def token_create(request):
     u = request.user
     token = Token.objects.filter(user=u)
@@ -250,7 +266,7 @@ def token_create(request):
     return redirect(reverse("token_manage"))
 
 
-@login_required
+@login_required(login_url="/")
 @api_view(["POST"])
 @transaction.atomic
 def candidate_update_rating(request, id):
@@ -292,7 +308,7 @@ def candidate_update_rating(request, id):
     return redirect(reverse("candidate_random"))
 
 
-@login_required
+@login_required(login_url="/")
 @api_view(["POST"])
 @transaction.atomic
 def candidate_update_catalogue_query(request, id):
@@ -308,7 +324,7 @@ def candidate_update_catalogue_query(request, id):
         return candidate_rating(request, id, arcmin=arcmin)
 
 
-@login_required
+@login_required(login_url="/")
 def candidate_random(request):
     # Get session data for candidate ordering and inclusion settings
     session_settings = request.session.get("session_settings", 0)
@@ -633,3 +649,91 @@ def download_data(request, table):
     response = download_fits(request, this_model.objects.all(), table)
     # response = download_csv(request, this_model.objects.all(), table)
     return response
+
+
+# Receive data from
+@api_view(["POST"])
+def upload_candidate(request):
+    if request.method == "POST":
+
+        # Get user specific data
+        try:
+            token_str = request.headers["Authorization"]
+            project_id = request.POST["project_id"]
+
+        except KeyError:
+            return JsonResponse(
+                {"status": "error", "message": f"Unable to pull out project_id, username, or token out from request."},
+                status=400,
+            )
+
+        try:
+            # Find token in the db
+            token = Token.objects.get(key=token_str)
+            if token is not None:
+
+                print(f" --------------- Candidate uploaded by user: {token.user} --------------- ")
+
+                # Save the candidate data to DB.
+                try:
+                    cand_data = json.loads(request.POST)
+                    survey_id, beam_id, cand_id = cand_data["survey_id"], cand_data["beam_id"], cand_data["name"]
+
+                    # Path for the candidate files.
+                    upload_dir = f"/ywangvaster_media/{project_id}/{survey_id}/{beam_id}/{cand_id}/"
+                    os.makedirs(upload_dir, exist_ok=True)
+
+                    print(type(cand_data["lightcurve_local_rms"]))
+
+                    # Save files to disk
+                    for file, uploaded_file in request.FILES.items():
+                        file_path = os.path.join(upload_dir, file)
+                        with open(file_path, "wb") as f:
+                            f.write(uploaded_file.read())
+
+                    print(f"Successfully saved candidate data to database - {survey_id}, {beam_id}, {cand_id}")
+
+                    return JsonResponse(
+                        {"status": "success", "survey_id": survey_id, "beam_id": beam_id, "cand_id": cand_id},
+                        status=200,
+                    )
+
+                    # return JsonResponse({"status": "success", "message": "got data"}, status=200)
+                except Exception as error:
+                    print("An exception occurred:", error)
+                    return JsonResponse({"status": "error", "message": error})
+
+            else:
+                return JsonResponse({"status": "error", "message": f"Token given does not match a user."})
+
+        except Exception as error:
+            print("An exception occurred:", error)
+            return JsonResponse({"status": "error", "message": "Invalid or expired token"}, status=403)
+
+    return HttpResponseForbidden()
+
+
+class LoginView(TemplateView, View):
+    def get(self, request, *args, **kwargs):
+        return self.render_to_response({})
+
+    def post(self, request, *args, **kwargs):
+        user = authenticate(username=request.POST.get("username"), password=request.POST.get("password"))
+        if user is not None:
+            if user.is_active:
+                login(request, user)
+            else:
+                messages.warning(request, "The password is valid, but the account has been disabled!")
+        else:
+            messages.warning(request, "The username or password were incorrect.")
+
+        return redirect(request.POST.get("next", "/"))
+
+
+class LogoutView(View):
+    def post(self, request: HttpRequest, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect("/")
+        logout(request)
+        messages.success(request, "You are now logged out!")
+        return redirect("/")

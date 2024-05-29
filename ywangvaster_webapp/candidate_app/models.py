@@ -34,9 +34,32 @@ class Beam(models.Model):
     id = models.AutoField(primary_key=True)
 
     # Unsure if needed
+    # beam_index = models.IntegerField()
     beam_name = models.CharField(verbose_name="Beam name", max_length=64, blank=True, null=True, unique=True)
-
     description = models.CharField(verbose_name="Description", max_length=256, blank=True, null=True)
+
+    # Need to parse the following
+    # chisqure cand.csv
+    # chisqure cand.vot - allow for download but dont parse
+
+    # chisquare map1 png
+    # chisquare map2 png
+    # chisquare fits
+
+    # final . csv
+    # final . vot - allow for download, do not parse
+
+    # lightcurve local rms . csv
+    # lightcurce peak flux . csv
+
+    # peak cand . csv
+    # peak cand . vot - allow for download, do not parse
+    # peak map1 . png
+    # peak map2 . png
+
+    # peak . fits
+
+    # std . fits
 
     def __str__(self):
         return f"{self.id}"
@@ -87,6 +110,16 @@ class Candidate(models.Model):
     )
     filter = models.ForeignKey(Filter, on_delete=models.CASCADE, related_name="candidate", default=None)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="candidate", default=None)
+
+    # Lightcurve data, local rms and peak
+
+    # Deepcutout png
+    # Deepcutout fits
+
+    # Lightcurve png
+
+    # Slices fits
+    # Slices gif
 
     png_path = models.FileField(upload_to="candidates/", max_length=1024, null=True)
     gif_path = models.FileField(upload_to="candidates/", max_length=1024, null=True)

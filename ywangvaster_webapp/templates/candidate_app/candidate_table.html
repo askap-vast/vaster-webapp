@@ -66,54 +66,56 @@
   </form>
 </div>
 
-<p><a href="/download_data/candidate/"   class="btn btn-primary btn-lg" tabindex="-1" role="button" aria-disabled="true">Download All Candidates</a></p>
+<p><a href="/download_data/candidate/" class="btn btn-primary btn-lg" tabindex="-1" role="button"
+    aria-disabled="true">Download All Candidates</a></p>
 
-  {% if page_obj %}
-  <table class="fl-table">
-    <thead>
-      <th>ID</th>
-      <th>Rating(Count)</th>
-      <th>Notes</th>
-      {% if selected_column %}
-        <th>{{ selected_column }}</th>
-      {% else %}
-        {% for key, name in column_names.items %}
-          <th>{{ name }}</th>
-        {% endfor %}
-      {% endif %}
-      <th>RA (HH:MM:SS.SS)</th>
-      <th>Dec (DD:MM:SS.SS)</th>
-      <th>Obs ID</th>
-      <th>Plot</th>
-    </thead>
-
-    {% for cand in page_obj %}
-      <tr>
-        <td><a href="/candidate_rating/{{cand.id}}/">{{cand.id}}</a></td>
-        <td>
-          {% if cand.num_ratings > 0 %}
-            {{cand.avg_rating|floatformat:2}} ({{cand.num_ratings}})
-          {% else %}
-            not rated
-          {% endif %}
-        </td>
-        <td>{{cand.notes}}</td>
-        {% if selected_column %}
-          <td>{{cand.selected_count}}</td>
-        {% else %}
-          {% for key, name in column_names.items %}
-            <td>{% get_type_count cand key %}</td>
-          {% endfor %}
-        {% endif %}
-        <td>{{cand.ra_hms}}</td>
-        <td>{{cand.dec_dms}}</td>
-        <td>{{cand.obs_id.observation_id}}</td>
-        <td><img src="{{cand.png_path.url}}" alt="Diagnostic Plot for {{cand.id}}" style="width:100px;" onClick="window.open(this.src)" > </td>
-      </tr>
+{% if page_obj %}
+<table class="fl-table">
+  <thead>
+    <th>ID</th>
+    <th>Rating(Count)</th>
+    <th>Notes</th>
+    {% if selected_column %}
+    <th>{{ selected_column }}</th>
+    {% else %}
+    {% for key, name in column_names.items %}
+    <th>{{ name }}</th>
     {% endfor %}
-  </table>
+    {% endif %}
+    <th>RA (HH:MM:SS.SS)</th>
+    <th>Dec (DD:MM:SS.SS)</th>
+    <th>Obs ID</th>
+    <th>Plot</th>
+  </thead>
+
+  {% for cand in page_obj %}
+  <tr>
+    <td><a href="/candidate_rating/{{cand.id}}/">{{cand.id}}</a></td>
+    <td>
+      {% if cand.num_ratings > 0 %}
+      {{cand.avg_rating|floatformat:2}} ({{cand.num_ratings}})
+      {% else %}
+      not rated
+      {% endif %}
+    </td>
+    <td>{{cand.notes}}</td>
+    {% if selected_column %}
+    <td>{{cand.selected_count}}</td>
+    {% else %}
+    {% for key, name in column_names.items %}
+    <td>{% get_type_count cand key %}</td>
+    {% endfor %}
+    {% endif %}
+    <td>{{cand.ra_hms}}</td>
+    <td>{{cand.dec_dms}}</td>
+    <td>{{cand.obs_id.observation_id}}</td>
+    <td><img src="{{cand.png_path.url}}" alt="Diagnostic Plot for {{cand.id}}" style="width:100px;"
+        onClick="window.open(this.src)"> </td>
+  </tr>
+  {% endfor %}
+</table>
 {% else %}
-  <p>No Candidates Found!</p>
+<p>No Candidates Found!</p>
 {% endif %}
 </div>
 

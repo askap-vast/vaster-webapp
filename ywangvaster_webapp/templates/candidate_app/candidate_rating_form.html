@@ -2,101 +2,104 @@
 
 {% block head %}
 <script>
-  async function getSimbad(){
-    try{
-        let mydiv = document.getElementById('simbadlocator');
-        let arcmin = document.getElementById('arcmin').value
+  async function getSimbad() {
+    try {
+      let mydiv = document.getElementById('simbadlocator');
+      let arcmin = document.getElementById('arcmin').value
 
-        console.log(mydiv);
-        console.log(`Searching within ${arcmin} arcmin of {{candidate.ra_deg}} {{candidate.dec_deg}}`);
+      console.log(mydiv);
+      console.log(`Searching within ${arcmin} arcmin of {{candidate.ra_deg}} {{candidate.dec_deg}}`);
 
-        mydiv.innerHTML = "<p>Loading SIMBAD search data ...</p>";
+      mydiv.innerHTML = "<p>Loading SIMBAD search data ...</p>";
 
-        const response = await fetch('/cone_search_simbad/', {
-          method:'POST',
-          headers: {
-              'X-CSRFToken': '{{csrf_token }}',
-          },
-          body: JSON.stringify({
-            ra_deg:{{ candidate.ra_deg }},
-            dec_deg: {{ candidate.dec_deg }},
-            dist_arcmin: arcmin
-          })
-        });
-        const data = await response.text();
-        console.log(data);
-        mydiv.innerHTML = data;
-    }catch(error){
-        console.log(error);
+      const response = await fetch('/cone_search_simbad/', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{csrf_token }}',
+        },
+        body: JSON.stringify({
+          ra_deg: '{{ candidate.ra_deg }}',
+          dec_deg: '{{ candidate.dec_deg }}',
+          dist_arcmin: arcmin
+        })
+      });
+      const data = await response.text();
+      console.log(data);
+      mydiv.innerHTML = data;
+    } catch (error) {
+      console.log(error);
     }
   }
 
-  async function getNearest(){
-    try{
-        let mydiv = document.getElementById('nearestlocator');
-        let arcmin = document.getElementById('arcmin').value
+  async function getNearest() {
+    try {
+      let mydiv = document.getElementById('nearestlocator');
+      let arcmin = document.getElementById('arcmin').value
 
-        console.log(mydiv);
-        console.log(`Searching within ${arcmin} arcmin of {{candidate.ra_deg}} {{candidate.dec_deg}}`);
+      console.log(mydiv);
+      console.log(`Searching within ${arcmin} arcmin of {{candidate.ra_deg}} {{candidate.dec_deg}}`);
 
-        mydiv.innerHTML = "<p>Finding nearby candiates ...</p>";
+      mydiv.innerHTML = "<p>Finding nearby candiates ...</p>";
 
-        const response = await fetch('/cone_search/', {
-          method:'POST',
-          headers: {'X-CSRFToken': '{{csrf_token }}'},
-          body: JSON.stringify({
-            ra_deg: {{ candidate.ra_deg }},
-            dec_deg: {{ candidate.dec_deg }},
-            dist_arcmin: arcmin,
-            exclude_id: {{ candidate.id }},
-            project: '{{ candidate.project }}'
-          })
-        });
-        const data = await response.text();
-        console.log(data);
-        mydiv.innerHTML = data;
-    }catch(error){
-        console.log(error);
+      const response = await fetch('/cone_search/', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{csrf_token }}'
+        },
+        body: JSON.stringify({
+          ra_deg: '{{ candidate.ra_deg }}',
+          dec_deg: '{{ candidate.dec_deg }}',
+          dist_arcmin: arcmin,
+          exclude_id: '{{ candidate.id }}',
+          project: '{{ candidate.project }}'
+        })
+      });
+      const data = await response.text();
+      console.log(data);
+      mydiv.innerHTML = data;
+    } catch (error) {
+      console.log(error);
     }
   }
 
-  async function getPulsars(){
-    try{
-        let mydiv = document.getElementById('pulsarlocator');
-        let arcmin = document.getElementById('arcmin').value
+  async function getPulsars() {
+    try {
+      let mydiv = document.getElementById('pulsarlocator');
+      let arcmin = document.getElementById('arcmin').value
 
-        console.log(mydiv);
-        console.log(`Searching within ${arcmin} arcmin of {{candidate.ra_deg}} {{candidate.dec_deg}}`);
+      console.log(mydiv);
+      console.log(`Searching within ${arcmin} arcmin of {{candidate.ra_deg}} {{candidate.dec_deg}}`);
 
-        mydiv.innerHTML = "<p>Finding nearby candiates ...</p>";
+      mydiv.innerHTML = "<p>Finding nearby candiates ...</p>";
 
-        const response = await fetch('/cone_search_pulsars/', {
-          method:'POST',
-          headers: {'X-CSRFToken': '{{csrf_token }}'},
-          body: JSON.stringify({
-            ra_deg: '{{ candidate.ra_deg }}',
-            dec_deg: '{{ candidate.dec_deg }}',
-            dist_arcmin: arcmin,
-          })
-        });
-        const data = await response.text();
-        console.log(data);
-        mydiv.innerHTML = data;
-    }catch(error){
-        console.log(error);
+      const response = await fetch('/cone_search_pulsars/', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{csrf_token }}'
+        },
+        body: JSON.stringify({
+          ra_deg: '{{ candidate.ra_deg }}',
+          dec_deg: '{{ candidate.dec_deg }}',
+          dist_arcmin: arcmin,
+        })
+      });
+      const data = await response.text();
+      console.log(data);
+      mydiv.innerHTML = data;
+    } catch (error) {
+      console.log(error);
     }
   }
-  async function getAll(){
-    try{
+  async function getAll() {
+    try {
       getSimbad();
       getNearest();
       getPulsars();
-    }catch(error){
+    } catch (error) {
       console.log(error);
     }
   }
   document.addEventListener('DOMContentLoaded', getAll)
-
 </script>
 {% endblock head  %}
 
@@ -116,97 +119,125 @@
   <div class="row">
     <div class="col-3">
       {% if candidate.png_path %}
-          <img src="{{candidate.png_path.url}}" 
-              alt="Diagnostic Plot for {{candidate.id}}" 
-              onClick="window.open(this.src)"
-              class="mw-100">
+      <img src="{{candidate.png_path.url}}" alt="Diagnostic Plot for {{candidate.id}}" onClick="window.open(this.src)"
+        class="mw-100">
       {% endif %}
     </div>
     <div class="col-3">
       {% if candidate.gif_path %}
-        <img src="{{candidate.gif_path.url}}"
-            alt="Diagnostic GIF for {{candidate.id}}"
-            onClick="window.open(this.src)"
-            class="mw-100"
-            >
+      <img src="{{candidate.gif_path.url}}" alt="Diagnostic GIF for {{candidate.id}}" onClick="window.open(this.src)"
+        class="mw-100">
       {% endif %}
     </div>
 
     <div class="col-3">
-            <h3>Candidate:</h3>
-            <table>
-              <tr><td>Detection statistic</td> <td>{{ candidate.can_det_stat|floatformat:2 }}</td></tr>
-              <tr><td>Peak Flux (Jy)</td>      <td>{{ candidate.can_peak_flux|floatformat:2 }}</td></tr>
-              <tr><td>Primary Beam</td>        <td>{{ candidate.can_beam|floatformat:2 }}</td></tr>
-              <tr><td>Separation from obs center (deg)</td> <td>{{ candidate.cent_sep_deg|floatformat:2 }}</td></tr>
-              <tr><td>Location</td>            <td>{{ candidate.ra_hms }}, {{ candidate.dec_dms }}</td></tr>
-              <tr><td>Radius (deg)</td>        <td>{{ candidate.rad_deg|floatformat:3 }}</td></tr>
-              <tr><td>Filter name</td>         <td>{{ candidate.filter.name }}</td></tr>
-            </table>
-            <h3>Observation:</h3>
-            <table>
-              <tr><td>Observation ID</td>  <td><a href="http://ws.mwatelescope.org/observation/obs/?obs_id={{ candidate.obs_id.observation_id }}" target="_blank">{{ candidate.obs_id.observation_id }}</a></td></tr>
-              <tr><td>Time (UTC)</td>      <td>{{ time }}</td></tr>
-              <tr><td>Frequency (MHz)</td> <td>{{ candidate.obs_id.cent_freq }}</td></tr>
-            </table>
+      <h3>Candidate:</h3>
+      <table>
+        <tr>
+          <td>Detection statistic</td>
+          <td>{{ candidate.can_det_stat|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <td>Peak Flux (Jy)</td>
+          <td>{{ candidate.can_peak_flux|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <td>Primary Beam</td>
+          <td>{{ candidate.can_beam|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <td>Separation from obs center (deg)</td>
+          <td>{{ candidate.cent_sep_deg|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <td>Location</td>
+          <td>{{ candidate.ra_hms }}, {{ candidate.dec_dms }}</td>
+        </tr>
+        <tr>
+          <td>Radius (deg)</td>
+          <td>{{ candidate.rad_deg|floatformat:3 }}</td>
+        </tr>
+        <tr>
+          <td>Filter name</td>
+          <td>{{ candidate.filter.name }}</td>
+        </tr>
+      </table>
+      <h3>Observation:</h3>
+      <table>
+        <tr>
+          <td>Observation ID</td>
+          <td><a href="http://ws.mwatelescope.org/observation/obs/?obs_id={{ candidate.obs_id.observation_id }}"
+              target="_blank">{{ candidate.obs_id.observation_id }}</a></td>
+        </tr>
+        <tr>
+          <td>Time (UTC)</td>
+          <td>{{ time }}</td>
+        </tr>
+        <tr>
+          <td>Frequency (MHz)</td>
+          <td>{{ candidate.obs_id.cent_freq }}</td>
+        </tr>
+      </table>
     </div>
 
     <div class="col-3">
-          <form action="{% url 'candidate_update_rating' id=candidate.id %}" method="post">
-            {% csrf_token %}
-            <div class="field">
-              <h4>Choose classification:</h4>
-              {% for value, text in cand_type_choices %}
-                {% if value == "T" and not rating %}
-                  <input checked="checked"
-                {% elif value == rating.classification %}
-                  <input checked="checked"
-                {% else %}
-                  <input
-                {% endif %}
-                  class="form-check-input" type="radio" name="classification" id="{{ value }}" value="{{ value }}">
-                <label  class="form-check-label" for="{{ value }}">{{ text }}</label><br>
-              {% endfor %}
-            </div>
-            <div class="field">
-            <h4>Rating from 1(noise) to 5(clear candidate){% if rating %}(currently {{rating.rating}}){% endif %}</h4>
-            <div>
-              {% if rating.rating == 1 %}
-                <input type="submit" class="btn btn-success btn-lg" name="rating" value="1">
-              {% else %}
-                <input type="submit" class="btn btn-primary btn-lg" name="rating" value="1">
-              {% endif %}
-              {% if rating.rating == 2 %}
-                <input type="submit" class="btn btn-success btn-lg" name="rating" value="2">
-              {% else %}
-                <input type="submit" class="btn btn-primary btn-lg" name="rating" value="2">
-              {% endif %}
-              {% if rating.rating == 3 %}
-                <input type="submit" class="btn btn-success btn-lg" name="rating" value="3">
-              {% else %}
-                <input type="submit" class="btn btn-primary btn-lg" name="rating" value="3">
-              {% endif %}
-              {% if rating.rating == 4 %}
-                <input type="submit" class="btn btn-success btn-lg" name="rating" value="4">
-              {% else %}
-                <input type="submit" class="btn btn-primary btn-lg" name="rating" value="4">
-              {% endif %}
-              {% if rating.rating == 5 %}
-                <input type="submit" class="btn btn-success btn-lg" name="rating" value="5">
-              {% else %}
-                <input type="submit" class="btn btn-primary btn-lg" name="rating" value="5">
-              {% endif %}
-            </div>
-            </div>
-            <div class="field">
-            <h4>Notes</h4>
-            <textarea rows="5" id="notes" name="notes" placeholder="is it a known source?">{{candidate.notes}}</textarea>
-            </div>
-            <input type="hidden" name="id" value="">
-            <input type="hidden" name="username" value="{{user}}">
-          </form>
-          <button class="btn btn-info" onclick="window.history.go(-1)">Back to previous</button>
-          <a class="btn btn-info" href="/candidate_rating/random/">Skip</a>
+      <form action="{% url 'candidate_update_rating' id=candidate.id %}" method="post">
+        {% csrf_token %}
+        <div class="field">
+          <h4>Choose classification:</h4>
+          {% for value, text in cand_type_choices %}
+          {% if value == "T" and not rating %}
+          <input checked="checked" class="form-check-input" type="radio" name="classification" id="{{ value }}"
+            value="{{ value }}">
+          {% elif value == rating.classification %}
+          <input checked="checked" class="form-check-input" type="radio" name="classification" id="{{ value }}"
+            value="{{ value }}">
+          {% else %}
+          <input class="form-check-input" type="radio" name="classification" id="{{ value }}" value="{{ value }}">
+          {% endif %}
+
+          <label class="form-check-label" for="{{ value }}">{{ text }}</label><br>
+          {% endfor %}
+        </div>
+        <div class="field">
+          <h4>Rating from 1(noise) to 5(clear candidate){% if rating %}(currently {{rating.rating}}){% endif %}</h4>
+          <div>
+            {% if rating.rating == 1 %}
+            <input type="submit" class="btn btn-success btn-lg" name="rating" value="1">
+            {% else %}
+            <input type="submit" class="btn btn-primary btn-lg" name="rating" value="1">
+            {% endif %}
+            {% if rating.rating == 2 %}
+            <input type="submit" class="btn btn-success btn-lg" name="rating" value="2">
+            {% else %}
+            <input type="submit" class="btn btn-primary btn-lg" name="rating" value="2">
+            {% endif %}
+            {% if rating.rating == 3 %}
+            <input type="submit" class="btn btn-success btn-lg" name="rating" value="3">
+            {% else %}
+            <input type="submit" class="btn btn-primary btn-lg" name="rating" value="3">
+            {% endif %}
+            {% if rating.rating == 4 %}
+            <input type="submit" class="btn btn-success btn-lg" name="rating" value="4">
+            {% else %}
+            <input type="submit" class="btn btn-primary btn-lg" name="rating" value="4">
+            {% endif %}
+            {% if rating.rating == 5 %}
+            <input type="submit" class="btn btn-success btn-lg" name="rating" value="5">
+            {% else %}
+            <input type="submit" class="btn btn-primary btn-lg" name="rating" value="5">
+            {% endif %}
+          </div>
+        </div>
+        <div class="field">
+          <h4>Notes</h4>
+          <textarea rows="5" id="notes" name="notes" placeholder="is it a known source?">{{candidate.notes}}</textarea>
+        </div>
+        <input type="hidden" name="id" value="">
+        <input type="hidden" name="username" value="{{user}}">
+      </form>
+      <button class="btn btn-info" onclick="window.history.go(-1)">Back to previous</button>
+      <a class="btn btn-info" href="/candidate_rating/random/">Skip</a>
     </div>
   </div>
 </div>
@@ -214,7 +245,7 @@
 <div class="row">
   <div class="col-12 justify-content-center ">
     <p class="h4">Search nearby within
-      <input id="arcmin" type="text"  name="arcmin" value="{{arcmin_search}}" size="2">
+      <input id="arcmin" type="text" name="arcmin" value="{{arcmin_search}}" size="2">
       arcmin
       <button class="btn btn-primary" onclick="getAll()">Search</button>
     </p>
@@ -222,19 +253,33 @@
 </div>
 
 <div class="row">
-  <div class="col"> 
+  <div class="col">
     <h4>Nearest within this project</h4>
     <table>
-      <tr><td>Source name</td>      <td>{{ candidate.nks_name }}</td></tr>
-      <tr><td>Location</td>         <td>{{ candidate.nks_ra_hms }}, {{ candidate.nks_dec_dms }}</td></tr>
+      <tr>
+        <td>Source name</td>
+        <td>{{ candidate.nks_name }}</td>
+      </tr>
+      <tr>
+        <td>Location</td>
+        <td>{{ candidate.nks_ra_hms }}, {{ candidate.nks_dec_dms }}</td>
+      </tr>
       {% if candidate.can_nks_is_close %}
-        <tr>
-      {% else %}
-        <tr class="NegativeTransaction">
-      {% endif %}
-      <td>Sep (arcmin)</td>  <td>{{ sep_arcmin|floatformat:2 }}</td></tr>
-      <tr><td>Flux (Jy)</td>        <td>{{ candidate.nks_flux|floatformat:2 }}</td></tr>
-      <tr><td>Flux ratio</td>       <td>{{ candidate.can_nks_flux_rat|floatformat:2 }}</td></tr>
+      <tr>
+        {% else %}
+      <tr class="NegativeTransaction">
+        {% endif %}
+        <td>Sep (arcmin)</td>
+        <td>{{ sep_arcmin|floatformat:2 }}</td>
+      </tr>
+      <tr>
+        <td>Flux (Jy)</td>
+        <td>{{ candidate.nks_flux|floatformat:2 }}</td>
+      </tr>
+      <tr>
+        <td>Flux ratio</td>
+        <td>{{ candidate.can_nks_flux_rat|floatformat:2 }}</td>
+      </tr>
     </table>
   </div>
 

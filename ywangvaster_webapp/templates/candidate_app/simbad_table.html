@@ -9,13 +9,17 @@
       </tr>
       {% for result in simbad_result_table %}
       <tr>
-        <td><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident={{ result.search_term }}&NbIdent=1&submit=submit+id" style="text-decoration:None">{{ result.name }}</a></td>
+        <td><a
+            href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident={{ result.search_term }}&NbIdent=1&submit=submit+id"
+            style="text-decoration:None">{{ result.name }}</a></td>
         <td>{{ result.ra }}</td>
         <td>{{ result.dec }}</td>
         <td>{{ result.sep|floatformat:2 }}</td>
       </tr>
       {% empty %}
-        <tr><td>No Sources found</td></tr>
+      <tr>
+        <td>No Sources found</td>
+      </tr>
       {% endfor %}
     </table>
   </div>

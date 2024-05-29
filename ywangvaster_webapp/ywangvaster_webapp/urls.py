@@ -15,7 +15,7 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path
 from django.conf.urls.static import static
 from django.conf import settings
 from django.views.generic import TemplateView
@@ -24,10 +24,9 @@ from candidate_app import views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("accounts/", include("django.contrib.auth.urls")),
+    path("login/", views.LoginView.as_view(), name="login"),
+    path("logout/", views.LogoutView.as_view(), name="logout"),
     path("", views.home_page, name="home_page"),
-    path("observation_create/", views.observation_create),
-    path("candidate_create/", views.candidate_create),
     path("token_manage/", views.token_manage, name="token_manage"),
     path("token_create/", views.token_create),
     path("candidate_rating/<int:id>/", views.candidate_rating, name="candidate_rating"),
@@ -54,6 +53,11 @@ urlpatterns = [
     path("cone_search_simbad/", views.cone_search_simbad, name="cone_search_simbad"),
     path("cone_search_pulsars/", views.cone_search_pulsars, name="cone_search_pulsars"),
     path("cone_search/", views.cone_search, name="cone_search"),
+    # Upload a candidate
+    path("upload_candidate/", views.upload_candidate, name="upload_candidate"),
+    # old ones
+    path("observation_create/", views.observation_create),
+    path("candidate_create/", views.candidate_create),
 ]
 
 # allow media files to be linked and viewed directly

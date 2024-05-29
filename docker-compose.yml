@@ -1,11 +1,12 @@
 version: "3.9"
 
-# networks:
-#   ywang_vaster-network:
-#     name: ywang_vaster-network
-#     driver: bridge
+networks:
+  ywang_vaster-network:
+    name: ywang_vaster-network
+    driver: bridge
 
 volumes:
+  django_media:
   postgres_data:
 
 services:
@@ -35,6 +36,7 @@ services:
       dockerfile: ./containers/web/Dockerfile
     volumes:
       - ./ywangvaster_webapp:/ywangvaster_webapp
+      - django_media:/ywangvaster_media
       - ./logs:/home/app/logs/
     ports:
       - 8000:8000
