@@ -1,5 +1,112 @@
 {% extends 'candidate_app/header.html' %} {% load utils %} {% block content %}
 
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+
+
+<!-- Container for the heatmap -->
+<div id="heatmap" style="width: 800px; height: 600px;"></div>
+<script>
+  // Function to generate a random 2D heatmap grid
+  function generateRandomHeatmapData(rows, cols) {
+    const data = [];
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        data.push([j, i, (Math.random() * 2 - 1).toFixed(2)]);
+      }
+    }
+    return data;
+  }
+
+  // Initialize the heatmap with the canvas renderer for better performance
+  const myChart = echarts.init(document.getElementById('heatmap'), null, {
+    renderer: 'canvas'
+  });
+
+  // Generate multiple datasets
+  const datasets = [];
+  for (let i = 0; i < 3; i++) {
+    datasets.push(generateRandomHeatmapData(120, 120));
+  }
+
+  // Initial dataset index
+  let currentDatasetIndex = 0;
+  let intervalId;
+
+  // Function to update the heatmap with the selected dataset
+  function updateHeatmap(index) {
+    currentDatasetIndex = index;
+    myChart.setOption({
+      series: [{
+        data: datasets[currentDatasetIndex]
+      }]
+    });
+  }
+
+  // Specify the initial heatmap configuration
+  const option = {
+    tooltip: {
+      position: 'top',
+      formatter: function (params) {
+        return `(${params.value[0]}, ${params.value[1]}): ${params.value[2]}`;
+      }
+    },
+    grid: {
+      height: '50%',
+      top: '10%'
+    },
+    xAxis: {
+      type: 'category',
+      data: Array.from({
+        length: 120
+      }, (_, i) => i)
+    },
+    yAxis: {
+      type: 'category',
+      data: Array.from({
+        length: 120
+      }, (_, i) => i)
+    },
+    visualMap: {
+      min: -1,
+      max: 1,
+      calculable: true,
+      orient: 'horizontal',
+      left: 'center',
+      bottom: '15%'
+    },
+    series: [{
+      name: 'Heatmap',
+      type: 'heatmap',
+      data: datasets[currentDatasetIndex],
+      label: {
+        show: false
+      },
+      emphasis: {
+        itemStyle: {
+          shadowBlur: 10,
+          shadowColor: 'rgba(0, 0, 0, 0.5)'
+        }
+      }
+    }]
+  };
+
+  // Set the option and render the initial heatmap
+  myChart.setOption(option);
+
+  // Function to start the automatic transition
+  function startAnimation() {
+    intervalId = setInterval(() => {
+      const nextIndex = (currentDatasetIndex + 1) % datasets.length;
+      updateHeatmap(nextIndex);
+    }, 2000);
+  }
+
+  // Start the animation by default
+  startAnimation();
+</script>
+
+
 <div id="main"></div>
 <div>Handles <input id="handles" type="range" min="1" max="5" value="1" /></div>
 <div>

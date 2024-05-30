@@ -659,11 +659,10 @@ def upload_candidate(request):
         # Get user specific data
         try:
             token_str = request.headers["Authorization"]
-            project_id = request.POST["project_id"]
 
         except KeyError:
             return JsonResponse(
-                {"status": "error", "message": f"Unable to pull out project_id, username, or token out from request."},
+                {"status": "error", "message": f"Unable to pull out token of the request."},
                 status=400,
             )
 
@@ -676,8 +675,11 @@ def upload_candidate(request):
 
                 # Save the candidate data to DB.
                 try:
-                    cand_data = json.loads(request.POST)
-                    survey_id, beam_id, cand_id = cand_data["survey_id"], cand_data["beam_id"], cand_data["name"]
+                    cand_data = request.POST
+                    project_id = cand_data["project_id"]
+                    survey_id = cand_data["survey_id"]
+                    beam_id = cand_data["beam_id"]
+                    cand_id = cand_data["name"]
 
                     # Path for the candidate files.
                     upload_dir = f"/ywangvaster_media/{project_id}/{survey_id}/{beam_id}/{cand_id}/"
