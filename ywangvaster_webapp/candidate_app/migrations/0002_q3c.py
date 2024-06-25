@@ -14,13 +14,22 @@ class Migration(migrations.Migration):
             ["CREATE EXTENSION IF NOT EXISTS q3c;"],  # Apply Q3C Extension
             ["DROP EXTENSION IF EXISTS q3c;"],  # This is the SQL for reversing the DB if needed
         ),
+        # Index for the candidate's coordinates
         migrations.RunSQL(
-            ["CREATE INDEX ON candidate_app_candidate (q3c_ang2ipix(ra_deg, dec_deg));"],
+            ["CREATE INDEX ON candidate_app_candidate (q3c_ang2ipix(ra, dec));"],
             ["DROP INDEX candidate_app_candidate_q3c_ang2ipix_idx;"],
         ),
         migrations.RunSQL(
             ["CLUSTER candidate_app_candidate_q3c_ang2ipix_idx ON candidate_app_candidate;"],
             [],
+        ),
+        migrations.RunSQL(
+            ["CREATE INDEX ON candidate_app_candidate (q3c_ang2ipix(beam_ra, beam_dec));"],
+            ["DROP INDEX candidate_app_candidate_q3c_ang2ipix_idx;"],
+        ),
+        migrations.RunSQL(
+            ["CREATE INDEX ON candidate_app_candidate (q3c_ang2ipix(deep_ra_deg, deep_dec_deg));"],
+            ["DROP INDEX candidate_app_candidate_q3c_ang2ipix_idx;"],
         ),
         migrations.RunSQL(
             ["ANALYZE candidate_app_candidate;"],

@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
 import os
-import glob
-import argparse
 import re
 import csv
-from typing import List, Tuple
-import urllib.request
-import requests
 import json
+import argparse
+import requests
+from datetime import datetime, timezone
+from typing import Dict, List, Optional, Tuple
+
+from astropy.io import fits
 
 import logging
 
@@ -89,12 +90,28 @@ class TokenAuth(requests.auth.AuthBase):
 #     session.post(url, data=data)
 
 
+def group_dictionaries(tuples_list):
+    # Dictionary to hold the groups, using frozenset of dictionary items as keys
+    grouped = {}
+
+    for keys, dictionary in tuples_list:
+        # Convert dictionary to frozenset of its items to use as a hashable key
+        dict_key = frozenset(dictionary.items())
+        if dict_key not in grouped:
+            grouped[dict_key] = (keys, dictionary)
+        else:
+            grouped[dict_key][0].extend(keys)
+
+    # Convert the dictionary back to the list of tuples
+    return list(grouped.values())
+
+
 def parse_filename(filename: str) -> Tuple[str, str, str]:
     """Parse the filename to get it's componenets"""
 
     # Get details of the filename and sort into folders
     split_filename = filename.split("_")
-    survey_id = split_filename[0]
+    obs_id = split_filename[0]
     beam_id = split_filename[1]  # or [4:]
     series = split_filename[2]
 
@@ -102,7 +119,7 @@ def parse_filename(filename: str) -> Tuple[str, str, str]:
     if len(series_split) > 1:
         series = series_split[0]
 
-    return survey_id, beam_id, series
+    return obs_id, beam_id, series
 
 
 # Find file in list
@@ -133,94 +150,265 @@ def get_absolute_file_paths(directory):
     return file_paths
 
 
-def find_csv_file_with_name(search_pattern: str, data_type: str, file_list: List[str], project_id: str):
-    """Find the a file that best matches '{search pattern}.csv' and read from it."""
+def find_files_with_pattern(search_pattern: str, directory: str) -> List[str]:
+    """
+    param search_pattern: The regex style search pattern to find the files with that string.
+    param
+    """
+
+    pattern = re.compile(search_pattern)
+    matching_files = []
+    for root, _, files in os.walk(directory):
+        for file in files:
+            if pattern.match(file):
+                matching_files.append(os.path.join(root, file))
+
+    return matching_files
+
+
+def parse_csv_file(file_path: str, data_type: str, project_id: str):
+    """"""
+
+    # Get info from filename.
+    filename = os.path.basename(file_path)
+    obs_id, beam_id, _ = parse_filename(filename)
+
+    if not os.path.exists(file_path):
+        print(f"File path {file_path} does not exsist!")
+        return None
 
     data = []
-    for path in file_list:
+    with open(file_path, mode="r", newline="", encoding="utf-8") as csv_file:
+        csv_reader = csv.DictReader(csv_file)
 
-        # Get info from filename.
-        filename = os.path.basename(path)
-        survey_id, beam_id, series = parse_filename(filename)
+        if data_type == "cand_list":
+            for row in csv_reader:
+                beam_int = int(beam_id[4:])
+                row["proj_id"] = project_id
+                row["obs_id"] = obs_id
+                row["beam_index"] = beam_int
+                data.append(row)
 
-        # Get path to file
-        pattern = re.compile(rf"{search_pattern}\.csv$")
-        if pattern.search(filename):
-
-            # Read csv file
-
-            with open(path, mode="r", newline="", encoding="utf-8") as csv_file:
-                csv_reader = csv.DictReader(csv_file)
-
-                if data_type == "cand_list":
-                    for row in csv_reader:
-                        row["project_id"] = project_id
-                        row["survey_id"] = survey_id
-                        row["beam_id"] = beam_id
-                        data.append(row)
-
-                if data_type == "per_cand":
-                    for row in csv_reader:
-                        data.append(row)
-
-            break
+        if data_type == "per_cand":
+            for row in csv_reader:
+                data.append(row)
 
     return data
 
 
-def upload_candidates(base_url, token, project_id, data_directory):
-    """Upload a survey/observation to the YWANG-VASTER webapp."""
+def send_observation_request(
+    session: requests.Session,
+    obs_url: str,
+    project_id: str,
+    obs_id: str,
+    directory: str = os.path.dirname(os.path.realpath(__file__)),
+):
+
+    ### Get the observation date from one of the fits files ###
+    std_fits_obs_file_path = os.path.join(directory, f"{obs_id}_beam00_std.fits")
+    with fits.open(std_fits_obs_file_path) as hdul:
+        # Access the primary header
+        header = hdul[0].header
+
+        # Retrieve the value of the 'DATE-OBS' keyword
+        _date_obs = header.get("DATE-OBS")
+        _time_sys = header.get("TIMESYS")
+
+        # Turn datetime into a proper datetime object for
+        timesys = _time_sys.strip()
+        datetime_object = datetime.fromisoformat(_date_obs)
+        if timesys.upper() == "UTC":
+            datetime_object = datetime_object.replace(tzinfo=timezone.utc)
+
+    ### Send a request to create an observation record in the DB ###
+    r = session.post(
+        obs_url,
+        data={
+            "id": obs_id,
+            "proj_id": project_id,
+            "obs_start": datetime_object.isoformat(),
+            "obs_obj_id": f"{project_id}_{obs_id}",
+        },
+    )
+    print(r.text)
+    # r.raise_for_status()
+
+
+def send_beam_request(
+    session: requests.Session,
+    beam_url: str,
+    project_id: str,
+    obs_id: str,
+    beam_id: str,
+    directory: str = os.path.dirname(os.path.realpath(__file__)),
+):
+    """Uploads beam specific files to the ywangvaster webapp."""
+
+    beam_upload_files = {}
+    for series_name, fmt_list in [
+        ("final", ["csv"]),
+        ("std", ["fits"]),
+        # ("chisquare_cand", ["csv"]),
+        ("chisquare_map1", ["png"]),
+        ("chisquare_map2", ["png"]),
+        ("chisquare", ["fits"]),
+        # ("peak_cand", ["csv"]),
+        ("peak_map1", ["png"]),
+        ("peak_map2", ["png"]),
+        ("peak", ["fits"]),
+    ]:
+
+        for fmt in fmt_list:
+            filename = os.path.join(directory, f"{obs_id}_{beam_id}_{series_name}.{fmt}")
+            beam_upload_files[f"{series_name}_{fmt}"] = open(filename, "rb")
+
+    try:
+        beam_int = int(beam_id[4:])
+        # Send the request
+        r = session.post(
+            beam_url,
+            data={
+                "proj_id": project_id,
+                "obs_id": obs_id,
+                "index": beam_int,
+                "beam_obj_id": f"{project_id}_{obs_id}_beam{beam_int}",
+            },
+            files=beam_upload_files,
+        )
+        print(r.text)
+        r.raise_for_status()
+
+    finally:
+        # Close all of the opened files.
+        for file in beam_upload_files.values():
+            file.close()
+
+
+def send_cand_request(
+    session: requests.Session,
+    cand_url: str,
+    obs_id: str,
+    beam_id: str,
+    cand: Dict,
+    lightcurve_local_rms: Optional[Dict] = None,
+    lightcurve_peak_flux: Optional[Dict] = None,
+    directory: str = os.path.dirname(os.path.realpath(__file__)),
+):
+
+    # Add the lightcurve data to the candidate, and in error bars and cast as strings for json handling.
+    if (
+        lightcurve_peak_flux is not None
+        and lightcurve_local_rms is not None
+        and cand["name"] in lightcurve_peak_flux[0]
+    ):
+
+        lightcurve = [["Time", cand["name"], "rms_error"]]
+        for lc, lc_err in zip(lightcurve_peak_flux, lightcurve_local_rms):
+
+            assert (
+                lc["Time"] == lc_err["Time"]
+            ), f"Time x-value for the lightcurve data is not the same in CSVs! {cand['name']}"
+
+            lightcurve.append([lc["Time"], lc[cand["name"]], lc_err[cand["name"]]])
+        cand["lightcurve_data"] = json.dumps(lightcurve)
+
+    cand_upload_files = {}
+    # Upload the images, gifs and fits files if it is from the "final" model.
+    for series_name, fmt_list in [
+        ("lightcurve", ["png"]),
+        ("slices", ["gif", "fits"]),
+        ("deepcutout", ["png", "fits"]),
+    ]:
+
+        for fmt in fmt_list:
+            filename = os.path.join(directory, f"{obs_id}_{beam_id}_{series_name}_{cand['name']}.{fmt}")
+            if os.path.exists(filename):
+                cand_upload_files[f"{series_name}_{fmt}"] = open(filename, "rb")
+
+    try:
+        # Send the request
+        r = session.post(
+            cand_url,
+            data=cand,
+            files=cand_upload_files,
+        )
+        print(r.text)
+        r.raise_for_status()
+
+    finally:
+        # Close all of the opened files.
+        for file in cand_upload_files.values():
+            file.close()
+
+
+def upload_data(base_url, token, project_id, obs_id, data_directory):
+    """Upload a obs/observation to the YWANG-VASTER webapp."""
     # Set up session
     session = requests.session()
     session.auth = TokenAuth(token)
-    url = f"{base_url}/upload_candidate/"
+    obs_url = f"{base_url}/upload_observation/"
+    beam_url = f"{base_url}/upload_beam/"
+    cand_url = f"{base_url}/upload_candidate/"
 
-    # Get list of files from the data directory
-    file_list = get_absolute_file_paths(data_directory)
+    # Find all of the beam output files for this observation.
+    beam_final_candidate_files = find_files_with_pattern(rf"{obs_id}_.*_final\.csv", data_directory)
 
-    # Find csv final - list of candidates to be pushed to the webapp
-    candidates = find_csv_file_with_name("_final", "cand_list", file_list, project_id)
+    print(f"beam_final_candidate_files: {beam_final_candidate_files}")
 
-    # Get lightcurve data
-    lightcurve_local_rms = find_csv_file_with_name("_lightcurve_local_rms", "per_cand", file_list, project_id)
-    lightcurve_peak_flux = find_csv_file_with_name("_lightcurve_peak_flux", "per_cand", file_list, project_id)
+    # Get the list of beams in the directory
+    all_beam_ids = []
+    for beam_final_csv_path in beam_final_candidate_files:
+        filename = os.path.basename(beam_final_csv_path)
+        all_beam_ids.append(filename.split("_")[1])
 
-    # for each candidate
-    for cand in candidates:
+    # Upload information about the observation
+    send_observation_request(session, obs_url, project_id, obs_id, data_directory)
 
-        survey_id, beam_id, cand_id = cand["survey_id"], cand["beam_id"], cand["name"]
+    # For each beam
+    for beam_id in all_beam_ids:
 
-        # Add the lightcurve data to the candidate data
-        cand["lightcurve_local_rms"] = [[lc["Time"], lc[cand_id]] for lc in lightcurve_local_rms]
-        cand["lightcurve_peak_flux"] = [[lc["Time"], lc[cand_id]] for lc in lightcurve_peak_flux]
+        # Upload the metadata, fits and images for each beam
+        send_beam_request(session, beam_url, project_id, obs_id, beam_id, data_directory)
 
-        print(cand["lightcurve_local_rms"])
+        candidate_csv_path = os.path.join(data_directory, f"{obs_id}_{beam_id}_final.csv")
 
-        # Upload the images, gifs and fits files
-        upload_files = {}
-        for series_name, fmt_list in [
-            ("lightcurve", ["png"]),
-            ("slices", ["gif", "fits"]),
-            ("deepcutout", ["png", "fits"]),
-        ]:
+        # List of candidates from the *_final.csv
+        candidates = parse_csv_file(candidate_csv_path, "cand_list", project_id)
 
-            for fmt in fmt_list:
-                filename = os.path.join(data_directory, f"{survey_id}_{beam_id}_{series_name}_{cand_id}.{fmt}")
-                upload_files[f"{series_name}.{fmt}"] = open(filename, "rb")
+        print(f"Number of candidates for upload - {len(candidates)}")
 
-        try:
-            # Send the request
-            r = session.post(
-                url,
-                data=cand,
-                files=upload_files,
+        # Read in the lightcurve data files
+        lightcurve_peak_flux = parse_csv_file(
+            os.path.join(data_directory, f"{obs_id}_{beam_id}_lightcurve_peak_flux.csv"),
+            "per_cand",
+            project_id,
+        )
+
+        lightcurve_local_rms = parse_csv_file(
+            os.path.join(data_directory, f"{obs_id}_{beam_id}_lightcurve_local_rms.csv"),
+            "per_cand",
+            project_id,
+        )
+
+        # Loop through each possible candidate
+        for cand in candidates:
+
+            # Remove source_id
+            cand.pop("source_id")
+
+            # Add or remove other keys for webapp
+            cand["cand_obj_id"] = f"{project_id}_{obs_id}_beam{int(beam_id[4:])}_{cand['name']}"
+
+            send_cand_request(
+                session,
+                cand_url,
+                obs_id,
+                beam_id,
+                cand,
+                lightcurve_local_rms,
+                lightcurve_peak_flux,
+                data_directory,
             )
-            print(r.text)
-            r.raise_for_status()
-
-        finally:
-            for file in upload_files.values():
-                file.close()
 
 
 if __name__ == "__main__":
@@ -234,12 +422,6 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--username",
-        type=str,
-        help="Username for the webapp.",
-    )
-
-    parser.add_argument(
         "--token",
         type=str,
         help="Uplaod token for the webapp.",
@@ -249,6 +431,12 @@ if __name__ == "__main__":
         "--project_id",
         type=str,
         help="ID of the propject to upload to.",
+    )
+
+    parser.add_argument(
+        "--observation_id",
+        type=str,
+        help="Observation ID - eg, SB50230",
     )
 
     parser.add_argument(
@@ -283,4 +471,4 @@ if __name__ == "__main__":
     else:
         data_path = args.data_directory
 
-    upload_candidates(args.base_url, args.token, args.project_id, data_path)
+    upload_data(args.base_url, args.token, args.project_id, args.observation_id, data_path)
