@@ -1,12 +1,11 @@
-astropy==5.2
-astroquery==0.4.6
+astropy
+astroquery
 crispy-bootstrap4==2023.1
 django_crispy_forms>=2.1
 django==4.2
 djangorestframework==3.14
 django-rest-auth==0.9.5
-# git+https://dev.aao.org.au/paul.hancock/django-q3c.git
-django-q3c==0.2  # for now use my fork above
+django-q3c==0.2 
 gunicorn==21.2.0
 psycopg2-binary==2.9.9
 voevent-parse==1.0.3

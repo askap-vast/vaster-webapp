@@ -5,9 +5,9 @@ TABLE_CHECK="$( psql "postgres://$DB_USERNAME:$DB_PASSWORD@$DB_HOST:$DB_PORT" -X
 
 echo "Result from auth_table check: " $TABLE_CHECK
 
-# Make migrations (just incase of changes) and apply 
-python3 /ywangvaster_webapp/manage.py makemigrations
-python3 /ywangvaster_webapp/manage.py makemigrations candidate_app 
+# Make migrations (incase of changes) and apply 
+python3 /ywangvaster_webapp/manage.py makemigrations --noinput
+python3 /ywangvaster_webapp/manage.py makemigrations candidate_app --noinput
 python3 /ywangvaster_webapp/manage.py migrate 
 
 if  [[ $TABLE_CHECK == *$DJANGO_SUPERUSER_USERNAME* ]]; then
