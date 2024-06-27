@@ -4,120 +4,263 @@
 
 {% block content %}
 
-<!--
-<h1>Range Slider Form</h1>
-
-{{ form_slider }}
--->
-
-
 <title>Candidate Ratings Table</title>
 <h1>Candidate Ratings Table</h1>
 <h2>For {{ project_name }} (<a href="/session_settings/">change</a>)</h2>
-<div class="col-6" style="width:90%; margin: 0 auto; padding-bottom: 20px;">
-  <h2>Filter Candidate Ratings:</h2>
-  <form method="post">
-    {% csrf_token %}
-    <div class="row justify-content-center" style="background-color:#f8f8f8; margin: 0;">
-      <div class="col-3">
-        <div class="fieldWrapper">
-          {{ form.rating_cutoff.errors }}
-          <label for="{{ form.rating_cutoff.id_for_label }}">Average rating cutoff:</label>
-          {{ form.rating_cutoff }}
-        </div>
-        <div class="fieldWrapper">
-          {{ form.observation_id.errors }}
-          <label for="{{ form.observation_id.id_for_label }}">Observation ID:</label>
-          {{ form.observation_id }}
-        </div>
-        <div class="fieldWrapper">
-          {{ form.column_display.errors }}
-          <label for="{{ form.column_display.id_for_label }}">Display Count Columns:</label>
-          {{ form.column_display }}
-        </div>
-        <div class="fieldWrapper">
-          {{ form.order_by.errors }}
-          <label for="{{ form.order_by.id_for_label }}">Order by:</label>
-          {{ form.order_by }}
-          {{ form.asc_dec.errors }}
-          {{ form.asc_dec }}
-        </div>
-        <input class="button is-primary" type=submit value="Submit">
-      </div>
-      <div class="col-3">
-        <h4>Filter by position:</h4>
-        <div class="fieldWrapper">
-          {{ form.ra_hms.errors }}
-          <label for="{{ form.ra_hms.id_for_label }}">RA (HH:MM:SS):</label>
-          {{ form.ra_hms }}
-        </div>
-        <div class="fieldWrapper">
-          {{ form.dec_dms.errors }}
-          <label for="{{ form.dec_dms.id_for_label }}">Dec (DD:MM:SS)::</label>
-          {{ form.dec_dms }}
-        </div>
-        <div class="fieldWrapper">
-          {{ form.search_radius_arcmin.errors }}
-          <label for="{{ form.search_radius_arcmin.id_for_label }}">Search radius (arcmin):</label>
-          {{ form.search_radius_arcmin }}
-        </div>
-      </div>
-    </div>
-  </form>
-</div>
+<div style="width:85%; margin: 0 auto; padding-bottom: 20px;">
+  <h2>Filter Candidates</h2>
 
-<p><a href="/download_data/candidate/" class="btn btn-primary btn-lg" tabindex="-1" role="button"
-    aria-disabled="true">Download All Candidates</a></p>
+  <div id='candidate-filter-form-div'>
+    <div class='container-fluid' style="background-color:#f8f8f8; margin: 0;">
+
+      <form id='testFormId' method="post">
+        {% csrf_token %}
+        <div class='row'>
+          <div class='col'>
+            <h4>Candidate position:</h4>
+            <div class="fieldWrapper">
+              {{ form.cand_ra_str.errors }}
+              <label for="{{ form.cand_ra_str.id_for_label }}">RA (HH:MM:SS):</label>
+              {{ form.cand_ra_str }}
+            </div>
+            <div class="fieldWrapper">
+              {{ form.cand_dec_str.errors }}
+              <label for="{{ form.cand_dec_str.id_for_label }}">Dec (DD:MM:SS):</label>
+              {{ form.cand_dec_str }}
+            </div>
+            <div class="fieldWrapper">
+              {{ form.cand_arcmin_search_radius.errors }}
+              <label for="{{ form.cand_arcmin_search_radius.id_for_label }}">Candidate search radius (arcmin):</label>
+              {{ form.cand_arcmin_search_radius }}
+            </div>
+          </div>
+
+          <div class='col'>
+            <h4>Beam position:</h4>
+            <div class="fieldWrapper">
+              {{ form.beam_ra_str.errors }}
+              <label for="{{ form.beam_ra_str.id_for_label }}">RA (HH:MM:SS):</label>
+              {{ form.beam_ra_str }}
+            </div>
+            <div class="fieldWrapper">
+              {{ form.beam_dec_str.errors }}
+              <label for="{{ form.beam_dec_str.id_for_label }}">Dec (DD:MM:SS):</label>
+              {{ form.beam_dec_str }}
+            </div>
+            <div class="fieldWrapper">
+              {{ form.beam_arcmin_search_radius.errors }}
+              <label for="{{ form.beam_arcmin_search_radius.id_for_label }}">Beam search radius (arcmin):</label>
+              {{ form.beam_arcmin_search_radius }}
+            </div>
+          </div>
+
+          <div class='col'>
+            <h4>Deep position:</h4>
+            <div class="fieldWrapper">
+              {{ form.deep_ra_str.errors }}
+              <label for="{{ form.deep_ra_str.id_for_label }}">RA (HH:MM:SS):</label>
+              {{ form.deep_ra_str }}
+            </div>
+            <div class="fieldWrapper">
+              {{ form.deep_dec_str.errors }}
+              <label for="{{ form.deep_dec_str.id_for_label }}">Dec (DD:MM:SS):</label>
+              {{ form.deep_dec_str }}
+            </div>
+            <div class="fieldWrapper">
+              {{ form.deep_arcmin_search_radius.errors }}
+              <label for="{{ form.deep_arcmin_search_radius.id_for_label }}">Deep search radius (arcmin):</label>
+              {{ form.deep_arcmin_search_radius }}
+            </div>
+          </div>
+
+          <div class='col'>
+            <div class="fieldWrapper">
+              {{ form.rated.errors }}
+              <label for="{{ form.rated.id_for_label }}">Has been rated:</label>
+              {{ form.rated }}
+            </div>
+            <div class="fieldWrapper">
+              {{ form.observation_id.errors }}
+              <label for="{{ form.observation_id.id_for_label }}">Observation ID:</label>
+              {{ form.observation_id }}
+            </div>
+          </div>
+
+
+        </div>
+
+        <h4>Filter candidates by floats:</h4>
+
+        <div class='row'>
+          {% if cand_values.chi_square.min|is_not_nan_or_none and cand_values.chi_square.max|is_not_nan_or_none %}
+          <div class='col d-flex justify-content-center'>
+            <multi-input-slider label="Chi square" id="chi_square" num-sliders="2"
+              slider-min="{{cand_values.chi_square.min}}" slider-max="{{cand_values.chi_square.max}}"
+              initial-values="[{{cand_values.chi_square.gte}}, {{cand_values.chi_square.lte}}]" />
+          </div>
+          {% endif %}
+
+          {% if cand_values.chi_square_sigma.min|is_not_nan_or_none and cand_values.chi_square_sigma.max|is_not_nan_or_none %}
+          <div class='col d-flex justify-content-center'>
+            <multi-input-slider label='Chi square sigma' id="chi_square_sigma" num-sliders="2"
+              slider-min="{{cand_values.chi_square_sigma.min}}" slider-max="{{cand_values.chi_square_sigma.max}}"
+              initial-values="[{{cand_values.chi_square_sigma.gte}}, {{cand_values.chi_square_sigma.lte}}]" />
+          </div>
+          {% endif %}
+
+          {% if cand_values.chi_square_log_sigma.min|is_not_nan_or_none and cand_values.chi_square_log_sigma.max|is_not_nan_or_none %}
+          <div class='col d-flex justify-content-center'>
+            <multi-input-slider label='Chi square log sigma' id="chi_square_log_sigma" num-sliders="2"
+              slider-min="{{cand_values.chi_square_log_sigma.min}}"
+              slider-max="{{cand_values.chi_square_log_sigma.max}}"
+              initial-values="[{{cand_values.chi_square_log_sigma.gte}}, {{cand_values.chi_square_log_sigma.lte}}]" />
+          </div>
+          {% endif %}
+        </div>
+
+        <hr />
+
+        <div class='row'>
+          {% if cand_values.peak_map.min|is_not_nan_or_none and cand_values.peak_map.max|is_not_nan_or_none %}
+          <div class='col d-flex justify-content-center'>
+            <multi-input-slider label='Peak map' id="peak_map" num-sliders="2" slider-min="{{cand_values.peak_map.min}}"
+              slider-max="{{cand_values.peak_map.max}}"
+              initial-values="[{{cand_values.peak_map.gte}}, {{cand_values.peak_map.lte}}]" />
+          </div>
+          {% endif %}
+
+          {% if cand_values.peak_map_sigma.min|is_not_nan_or_none and cand_values.peak_map_sigma.max|is_not_nan_or_none %}
+          <div class='col d-flex justify-content-center'>
+            <multi-input-slider label='Peak map sigma' id="peak_map_sigma" num-sliders="2"
+              slider-min="{{cand_values.peak_map_sigma.min}}" slider-max="{{cand_values.peak_map_sigma.max}}"
+              initial-values="[{{cand_values.peak_map_sigma.gte}}, {{cand_values.peak_map_sigma.lte}}]" />
+          </div>
+          {% endif %}
+
+          {% if cand_values.peak_map_log_sigma.min|is_not_nan_or_none and cand_values.peak_map_log_sigma.max|is_not_nan_or_none %}
+          <div class='col d-flex justify-content-center'>
+            <multi-input-slider label='Peak map log sigma' id="peak_map_log_sigma" num-sliders="2"
+              slider-min="{{cand_values.peak_map_log_sigma.min}}" slider-max="{{cand_values.peak_map_log_sigma.max}}"
+              initial-values="[{{cand_values.peak_map_log_sigma.gte}}, {{cand_values.peak_map_log_sigma.lte}}]" />
+          </div>
+          {% endif %}
+        </div>
+
+        <div class='row'>
+          {% if cand_values.gaussian_map.min|is_not_nan_or_none and cand_values.gaussian_map.max|is_not_nan_or_none %}
+          <hr />
+          <div class='col d-flex justify-content-center'>
+            <multi-input-slider label='Gaussian map' id="gaussian_map" num-sliders="2"
+              slider-min="{{cand_values.gaussian_map.min}}" slider-max="{{cand_values.gaussian_map.max}}"
+              initial-values="[{{cand_values.gaussian_map.gte}}, {{cand_values.gaussian_map.lte}}]" />
+          </div>
+          {% endif %}
+
+          {% if cand_values.gaussian_map_sigma.min|is_not_nan_or_none and cand_values.gaussian_map_sigma.max|is_not_nan_or_none %}
+          <div class='col d-flex justify-content-center'>
+            <multi-input-slider label='Gaussian map sigma' id="gaussian_map_sigma" num-sliders="2"
+              slider-min="{{cand_values.gaussian_map_sigma.min}}" slider-max="{{cand_values.gaussian_map_sigma.max}}"
+              initial-values="[{{cand_values.gaussian_map_sigma.gte}}, {{cand_values.gaussian_map_sigma.lte}}]" />
+          </div>
+          {% endif %}
+        </div>
+
+        <hr />
+
+        <div class='row'>
+          {% if cand_values.beam_sep_deg.min|is_not_nan_or_none and cand_values.beam_sep_deg.max|is_not_nan_or_none %}
+          <div class='col d-flex justify-content-center'>
+            <multi-input-slider label='Beam sep deg' id="beam_sep_deg" num-sliders="2"
+              slider-min="{{cand_values.beam_sep_deg.min}}" slider-max="{{cand_values.beam_sep_deg.max}}"
+              initial-values="[{{cand_values.beam_sep_deg.gte}}, {{cand_values.beam_sep_deg.lte}}]" />
+          </div>
+          {% endif %}
+
+          {% if cand_values.md_deep.min|is_not_nan_or_none and cand_values.md_deep.max|is_not_nan_or_none %}
+          <div class='col d-flex justify-content-center'>
+            <multi-input-slider label='MD deep' id="md_deep" num-sliders="2" slider-min="{{cand_values.md_deep.min}}"
+              slider-max="{{cand_values.md_deep.max}}"
+              initial-values="[{{cand_values.md_deep.gte}}, {{cand_values.md_deep.lte}}]" />
+          </div>
+          {% endif %}
+
+          {% if cand_values.deep_sep_arcsec.min|is_not_nan_or_none and cand_values.deep_sep_arcsec.max|is_not_nan_or_none %}
+          <div class='col d-flex justify-content-center'>
+            <multi-input-slider label='Deep sep arcsec' id="deep_sep_arcsec" num-sliders="2"
+              slider-min="{{cand_values.deep_sep_arcsec.min}}" slider-max="{{cand_values.deep_sep_arcsec.max}}"
+              initial-values="[{{cand_values.deep_sep_arcsec.gte}}, {{cand_values.deep_sep_arcsec.lte}}]" />
+          </div>
+          {% endif %}
+
+          {% if cand_values.deep_peak_flux.min|is_not_nan_or_none and cand_values.deep_peak_flux.max|is_not_nan_or_none %}
+          <div class='col d-flex justify-content-center'>
+            <multi-input-slider label='Deep peak flux' id="deep_peak_flux" num-sliders="2"
+              slider-min="{{cand_values.deep_peak_flux.min}}" slider-max="{{cand_values.deep_peak_flux.max}}"
+              initial-values="[{{cand_values.deep_peak_flux.gte}}, {{cand_values.deep_peak_flux.lte}}]" />
+          </div>
+          {% endif %}
+
+          {% if cand_values.deep_int_flux.min|is_not_nan_or_none and cand_values.deep_int_flux.max|is_not_nan_or_none %}
+          <div class='col d-flex justify-content-center'>
+            <multi-input-slider label='Deep int flux' id="deep_int_flux" num-sliders="2"
+              slider-min="{{cand_values.deep_int_flux.min}}" slider-max="{{cand_values.deep_int_flux.max}}"
+              initial-values="[{{cand_values.deep_int_flux.gte}}, {{cand_values.deep_int_flux.lte}}]" />
+          </div>
+          {% endif %}
+
+          {% if cand_values.std_map.min|is_not_nan_or_none and cand_values.std_map.max|is_not_nan_or_none %}
+          <div class='col d-flex justify-content-center'>
+            <multi-input-slider label='Std map' id="std_map" num-sliders="2" slider-min="{{cand_values.std_map.min}}"
+              slider-max="{{cand_values.std_map.max}}"
+              initial-values="[{{cand_values.std_map.gte}}, {{cand_values.std_map.lte}}]" />
+          </div>
+          {% endif %}
+        </div>
+
+        <button class="btn btn-primary bottom-0 end-0" type='submit '>Filter!</button>
+      </form>
+
+      <form method="post" action="{% url 'clear_candidate_table_filter' %}">
+        {% csrf_token %}
+        <button class="btn btn-danger bottom-0 end-0" type="submit">Reset filters</button>
+      </form>
+
+    </div>
+
+    {% comment %} TODO {% endcomment %}
+    {% comment %} <button class="btn btn-primary"> Reset Form!</button> {% endcomment %}
+    <!-- TODO: Get the caching to work properly - Resetting the form can be just by refreshing the page.-->
+
+
+  </div>
+
+</div>
 
 {% if page_obj %}
 <table class="fl-table">
   <thead>
-    <th>ID</th>
-    <th>Rating(Count)</th>
-    <th>Notes</th>
-    {% if selected_column %}
-    <th>{{ selected_column }}</th>
-    {% else %}
-    {% for key, name in column_names.items %}
-    <th>{{ name }}</th>
-    {% endfor %}
-    {% endif %}
+    <th>Name</th>
     <th>RA (HH:MM:SS.SS)</th>
     <th>Dec (DD:MM:SS.SS)</th>
     <th>Obs ID</th>
-    <th>Plot</th>
+    <th>Beam Index</th>
   </thead>
 
   {% for cand in page_obj %}
   <tr>
-    <td><a href="/candidate_rating/{{cand.id}}/">{{cand.id}}</a></td>
-    <td>
-      {% if cand.num_ratings > 0 %}
-      {{cand.avg_rating|floatformat:2}} ({{cand.num_ratings}})
-      {% else %}
-      not rated
-      {% endif %}
-    </td>
-    <td>{{cand.notes}}</td>
-    {% if selected_column %}
-    <td>{{cand.selected_count}}</td>
-    {% else %}
-    {% for key, name in column_names.items %}
-    <td>{% get_type_count cand key %}</td>
-    {% endfor %}
-    {% endif %}
-    <td>{{cand.ra_hms}}</td>
-    <td>{{cand.dec_dms}}</td>
-    <td>{{cand.obs_id.observation_id}}</td>
-    <td><img src="{{cand.png_path.url}}" alt="Diagnostic Plot for {{cand.id}}" style="width:100px;"
-        onClick="window.open(this.src)"> </td>
+    <td><a href="/candidate_rating/{{cand.hash_id}}/">{{cand.name}}</a></td>
+    <td>{{cand.ra_str}}</td>
+    <td>{{cand.dec_str}}</td>
+    <td>{{cand.observation.id}}</td>
+    <td>{{cand.beam.index}}</td>
   </tr>
   {% endfor %}
 </table>
+
 {% else %}
 <p>No Candidates Found!</p>
 {% endif %}
-</div>
+
 
 {% include "candidate_app/pagination.html" %}
 

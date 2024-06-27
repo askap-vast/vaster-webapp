@@ -5,10 +5,12 @@ import csv
 import json
 import logging
 import random
-from datetime import datetime, timedelta
-from typing import List, Tuple
+from uuid import uuid4
 
-import voeventdb.remote.apiv1 as apiv1
+from datetime import datetime, timedelta
+from typing import List, Optional, Tuple
+
+# import voeventdb.remote.apiv1 as apiv1
 import voeventparse
 from astropy import units
 from astropy.coordinates import Angle, SkyCoord
@@ -28,7 +30,11 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .utils import download_fits
+
+from ywangvaster_webapp.settings import MEDIA_ROOT
+
+
+from .utils import download_fits, get_disk_space
 
 from django.http import HttpRequest
 from django.views.generic import TemplateView, View
@@ -36,14 +42,13 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 import base64
 from django.http import JsonResponse, HttpResponseForbidden
-
+from django.db.models import Min, Max, Q
 
 from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 
 from django.shortcuts import render
-from .forms import RangeSliderForm
 
 # from voeventdb.remote.apiv1 import FilterKeys, OrderValues
 
@@ -53,7 +58,17 @@ logger = logging.getLogger(__name__)
 
 
 def home_page(request):
-    return render(request, "candidate_app/home_page.html")
+
+    all_beams = models.Beam.objects.all()
+
+    for beam in all_beams:
+        print(beam.chisquare_fits)
+
+    candidates = models.Candidate.objects.all()
+
+    page_context = {"all_beams": all_beams, "candidates": candidates}
+
+    return render(request, "candidate_app/home_page.html", page_context)
 
 
 def cone_search_simbad(request):  # , ra_deg, dec_deg, dist_arcmin):
@@ -123,22 +138,21 @@ def cone_search(request):
                     Q3CRadialQuery(
                         center_ra=ra_deg,
                         center_dec=dec_deg,
-                        ra_col="ra_deg",
-                        dec_col="dec_deg",
+                        ra_col="ra",
+                        dec_col="dec",
                         radius=float(dist_arcmin) / 60.0,
                     )
                 )
-            )
-            .annotate(  # do the distance calcs in the db
+            ).annotate(  # do the distance calcs in the db
                 sep=Q3CDist(
-                    ra1=F("ra_deg"),
-                    dec1=F("dec_deg"),
+                    ra1=F("ra"),
+                    dec1=F("dec"),
                     ra2=ra_deg,
                     dec2=dec_deg,
                 )
-                * 60  # arcsec -> degrees
+                # * 60  # arcsec -> degrees
             )
-            .order_by("sep")
+            # .order_by("sep")
         )
 
         table = table.values()
@@ -195,21 +209,20 @@ def cone_search_pulsars(request):
 
 
 @login_required(login_url="/")
-def candidate_rating(request, id, arcmin=2):
-    candidate = get_object_or_404(models.Candidate, id=id)
+def candidate_rating(request, hash_id, arcmin=2):
+    candidate = get_object_or_404(models.Candidate, hash_id=hash_id)
 
     # Convert time to readable format
-    time = Time(Time(candidate.obs_id.starttime, format="gps"), format="iso", scale="utc")
+    time = candidate.observation.obs_start
 
     # Grab any previous ratings
-    u = request.user
-    rating = models.Rating.objects.filter(candidate=candidate, user=u).first()
+    rating = models.Rating.objects.filter(candidate=candidate, user=request.user).first()
 
-    # Convert seperation to arcminutes
-    if candidate.nks_sep_deg is None:
-        sep_arcmin = None
-    else:
-        sep_arcmin = candidate.nks_sep_deg * 60
+    # # Convert seperation to arcminutes
+    # if candidate.nks_sep_deg is None:
+    #     sep_arcmin = None
+    # else:
+    #     sep_arcmin = candidate.nks_sep_deg * 60
 
     # Perform voevent database query
     # https://voeventdbremote.readthedocs.io/en/latest/notebooks/00_quickstart.html
@@ -228,11 +241,24 @@ def candidate_rating(request, id, arcmin=2):
     # }
     voevents = []
 
+    converted_lc = []
+    if candidate.lightcurve_data is not None:
+        # Convert the lightcurve data to mJy
+        converted_lc = []
+        for row in candidate.lightcurve_data:
+            try:
+                val = float(row[1]) * 1000.0
+                err = float(row[2]) * 1000.0
+                converted_lc.append([row[0], str(val), str(err)])
+            except ValueError:
+                converted_lc.append([row[0], 1000 * row[1], row[2]])
+
     context = {
         "candidate": candidate,
         "rating": rating,
         "time": time,
-        "sep_arcmin": sep_arcmin,
+        # "sep_arcmin": sep_arcmin,
+        "lightcurve_data": converted_lc,
         "arcmin_search": arcmin,
         "cand_type_choices": tuple((c.name, c.name) for c in models.Classification.objects.all()),
         "voevents": voevents,
@@ -240,12 +266,12 @@ def candidate_rating(request, id, arcmin=2):
     return render(request, "candidate_app/candidate_rating_form.html", context)
 
 
-def voevent_view(request, id):
-    ivorn = models.xml_ivorns.objects.filter(id=id).first().ivorn
-    xml_packet = apiv1.packet_xml(ivorn)
-    v = voeventparse.loads(xml_packet)
-    xml_pretty_str = voeventparse.prettystr(v)
-    return HttpResponse(xml_pretty_str, content_type="text/xml")
+# def voevent_view(request, id):
+#     ivorn = models.xml_ivorns.objects.filter(id=id).first().ivorn
+#     xml_packet = apiv1.packet_xml(ivorn)
+#     v = voeventparse.loads(xml_packet)
+#     xml_pretty_str = voeventparse.prettystr(v)
+#     return HttpResponse(xml_pretty_str, content_type="text/xml")
 
 
 @login_required(login_url="/")
@@ -253,6 +279,9 @@ def token_manage(request):
     u = request.user
     print("username: ", u)
     token = Token.objects.filter(user=u).first()
+
+    # TODO: Create a token if one does not already exist
+
     return render(request, "candidate_app/token_manage.html", {"token": token})
 
 
@@ -269,8 +298,8 @@ def token_create(request):
 @login_required(login_url="/")
 @api_view(["POST"])
 @transaction.atomic
-def candidate_update_rating(request, id):
-    candidate = models.Candidate.objects.filter(id=id).first()
+def candidate_update_rating(request, hash_id):
+    candidate = models.Candidate.objects.filter(hash_id=hash_id).first()
     if candidate is None:
         raise ValueError("Candidate not found")
 
@@ -306,6 +335,28 @@ def candidate_update_rating(request, id):
 
     # Redirects to a random next candidate
     return redirect(reverse("candidate_random"))
+
+
+@login_required(login_url="/")
+def render_beam_page(request: HttpRequest, hash_id: Optional[str] = None):
+    """"""
+
+    if hash_id is None:
+        print("Displaying all beams")
+
+    # context = {
+    #     "candidate": candidate,
+    #     "rating": rating,
+    #     "time": time,
+    #     # "sep_arcmin": sep_arcmin,
+    #     "arcmin_search": arcmin,
+    #     "cand_type_choices": tuple((c.name, c.name) for c in models.Classification.objects.all()),
+    #     "voevents": voevents,
+    # }
+
+    context = {}
+
+    return render(request, "candidate_app/beam.html", context)
 
 
 @login_required(login_url="/")
@@ -388,63 +439,177 @@ def candidate_random(request):
     return redirect(reverse("candidate_rating", args=(candidate.id,)))
 
 
+def filter_candidates_by_coords(
+    incoming: List[models.Candidate],
+    ra_str: str,
+    dec_str: str,
+    ra_col: str,
+    dec_col: str,
+    arcmin_search_radius: int,
+):
+    """Convert from str ra_hms and dec_dms to degrees and filter candidates that are withing the deep_arcminc_search_radius."""
+
+    if not (None in (ra_str, dec_str) or dec_str == "" or dec_str == ""):
+        ra_deg = Angle(ra_str, unit=units.hour).deg
+        dec_deg = Angle(dec_str, unit=units.deg).deg
+        filtered = incoming.filter(
+            Q(
+                Q3CRadialQuery(
+                    center_ra=ra_deg,
+                    center_dec=dec_deg,
+                    ra_col=ra_col,
+                    dec_col=dec_col,
+                    radius=arcmin_search_radius / 60.0,
+                )
+            )
+        )
+        return filtered
+    else:
+        print(f"Incoming variables did not pass the None or empty test - cols {ra_col} {dec_col}")
+        return incoming
+
+
+@login_required(login_url="/")
+def clear_candidate_table_filter(request):
+    if "current_filter_data" in request.session:
+        del request.session["current_filter_data"]
+    return redirect("/candidate_table/")
+
+
+FILTER_FORM_FLOAT_VARAIBLES = [
+    "chi_square",
+    "chi_square_log_sigma",
+    "chi_square_sigma",
+    "peak_map",
+    "peak_map_log_sigma",
+    "peak_map_sigma",
+    "gaussian_map",
+    "gaussian_map_sigma",
+    "std_map",
+    "md_deep",
+    "deep_sep_arcsec",
+    "bright_sep_arcmin",
+    "beam_sep_deg",
+    "deep_peak_flux",
+    "deep_int_flux",
+]
+
+
+@login_required(login_url="/")
 def candidate_table(request):
 
     # Get session data to keep filters when changing page
     session_settings = request.session.get("session_settings", 0)
-    candidate_table_session_data = request.session.get("current_filter_data", 0)
-    print(candidate_table_session_data)
+    candidate_table_session_data = request.session.get("current_filter_data")
 
-    # Check filter form
+    # Get the max and mins from the materialised view table
+    aggregates = models.CandidateMinMaxStats.objects.values().last()
+
+    cand_values = {}
+    for variable in FILTER_FORM_FLOAT_VARAIBLES:
+        temp = {}
+        for x in ["min", "max"]:
+            temp[x] = aggregates[f"{x}_{variable}"]
+
+        # These low and highs are the values that the user set before.
+        temp["gte"] = "null"
+        temp["lte"] = "null"
+
+        cand_values[variable] = temp
+
+    # This is a filter request.
     if request.method == "POST":
-        # create a form instance and populate it with data from the request:
+
         form = forms.CandidateFilterForm(request.POST)
-        # check whether it's valid:
+
         if form.is_valid():
-            column_display = form.cleaned_data["column_display"]
+
             if form.cleaned_data["observation_id"] is None:
                 observation_id_filter = None
             else:
                 observation_id_filter = form.cleaned_data["observation_id"].observation_id
-            rating_cutoff = form.cleaned_data["rating_cutoff"]
-            order_by = form.cleaned_data["order_by"]
-            asc_dec = form.cleaned_data["asc_dec"]
+
             cleaned_data = {**form.cleaned_data}
             cleaned_data["observation_id"] = observation_id_filter
             request.session["current_filter_data"] = cleaned_data
-            ra_hms = form.cleaned_data["ra_hms"]
-            dec_dms = form.cleaned_data["dec_dms"]
-            search_radius_arcmin = form.cleaned_data["search_radius_arcmin"]
-    else:
-        if candidate_table_session_data != 0:
-            # Prefil form with previous session results
-            form = forms.CandidateFilterForm(
-                initial=candidate_table_session_data,
-            )
-            column_display = candidate_table_session_data["column_display"]
-            observation_id_filter = candidate_table_session_data["observation_id"]
-            rating_cutoff = candidate_table_session_data["rating_cutoff"]
-            order_by = candidate_table_session_data["order_by"]
-            asc_dec = candidate_table_session_data["asc_dec"]
-            ra_hms = candidate_table_session_data["ra_hms"]
-            dec_dms = candidate_table_session_data["dec_dms"]
-            search_radius_arcmin = candidate_table_session_data["search_radius_arcmin"]
-        else:
-            form = forms.CandidateFilterForm()
-            column_display = None
-            observation_id_filter = None
-            rating_cutoff = None
-            order_by = "avg_rating"
-            asc_dec = "-"
-            ra_hms = None
-            dec_dms = None
-            search_radius_arcmin = 2
+            candidate_table_session_data = cleaned_data
 
-    print(f"column_display: {column_display}")
-    print(f"observation_id_filter: {observation_id_filter}")
-    print(f"rating_cutoff: {rating_cutoff}")
-    print(f"order_by: {order_by}")
-    print(f"asc_dec: {asc_dec}")
+            cand_ra_str = candidate_table_session_data["cand_ra_str"]
+            cand_dec_str = candidate_table_session_data["cand_dec_str"]
+            cand_arcmin_search_radius = candidate_table_session_data["cand_arcmin_search_radius"]
+
+            beam_ra_str = candidate_table_session_data["beam_ra_str"]
+            beam_dec_str = candidate_table_session_data["beam_dec_str"]
+            beam_arcmin_search_radius = candidate_table_session_data["beam_arcmin_search_radius"]
+
+            deep_ra_str = candidate_table_session_data["deep_ra_str"]
+            deep_dec_str = candidate_table_session_data["deep_dec_str"]
+            deep_arcmin_search_radius = candidate_table_session_data["deep_arcmin_search_radius"]
+
+    # Page is loaded normall
+    else:
+
+        form = forms.CandidateFilterForm()
+        observation_id_filter = None
+
+        cand_ra_str = None
+        cand_dec_str = None
+        cand_arcmin_search_radius = 2
+
+        beam_ra_str = None
+        beam_dec_str = None
+        beam_arcmin_search_radius = 2
+
+        deep_ra_str = None
+        deep_dec_str = None
+        deep_arcmin_search_radius = 2
+
+        # This is a dictionary of floats
+        floats_filter_criteria = None
+
+    if candidate_table_session_data:
+        # Prefil form with previous session results
+        form = forms.CandidateFilterForm(
+            initial=candidate_table_session_data,
+        )
+
+        cand_ra_str = candidate_table_session_data["cand_ra_str"]
+        cand_dec_str = candidate_table_session_data["cand_dec_str"]
+        cand_arcmin_search_radius = candidate_table_session_data["cand_arcmin_search_radius"]
+
+        beam_ra_str = candidate_table_session_data["beam_ra_str"]
+        beam_dec_str = candidate_table_session_data["beam_dec_str"]
+        beam_arcmin_search_radius = candidate_table_session_data["beam_arcmin_search_radius"]
+
+        deep_ra_str = candidate_table_session_data["deep_ra_str"]
+        deep_dec_str = candidate_table_session_data["deep_dec_str"]
+        deep_arcmin_search_radius = candidate_table_session_data["deep_arcmin_search_radius"]
+
+        # Set the float slider values to what they were before the page load.
+        for variable in FILTER_FORM_FLOAT_VARAIBLES:
+            for x in ["gte", "lte"]:
+                cand_values[variable][x] = candidate_table_session_data[f"{variable}__{x}"]
+
+        # Find values that are different and make filtering dict from those
+        # Get floats out and remove Nones
+        floats_filter_criteria = {}
+        for variable in FILTER_FORM_FLOAT_VARAIBLES:
+            agg_min = float(aggregates[f"min_{variable}"]) if aggregates[f"min_{variable}"] is not None else None
+            agg_max = float(aggregates[f"max_{variable}"]) if aggregates[f"max_{variable}"] is not None else None
+
+            # For the min side
+            if (
+                candidate_table_session_data[f"{variable}__gte"] is not None
+                and candidate_table_session_data[f"{variable}__gte"] != agg_min
+            ):
+                floats_filter_criteria[f"{variable}__gte"] = candidate_table_session_data[f"{variable}__gte"]
+
+            # For the max side
+            if (
+                candidate_table_session_data[f"{variable}__lte"] is not None
+                and candidate_table_session_data[f"{variable}__lte"] != agg_max
+            ):
+                floats_filter_criteria[f"{variable}__lte"] = candidate_table_session_data[f"{variable}__lte"]
 
     # Gather all the cand types and prepare them as kwargs
     count_kwargs = {}
@@ -462,71 +627,86 @@ def candidate_table(request):
     if session_settings:
         candidates = candidates.filter(project__name=session_settings["project"])
         project = "Project " + session_settings["project"]
-    # Annotate with counts of different candidate type counts
-    candidates = candidates.annotate(
-        num_ratings=Count("rating"),
-        avg_rating=Avg("rating__rating"),
-        **count_kwargs,
-    )
+
+    if floats_filter_criteria:
+        print("++++++++++++++++++++++++++++++ float filter criteria ++++++++++++++++++++++++++")
+        print(floats_filter_criteria)
+        candidates = candidates.filter(**{key: value for key, value in floats_filter_criteria.items()})
+
+    # # Annotate with counts of different candidate type counts
+    # candidates = candidates.annotate(
+    #     num_ratings=Count("rating"),
+    #     avg_rating=Avg("rating__rating"),
+    #     **count_kwargs,
+    # )
 
     # If user only wants to display a single column annotate it and return it's name
-    if column_display:
-        candidates = candidates.annotate(
-            selected_count=Count("rating", filter=Q(rating__classification__name=column_display)),
-        )
-        # # Filter data to only show candidates with at least one count
-        # candidates = candidates.filter(selected_count__gte=1)
-        selected_column = column_type_to_name[column_display]
-    else:
-        selected_column = None
+    # if column_display:
+    #     candidates = candidates.annotate(
+    #         selected_count=Count("rating", filter=Q(rating__classification__name=column_display)),
+    #     )
+    #     # # Filter data to only show candidates with at least one count
+    #     # candidates = candidates.filter(selected_count__gte=1)
+    #     selected_column = column_type_to_name[column_display]
+    # else:
+    #     selected_column = None
 
-    # Ratings filter
-    if rating_cutoff is not None:
-        candidates = candidates.filter(avg_rating__gte=rating_cutoff)
+    # # Ratings filter
+    # if rating_cutoff is not None:
+    #     candidates = candidates.filter(avg_rating__gte=rating_cutoff)
+
+    # Order by the column the user clicked or by avg_rating by default
+    # candidates = candidates.order_by(asc_dec + order_by, "-avg_rating")
 
     # Obsid filter
     if observation_id_filter is not None:
         candidates = candidates.filter(obs_id__observation_id=observation_id_filter)
 
-    # Order by the column the user clicked or by avg_rating by default
-    candidates = candidates.order_by(asc_dec + order_by, "-avg_rating")
+    # Filter candidate by cone search of
+    candidates = filter_candidates_by_coords(
+        candidates,
+        cand_ra_str,
+        cand_dec_str,
+        "ra",
+        "dec",
+        cand_arcmin_search_radius,
+    )
 
-    # Filter by position
-    if not (None in (ra_hms, dec_dms) or ra_hms == "" or dec_dms == ""):
-        ra_deg = Angle(ra_hms, unit=units.hour).deg
-        dec_deg = Angle(dec_dms, unit=units.deg).deg
-        candidates = candidates.filter(
-            Q(
-                Q3CRadialQuery(
-                    center_ra=ra_deg,
-                    center_dec=dec_deg,
-                    ra_col="ra_deg",
-                    dec_col="dec_deg",
-                    radius=search_radius_arcmin / 60.0,
-                )
-            )
-        )
+    # Filter candidate by beam position
+    candidates = filter_candidates_by_coords(
+        candidates,
+        beam_ra_str,
+        beam_dec_str,
+        "beam_ra",
+        "beam_dec",
+        beam_arcmin_search_radius,
+    )
+
+    # Filter candidate by deep position
+    candidates = filter_candidates_by_coords(
+        candidates,
+        deep_ra_str,
+        deep_dec_str,
+        "deep_ra",
+        "deep_dec",
+        deep_arcmin_search_radius,
+    )
 
     # Paginate
     paginator = Paginator(candidates, 25)
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
 
-    form_slider = RangeSliderForm()
-
-    # print(form_slider)
-
     content = {
         "page_obj": page_obj,
         "form": form,
-        "selected_column": selected_column,
-        "column_names": column_type_to_name,
         "project_name": project,
-        # "form_slider": form_slider,
+        "cand_values": cand_values,
     }
     return render(request, "candidate_app/candidate_table.html", content)
 
 
+@login_required(login_url="/")
 def session_settings(request):
     # Get session data to keep filters when changing page
     session_settings = request.session.get("session_settings", 0)
@@ -557,47 +737,6 @@ def session_settings(request):
     }
 
     return render(request, "candidate_app/session_settings.html", context)
-
-
-@api_view(["POST"])
-@transaction.atomic
-def observation_create(request):
-    obs = serializers.ObservationSerializer(data=request.data)
-    if models.Observation.objects.filter(observation_id=request.data["observation_id"]).exists():
-        return Response("Observation already created so skipping", status=status.HTTP_201_CREATED)
-    if obs.is_valid():
-        obs.save()
-        return Response(obs.data, status=status.HTTP_201_CREATED)
-    logger.debug(request.data)
-    return Response(obs.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(["POST"])
-@transaction.atomic
-def candidate_create(request):
-    # Get or create filter
-    filter_name = request.data.get("filter_id")
-    if models.Filter.objects.filter(name=filter_name).exists():
-        filter = models.Filter.objects.filter(name=filter_name).first()
-    else:
-        filter = models.Filter.objects.create(name=filter_name)
-    request.data["filter"] = filter.id
-
-    cand = serializers.CandidateSerializer(data=request.data)
-    png_file = request.data.get("png")
-    gif_file = request.data.get("gif")
-    if cand.is_valid():
-        # Find obsid
-        # obs = models.Observation.objects.filter(observation_id=obsid).first()
-        if png_file is None:
-            return Response("Missing png file", status=status.HTTP_400_BAD_REQUEST)
-        if gif_file is None:
-            return Response("Missing gif file", status=status.HTTP_400_BAD_REQUEST)
-        cand.save(png_path=png_file, gif_path=gif_file, filter=filter)
-        return Response(cand.data, status=status.HTTP_201_CREATED)
-    logger.debug(request.data)
-    logger.error(cand.errors)
-    return Response(cand.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 def survey_status(request):
@@ -651,9 +790,10 @@ def download_data(request, table):
     return response
 
 
-# Receive data from
 @api_view(["POST"])
-def upload_candidate(request):
+@transaction.atomic
+def upload_observation(request):
+
     if request.method == "POST":
 
         # Get user specific data
@@ -661,9 +801,139 @@ def upload_candidate(request):
             token_str = request.headers["Authorization"]
 
         except KeyError:
-            return JsonResponse(
+            return Response(
                 {"status": "error", "message": f"Unable to pull out token of the request."},
-                status=400,
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            # Find token in the db
+            token = Token.objects.get(key=token_str)
+            if token is not None:
+
+                print(f" --------------- Observation uploaded by user: {token.user} --------------- ")
+
+                try:
+
+                    # Pull out the project id
+                    project_id = request.data["proj_id"]
+
+                    print(f"++++++++ project_id: {project_id} ++++++++ ")
+
+                    # Create the project if it doesn't already exist.
+                    if not models.Project.objects.filter(id=project_id).exists():
+                        uploaded_datetime = datetime.now()
+                        project = models.Project(
+                            hash_id=uuid4(),
+                            id=project_id,
+                            description=f"Project created on {uploaded_datetime.isoformat()}",
+                        )
+                        project.save()
+
+                    obs = serializers.ObservationSerializer(data=request.data, context={"user": token.user})
+                    if models.Observation.objects.filter(id=request.data["id"]).exists():
+                        return Response("Observation already created so skipping", status=status.HTTP_201_CREATED)
+                    if obs.is_valid():
+                        obs.save()
+                        print(f"Observation {request.data['id']} saved!")
+                        return Response(obs.data, status=status.HTTP_201_CREATED)
+                    logger.debug(request.data)
+                    return Response(obs.errors, status=status.HTTP_400_BAD_REQUEST)
+
+                except Exception as error:
+                    print("An exception occurred:", error)
+                    return Response({"error-message": error}, status=status.HTTP_400_BAD_REQUEST)
+
+            else:
+                return Response(
+                    {"status": "error", "message": f"Token given does not match a user."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+        except Exception as error:
+            print("An exception occurred:", error)
+            return Response(
+                {"status": "error", "message": f"Invalid or expired token - {error}"}, status=status.HTTP_403_FORBIDDEN
+            )
+
+    return Response({"status": "error", "message": f"Not a POST request."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["POST"])
+@transaction.atomic
+def upload_beam(request):
+
+    if request.method == "POST":
+
+        # Get user specific data
+        try:
+            token_str = request.headers["Authorization"]
+
+        except KeyError:
+            return Response(
+                {"status": "error", "message": f"Unable to pull out token of the request."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            # Find token in the db
+            token = Token.objects.get(key=token_str)
+            if token is not None:
+
+                print(f" --------------- Beam uploaded by user: {token.user} --------------- ")
+
+                try:
+
+                    # Check if beam has already been uploaded before.
+                    obs = models.Observation.objects.get(id=request.data["obs_id"])
+                    if models.Beam.objects.filter(observation=obs, index=request.data["index"]).exists():
+                        return Response(
+                            f"Beam '{request.data['index']}' for obsservation '{request.data['obs_id']}' already created so skipping",
+                            status=status.HTTP_200_OK,
+                        )
+
+                    beam = serializers.BeamSerializer(data=request.data, context={"user": token.user})
+
+                    if beam.is_valid():
+                        beam.save()
+                        print(f"Beam {request.data['index']} saved to {request.data['obs_id']}!")
+                        return Response(beam.data, status=status.HTTP_201_CREATED)
+                    logger.debug(request.data)
+                    return Response(beam.errors, status=status.HTTP_400_BAD_REQUEST)
+
+                except Exception as error:
+                    print("An exception occurred:", error)
+                    return Response({"error-message": error}, status=status.HTTP_400_BAD_REQUEST)
+
+            else:
+                return Response(
+                    {"status": "error", "message": f"Token given does not match a user."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+        except Exception as error:
+            print("An exception occurred:", error)
+            return Response(
+                {"status": "error", "message": f"Invalid or expired token - {error}"}, status=status.HTTP_403_FORBIDDEN
+            )
+
+    return Response({"status": "error", "message": f"Not a POST request."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["POST"])
+@transaction.atomic
+def upload_candidate(request):
+
+    if request.method == "POST":
+
+        # Get user specific data
+        try:
+            token_str = request.headers["Authorization"]
+
+        except KeyError:
+            return Response(
+                {"status": "error", "message": f"Unable to pull out token of the request."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
@@ -673,46 +943,65 @@ def upload_candidate(request):
 
                 print(f" --------------- Candidate uploaded by user: {token.user} --------------- ")
 
-                # Save the candidate data to DB.
-                try:
-                    cand_data = request.POST
-                    project_id = cand_data["project_id"]
-                    survey_id = cand_data["survey_id"]
-                    beam_id = cand_data["beam_id"]
-                    cand_id = cand_data["name"]
-
-                    # Path for the candidate files.
-                    upload_dir = f"/ywangvaster_media/{project_id}/{survey_id}/{beam_id}/{cand_id}/"
-                    os.makedirs(upload_dir, exist_ok=True)
-
-                    print(type(cand_data["lightcurve_local_rms"]))
-
-                    # Save files to disk
-                    for file, uploaded_file in request.FILES.items():
-                        file_path = os.path.join(upload_dir, file)
-                        with open(file_path, "wb") as f:
-                            f.write(uploaded_file.read())
-
-                    print(f"Successfully saved candidate data to database - {survey_id}, {beam_id}, {cand_id}")
-
-                    return JsonResponse(
-                        {"status": "success", "survey_id": survey_id, "beam_id": beam_id, "cand_id": cand_id},
-                        status=200,
+                cand_obj_id = request.data["cand_obj_id"]
+                if models.Candidate.objects.filter(cand_obj_id=cand_obj_id).exists():
+                    return Response(
+                        f"Candidate '{cand_obj_id}' has already been uploaded/created so skipping",
+                        status=status.HTTP_200_OK,
                     )
 
-                    # return JsonResponse({"status": "success", "message": "got data"}, status=200)
-                except Exception as error:
-                    print("An exception occurred:", error)
-                    return JsonResponse({"status": "error", "message": error})
+                cand = serializers.CandidateSerializer(data=request.data, context={"user": token.user})
+
+                if cand.is_valid():
+                    cand.save()
+                    print(cand.data)
+                    return Response(f"Data from - {cand.data}", status=status.HTTP_201_CREATED)
+
+                logger.debug(request.data)
+                return Response(f"{cand.errors}", status=status.HTTP_400_BAD_REQUEST)
 
             else:
-                return JsonResponse({"status": "error", "message": f"Token given does not match a user."})
+                return Response(
+                    {"status": "error", "message": f"Token given does not match a user."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
 
         except Exception as error:
             print("An exception occurred:", error)
-            return JsonResponse({"status": "error", "message": "Invalid or expired token"}, status=403)
+            return Response(
+                {"status": "error", "message": f"Invalid or expired token - {error}"}, status=status.HTTP_403_FORBIDDEN
+            )
 
-    return HttpResponseForbidden()
+    return Response({"status": "error", "message": f"Not a POST request."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+def page_admin(request: HttpRequest):
+
+    # Order by the column the user clicked or by observation_id by default
+    # order_by = request.GET.get("order_by", "")
+
+    print("************************** is user staff *********************************")
+    print(request.user.is_staff)
+
+    project_obj_list = models.Project.objects.all()
+
+    print(project_obj_list)
+
+    # projects_obs = {}
+    # for project in project_obj_list:
+    #     projects_obs[project.id] = models.Observation.objects.filter(project_id=project.id)
+
+    # Get disk space used by projects
+    total_disk_space, used_disk_space, free_disk_space = get_disk_space(MEDIA_ROOT)
+
+    context = {
+        "project_obj_list": project_obj_list,
+        "free_disk_space": free_disk_space,
+        "used_disk_space": used_disk_space,
+        "total_disk_space": total_disk_space,
+    }
+
+    return render(request, "candidate_app/page_admin.html", context)
 
 
 class LoginView(TemplateView, View):

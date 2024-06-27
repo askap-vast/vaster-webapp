@@ -9,9 +9,9 @@
       </tr>
       {% for result in table %}
       <tr>
-        <td><a href="/candidate_rating/{{ result.id }}/" style="text-decoration:None">{{ result.id }}</a></td>
-        <td>{{ result.ra_hms }}</td>
-        <td>{{ result.dec_dms }}</td>
+        <td><a href="/candidate_rating/{{ result.name }}/" style="text-decoration:None">{{ result.name }}</a></td>
+        <td>{{ result.ra_str }}</td>
+        <td>{{ result.dec_str }}</td>
         <td>{{ result.sep|floatformat:2 }}</td>
       </tr>
       {% empty %}

@@ -1,16 +1,674 @@
 {% extends 'candidate_app/header.html' %}
 
-{% block head %}
+{% block content %}
+
+<style>
+  .sticky-rating-button {
+    position: fixed;
+    top: 8%;
+    right: 1%;
+    transform: translateY(-50%);
+    z-index: 1050;
+    /* Make sure it’s above other content */
+  }
+
+  .modal.right .modal-dialog {
+    position: fixed;
+    top: 50%;
+    right: 2.5%;
+    transform: translateY(-50%) translateX(100%);
+
+    /* Adjust the width as needed */
+    height: 500px;
+    transition: transform 0.3s ease-out;
+  }
+
+  .modal.right.show .modal-dialog {
+    transform: translateY(-50%) translateX(0);
+  }
+
+  .modal-content {
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .modal-backdrop {
+    display: none;
+    z-index: 1040 !important;
+  }
+</style>
+
+<!-- Sticky Button -->
+<button type="button" class="btn btn-primary sticky-rating-button" data-toggle="modal" data-target="#rightModal">
+  Rate candidate
+</button>
+
+<!-- Make the modal open by default
+<script>
+  $(document).ready(function () {
+    $("#rightModal").modal('show');
+
+    $('body').removeClass('modal-open');
+    $('.modal-backdrop').remove();
+  });
+</script>
+ -->
+
+<!-- Modal for rating the candidate -->
+<div class="modal right fade" id="rightModal" tabindex="-1" role="dialog" aria-labelledby="rightModalLabel"
+  aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="rightModalLabel">Candidate: {{ candidate.name }}</h5>
+        <button type="button" class="btn btn-danger" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- Modal content goes here -->
+        <div class="container-fluid">
+          <div class="row">
+
+            <div class="col">
+              <form action="{% url 'candidate_update_rating' hash_id=candidate.hash_id %}" method="post">
+                {% csrf_token %}
+                <div class="field">
+                  <h4>Choose classification:</h4>
+                  {% for value, text in cand_type_choices %}
+                  {% if value == "T" and not rating %}
+                  <input checked="checked" class="form-check-input" type="radio" name="classification" id="{{ value }}"
+                    value="{{ value }}">
+                  {% elif value == rating.classification %}
+                  <input checked="checked" class="form-check-input" type="radio" name="classification" id="{{ value }}"
+                    value="{{ value }}">
+                  {% else %}
+                  <input class="form-check-input" type="radio" name="classification" id="{{ value }}"
+                    value="{{ value }}">
+                  {% endif %}
+
+                  <label class="form-check-label" for="{{ value }}">{{ text }}</label><br>
+                  {% endfor %}
+                </div>
+                <div class="field">
+                  <h4>Rating from 1(noise) to 5(clear candidate){% if rating %}(currently {{rating.rating}}){% endif %}
+                  </h4>
+                  <div>
+                    {% if rating.rating == 1 %}
+                    <input type="submit" class="btn btn-success btn-lg" name="rating" value="1">
+                    {% else %}
+                    <input type="submit" class="btn btn-primary btn-lg" name="rating" value="1">
+                    {% endif %}
+                    {% if rating.rating == 2 %}
+                    <input type="submit" class="btn btn-success btn-lg" name="rating" value="2">
+                    {% else %}
+                    <input type="submit" class="btn btn-primary btn-lg" name="rating" value="2">
+                    {% endif %}
+                    {% if rating.rating == 3 %}
+                    <input type="submit" class="btn btn-success btn-lg" name="rating" value="3">
+                    {% else %}
+                    <input type="submit" class="btn btn-primary btn-lg" name="rating" value="3">
+                    {% endif %}
+                    {% if rating.rating == 4 %}
+                    <input type="submit" class="btn btn-success btn-lg" name="rating" value="4">
+                    {% else %}
+                    <input type="submit" class="btn btn-primary btn-lg" name="rating" value="4">
+                    {% endif %}
+                    {% if rating.rating == 5 %}
+                    <input type="submit" class="btn btn-success btn-lg" name="rating" value="5">
+                    {% else %}
+                    <input type="submit" class="btn btn-primary btn-lg" name="rating" value="5">
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="field">
+                  <h4>Notes</h4>
+                  <textarea rows="5" id="notes" name="notes"
+                    placeholder="is it a known source?">{{candidate.notes}}</textarea>
+                </div>
+                <input type="hidden" name="id" value="">
+                <input type="hidden" name="username" value="{{user}}">
+              </form>
+              <button class="btn btn-info" onclick="window.history.go(-1)">Back to previous</button>
+              <a class="btn btn-info" href="/candidate_rating/random/">Skip</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% comment %} <script>
+  $(document).ready(function () {
+    // Ensure that the modal backdrop is disabled
+    $('#rightModal').modal({
+      backdrop: false
+    });
+  });
+</script> {% endcomment %}
+
+
+
+{% if candidate %}
+
+
+<!-- -->
+{{ lightcurve_data|json_script:"lightcurve_data" }}
+
+<title>Rating: {{ candidate.name }} </title>
+
+<div class="container-fluid">
+
+  <div class="row">
+    <div class="col-12">
+      <h2>Rate candidate {{ candidate.name }}</h2>
+      <h3> Project: {{candidate.project_id}} - Observation: {{candidate.obs_id}} </h3>
+    </div>
+  </div>
+
+  <!-- This the summary of the candidate -->
+
+
+  <div class="row" style="padding: 2.5%">
+    <div class='card'>
+      <div class='card-body'>
+
+        <div class='container-fluid'>
+          <div class='row'>
+
+            <div class="col" style="min-width: 500px">
+              <h3>Data</h3>
+
+              <h5>Download Candidate Data</h5>
+
+              <div class='hstack gap-2'>
+
+                {% if candidate.slices_fits %}
+                <div><a href="{{ candidate.slices_fits.url }}"><button class='btn btn-primary'>SLICES
+                      FITS</button></a>
+                </div>
+                {% endif %}
+                {% if candidate.deepcutout_fits %}
+                <div><a href="{{ candidate.deepcutout_fits.url }}"><button class='btn btn-primary'>DEEPCUT
+                      FITS</button></a>
+                </div>
+                {% endif %}
+                {% if candidate.lightcurve_data %}
+                <div><a href="{{ candidate.slices_fits.url }}"><button class='btn btn-success'>Lightcurve
+                      CSV (coming) </button></a>
+                </div>
+                {% endif %}
+
+              </div>
+
+              <br />
+
+              <h5>Summary</h5>
+
+              <table class="fl-table">
+                <tr>
+                  <td>MD Deep</td>
+                  <td>{{ candidate.md_deep|floatformat:3 }}</td>
+                </tr>
+
+              </table>
+
+              <div class="container-fluid">
+
+                <div class='row'>
+                  <div class='col' style="background: grey; border: 2px solid black;">
+                    Details
+
+                    <table class='fl-table'>
+                      <thead>
+                        <th>Ra</th>
+                        <th>Dec </th>
+                      </thead>
+
+                      <tr>
+                        <td>{{ candidate.ra_str }}</td>
+                        <td>{{ candidate.dec_str }}</td>
+                      </tr>
+                      <tr>
+                        <td>{{ candidate.ra|floatformat:7 }}</td>
+                        <td>{{ candidate.dec|floatformat:7 }}</td>
+                      </tr>
+
+                    </table>
+                  </div>
+
+                  <div class='col' style="background: grey; border: 2px solid black;">
+                    Statistics
+
+                    <table class='fl-table'>
+                      <thead>
+                        <th></th>
+                        <th>Value</th>
+                        <th>Sigma</th>
+                        <th>Log Sigma</th>
+                      </thead>
+
+                      <tr>
+                        <td>Chi^2</td>
+                        <td>{{ candidate.chi_square|floatformat:2 }}</td>
+                        <td>{{ candidate.chi_square_sigma|floatformat:2 }}</td>
+                        <td>{{ candidate.chi_square_log_sigma|floatformat:2 }}</td>
+                      </tr>
+                      <tr>
+                        <td>Peak map</td>
+                        <td>{{ candidate.peak_map|floatformat:2}}</td>
+                        <td>{{ candidate.peak_map_sigma|floatformat:2 }}</td>
+                        <td>{{ candidate.peak_map_log_sigma|floatformat:2 }}</td>
+                      </tr>
+                      <tr>
+                        <td>Gaussian map</td>
+                        <td>{{ candidate.gaussian_map|floatformat:2}}</td>
+                        <td>{{ candidate.gaussian_map_sigma|floatformat:2 }}</td>
+                        <td>-</td>
+                      </tr>
+                      <tr>
+                        <td>Standard map</td>
+                        <td>{{ candidate.std_map|floatformat:2}}</td>
+                        <td>-</td>
+                        <td>-</td>
+                      </tr>
+
+                    </table>
+                  </div>
+                </div>
+
+                <div class='row'>
+                  <div class='col' style="background: grey; border: 2px solid black;">
+                    Beam details
+
+                    <table class='fl-table'>
+                      <tr>
+                        <td>Ra</td>
+                        <td>{{ candidate.beam_ra }}</td>
+
+                      </tr>
+                      <tr>
+                        <td>Dec</td>
+                        <td>{{ candidate.beam_dec }}</td>
+                      </tr>
+
+                      <tr>
+                        <td>Sep Arcmin</td>
+                        <td>{{ candidate.bright_sep_arcmin|floatformat:3 }}</td>
+                      </tr>
+                      <tr>
+                        <td>Beam Sep Deg</td>
+                        <td>{{ candidate.beam_sep_deg|floatformat:3 }}</td>
+                      </tr>
+                    </table>
+                  </div>
+
+                  <div class='col' style="background: grey; border: 2px solid black;">
+                    Deep stats
+
+                    <table class='fl-table'>
+                      <tr>
+                        <td>Deep Sep Arcsec</td>
+                        <td>{{ candidate.deep_sep_arcsec|floatformat:3 }}</td>
+                      </tr>
+                      <tr>
+                        <td>Deep Num</td>
+                        <td>{{ candidate.deep_num|floatformat:3 }}</td>
+                      </tr>
+
+                      <tr>
+                        <td>Name</td>
+                        <td>{{ candidate.deep_name }}</td>
+                      </tr>
+                      <tr>
+                        <td>RA</td>
+                        <td>{{ candidate.deep_ra_deg|floatformat:7 }}</td>
+                      </tr>
+                      <tr>
+                        <td>Dec</td>
+                        <td>{{ candidate.deep_dec_deg|floatformat:7 }}</td>
+                      </tr>
+                      <tr>
+                        <td>Peak Flux</td>
+                        <td>{{ candidate.deep_peak_flux|floatformat:3 }}</td>
+                      </tr>
+                      <tr>
+                        <td>Int Flux</td>
+                        <td>{{ candidate.deep_int_flux|floatformat:3 }}</td>
+                      </tr>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+            <div class='col' style="min-width: 500px">
+              <h3>Images</h3>
+
+              <div class='container-fluid'>
+                <div class='row'>
+
+                  <div class='col d-flex justify-content-center align-items-center'>
+
+                    {% if lightcurve_data %}
+                    <div id="lightcurve_echarts" style="width: 100%; height: 600px; max-width: 900px"></div>
+                    {% else %}
+                    <div class='image-placeholder'
+                      style="width: 100%; height: 600px; background: grey; border: 2px solid black;">
+                      <p style="text-align: center; vertical-align: middle;">No lightcure data for ECharts to render</p>
+                    </div>
+                    {% endif %}
+
+                  </div>
+
+                </div>
+
+                <hr />
+
+                <div class='row d-flex justify-content-center align-items-center'>
+
+                  {% if candidate.slices_gif %}
+                  <img src="{{ candidate.slices_gif.url }}"
+                    style="width: 100%; height: 100%; max-width: 650px; max-height: 600px;">
+                  {% else %}
+                  <div class='image-placeholder'
+                    style="width: 100%; height: 300px; background: grey; border: 2px solid black;">
+                    <p style="text-align: center; vertical-align: middle;">No slices gif to display.</p>
+                  </div>
+                  {% endif %}
+
+
+                  {% if candidate.deepcutout_png %}
+                  <img src="{{ candidate.deepcutout_png.url }}"
+                    style="width: 100%; height: 100%; max-width: 600px; max-height: 600px;">
+                  {% else %}
+                  <div class='image-placeholder'
+                    style="width: 100%; height: 300px; background: grey; border: 2px solid black;">
+                    <p style="text-align: center; vertical-align: middle;">No deepcut image to rdisplay.</p>
+                  </div>
+                  {% endif %}
+
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- This is the summary of the beam that found the candidate-->
+<div class="row" style="padding: 2.5%">
+  <h3>Nearby objects</h3>
+  <div class='card'>
+    <div class='card-body'>
+
+      <div class="col-12 justify-content-center ">
+        <p class="h5">Search nearby within
+          <input id="arcmin" type="text" name="arcmin" value="{{arcmin_search}}" size="2">
+          arcmin
+          <button class="btn btn-primary" onclick="getAll()">Search</button>
+        </p>
+      </div>
+
+      <div class='container-fluid'>
+        <div class='row'>
+          <div class='col' style="height: 500px; background-color: red; overflow-y: auto">
+
+            <div id="simbadlocator">
+              <p>Loading ...</p>
+            </div>
+
+          </div>
+          <div class='col' style="height: 500px; background-color: green">
+
+            <div id="pulsarlocator">
+              <p>Loading ... </p>
+            </div>
+
+          </div>
+          <div class='col' style="height: 500px; background-color: blue">
+
+            <div id="nearestlocator">
+              <p>Loading ... </p>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- This is the summary of the beam that found the candidate-->
+<div class="row" style="padding: 2.5%">
+  <h3>Beam summary</h3>
+  <div class='card'>
+    <div class='card-body'>
+
+      <div class='hstack gap-3'>
+
+        <h5>Download Beam FITS: </h5>
+
+        {% if candidate.beam.std_fits %}
+        <div><a href="{{ candidate.beam.std_fits.url }}"><button class='btn btn-primary'>STD FITS</button></a>
+        </div>
+        {% endif %}
+        {% if candidate.beam.peak_fits.url %}
+        <div><a href="{{ candidate.beam.peak_fits.url }}"><button class='btn btn-primary'>PEAK FITS</button></a>
+        </div>
+        {% endif %}
+        {% if candidate.beam.chisquare_fits.url %}
+        <div><a href="{{ candidate.chisquare_fits.url }}"><button class='btn btn-primary'>CHISQUARE
+              FITS</button></a>
+        </div>
+        {% endif %}
+
+      </div>
+
+      <hr />
+
+      <div class='container-fluid'>
+        <div class='row'>
+          <div class='col-lg'>
+            {% if candidate.beam.chisquare_map1_png %}
+            <div class='vstack align-content-center'>
+              Chi square map 1
+              <img src="{{ candidate.beam.chisquare_map1_png.url}}"
+                style="width: 100%; height: 100%; max-width: 700px; max-height: 700px;">
+            </div>
+            {% endif %}
+          </div>
+
+          <div class='col-lg'>
+            {% if candidate.beam.chisquare_map2_png %}
+            <div class='vstack'>
+              Chi square map 2
+              <img src="{{ candidate.beam.chisquare_map2_png.url }}"
+                style="width: 100%; height: 100%; max-width: 700px; max-height: 700px;">
+            </div>
+            {% endif %}
+          </div>
+          <div class='col-lg'>
+            {% if candidate.beam.peak_map1_png %}
+            Peak map 1
+            <img src="{{ candidate.beam.peak_map1_png.url }}"
+              style="width: 100%; height: 100%; max-width: 700px; max-height: 700px;">
+            {% endif %}
+          </div>
+          <div class='col-lg'>
+            {% if candidate.beam.peak_map2_png %}
+            Peak map 2
+            <img src="{{ candidate.beam.peak_map2_png.url }}"
+              style="width: 100%; height: 100%; max-width: 700px; max-height: 700px;">
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</div>
+
+
+
+</div>
+
+
+{% else %}
+<p>Candidate not Found!</p>
+{% endif %}
+
+
+<script>
+  // Echarts for plotting the lightcurve data
+
+  let lightcurve_data = JSON.parse(document.getElementById("lightcurve_data").textContent);
+  let lightcurveChart = echarts.init(document.getElementById("lightcurve_echarts"), null);
+
+  // Calculate the min and max values for the y-axis
+  let values = lightcurve_data.map(function (item) {
+    return item[1];
+  });
+
+  // Remove title  min/max find
+  values.shift();
+  let minValue = 0.95 * Math.min(...values);
+  let maxValue = 1.05 * Math.max(...values);
+
+  // Function to render the error bars
+  function renderErrorBar(params, api) {
+    const xValue = api.value(0);
+    const yValue = api.value(1);
+    const err = parseFloat(api.value(2)); // Not sure parse to float is needed.
+
+    const highPoint = api.coord([xValue, yValue + err]);
+    const lowPoint = api.coord([xValue, yValue - err]);
+
+    const style = api.style({
+      stroke: '#5470C6',
+      fill: null,
+    });
+
+    return {
+      type: 'group',
+      children: [{
+        type: 'line',
+        shape: {
+          x1: highPoint[0],
+          y1: highPoint[1],
+          x2: lowPoint[0],
+          y2: lowPoint[1]
+        },
+        style: style
+      }]
+    };
+  }
+
+
+  let option = {
+    tooltip: {
+      trigger: 'item',
+
+    },
+    animation: false,
+    dataZoom: [{
+      type: 'slider',
+      xAxisIndex: [0],
+      filterMode: 'filter',
+      // height: 12,
+      //bottom: 20,
+    }, ],
+    title: {
+      text: 'Lightcurve Peak Flux',
+      position: "center"
+    },
+    tooltip: {
+      trigger: 'axis'
+    },
+    xAxis: {
+      type: 'time',
+      datazoom: true,
+      name: 'Time (UTC)',
+      nameLocation: 'middle',
+      nameGap: 22
+    },
+    yAxis: {
+      type: 'value',
+      min: minValue,
+      max: maxValue,
+      axisLabel: {
+        formatter: function (value) {
+          return value.toFixed(1);
+        },
+        minInterval: 1,
+      },
+      name: 'Peak Flux Density (mJy/beam)',
+      nameLocation: 'middle',
+      nameGap: 50
+    },
+    series: [{
+        data: lightcurve_data,
+        dimensions: ["Time", "{{candidate.name}}", "Error bars"],
+        encode: {
+          x: 0,
+          y: 1,
+          tooltip: 1,
+        },
+        type: 'line',
+        smooth: false,
+        lineStyle: {
+          color: '#5470C6'
+        }
+      },
+      {
+        type: 'custom',
+        name: 'error',
+        renderItem: (params, api) => renderErrorBar(params, api),
+        dimensions: ["Time", "{{candidate.name}}", "Error bars"],
+        encode: {
+          x: 0,
+          y: 1,
+          tooltip: 2,
+        },
+        data: lightcurve_data,
+        z: 100
+      },
+    ],
+    tooltip: {
+      show: true,
+      trigger: "axis"
+    },
+  };
+
+  // Set the options to the chart
+  lightcurveChart.setOption(option);
+
+  // Add event listener for window resize
+  window.addEventListener("resize", () => {
+    lightcurveChart.resize();
+  });
+</script>
+
 <script>
   async function getSimbad() {
     try {
-      let mydiv = document.getElementById('simbadlocator');
+      let simbadDiv = document.getElementById('simbadlocator');
       let arcmin = document.getElementById('arcmin').value
 
-      console.log(mydiv);
-      console.log(`Searching within ${arcmin} arcmin of {{candidate.ra_deg}} {{candidate.dec_deg}}`);
+      console.log(`Simbad - searching within ${arcmin} arcmin of {{candidate.ra}} {{candidate.dec}}`);
 
-      mydiv.innerHTML = "<p>Loading SIMBAD search data ...</p>";
+      simbadDiv.innerHTML = "<p>Loading SIMBAD search data ...</p>";
 
       const response = await fetch('/cone_search_simbad/', {
         method: 'POST',
@@ -18,14 +676,14 @@
           'X-CSRFToken': '{{csrf_token }}',
         },
         body: JSON.stringify({
-          ra_deg: '{{ candidate.ra_deg }}',
-          dec_deg: '{{ candidate.dec_deg }}',
+          ra_deg: '{{ candidate.ra }}',
+          dec_deg: '{{ candidate.dec }}',
           dist_arcmin: arcmin
         })
       });
       const data = await response.text();
-      console.log(data);
-      mydiv.innerHTML = data;
+      console.log("simbad got success!");
+      simbadDiv.innerHTML = data;
     } catch (error) {
       console.log(error);
     }
@@ -33,13 +691,13 @@
 
   async function getNearest() {
     try {
-      let mydiv = document.getElementById('nearestlocator');
+      let nearestDiv = document.getElementById('nearestlocator');
       let arcmin = document.getElementById('arcmin').value
 
-      console.log(mydiv);
-      console.log(`Searching within ${arcmin} arcmin of {{candidate.ra_deg}} {{candidate.dec_deg}}`);
+      console.log(nearestDiv);
+      console.log(`Nearest in DB - Searching within ${arcmin} arcmin of {{candidate.ra}} {{candidate.dec}}`);
 
-      mydiv.innerHTML = "<p>Finding nearby candiates ...</p>";
+      nearestDiv.innerHTML = "<p>Finding nearby candiates ...</p>";
 
       const response = await fetch('/cone_search/', {
         method: 'POST',
@@ -47,16 +705,17 @@
           'X-CSRFToken': '{{csrf_token }}'
         },
         body: JSON.stringify({
-          ra_deg: '{{ candidate.ra_deg }}',
-          dec_deg: '{{ candidate.dec_deg }}',
+          ra_deg: '{{ candidate.ra }}',
+          dec_deg: '{{ candidate.dec }}',
           dist_arcmin: arcmin,
           exclude_id: '{{ candidate.id }}',
           project: '{{ candidate.project }}'
         })
       });
+
       const data = await response.text();
       console.log(data);
-      mydiv.innerHTML = data;
+      nearestDiv.innerHTML = data;
     } catch (error) {
       console.log(error);
     }
@@ -64,13 +723,13 @@
 
   async function getPulsars() {
     try {
-      let mydiv = document.getElementById('pulsarlocator');
+      let pulsarDiv = document.getElementById('pulsarlocator');
       let arcmin = document.getElementById('arcmin').value
 
-      console.log(mydiv);
-      console.log(`Searching within ${arcmin} arcmin of {{candidate.ra_deg}} {{candidate.dec_deg}}`);
+      console.log(pulsarDiv);
+      console.log(`Searching within ${arcmin} arcmin of {{candidate.ra}} {{candidate.dec}}`);
 
-      mydiv.innerHTML = "<p>Finding nearby candiates ...</p>";
+      pulsarDiv.innerHTML = "<p>Finding nearby candiates ...</p>";
 
       const response = await fetch('/cone_search_pulsars/', {
         method: 'POST',
@@ -78,14 +737,14 @@
           'X-CSRFToken': '{{csrf_token }}'
         },
         body: JSON.stringify({
-          ra_deg: '{{ candidate.ra_deg }}',
-          dec_deg: '{{ candidate.dec_deg }}',
+          ra_deg: '{{ candidate.ra }}',
+          dec_deg: '{{ candidate.dec }}',
           dist_arcmin: arcmin,
         })
       });
       const data = await response.text();
       console.log(data);
-      mydiv.innerHTML = data;
+      pulsarDiv.innerHTML = data;
     } catch (error) {
       console.log(error);
     }
@@ -94,272 +753,14 @@
     try {
       getSimbad();
       getNearest();
-      getPulsars();
+      // getPulsars();
     } catch (error) {
       console.log(error);
     }
   }
   document.addEventListener('DOMContentLoaded', getAll)
 </script>
-{% endblock head  %}
 
-{% block content %}
 
-{% if candidate %}
-<title>Rating:{{ candidate.id }} </title>
 
-<div class="container-fluid">
-  <div class="row">
-    <div class="col-12">
-      <h2>
-        Rating candidate with ID: {{ candidate.id }} from project: {{candidate.project.name}}</h2>
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col-3">
-      {% if candidate.png_path %}
-      <img src="{{candidate.png_path.url}}" alt="Diagnostic Plot for {{candidate.id}}" onClick="window.open(this.src)"
-        class="mw-100">
-      {% endif %}
-    </div>
-    <div class="col-3">
-      {% if candidate.gif_path %}
-      <img src="{{candidate.gif_path.url}}" alt="Diagnostic GIF for {{candidate.id}}" onClick="window.open(this.src)"
-        class="mw-100">
-      {% endif %}
-    </div>
-
-    <div class="col-3">
-      <h3>Candidate:</h3>
-      <table>
-        <tr>
-          <td>Detection statistic</td>
-          <td>{{ candidate.can_det_stat|floatformat:2 }}</td>
-        </tr>
-        <tr>
-          <td>Peak Flux (Jy)</td>
-          <td>{{ candidate.can_peak_flux|floatformat:2 }}</td>
-        </tr>
-        <tr>
-          <td>Primary Beam</td>
-          <td>{{ candidate.can_beam|floatformat:2 }}</td>
-        </tr>
-        <tr>
-          <td>Separation from obs center (deg)</td>
-          <td>{{ candidate.cent_sep_deg|floatformat:2 }}</td>
-        </tr>
-        <tr>
-          <td>Location</td>
-          <td>{{ candidate.ra_hms }}, {{ candidate.dec_dms }}</td>
-        </tr>
-        <tr>
-          <td>Radius (deg)</td>
-          <td>{{ candidate.rad_deg|floatformat:3 }}</td>
-        </tr>
-        <tr>
-          <td>Filter name</td>
-          <td>{{ candidate.filter.name }}</td>
-        </tr>
-      </table>
-      <h3>Observation:</h3>
-      <table>
-        <tr>
-          <td>Observation ID</td>
-          <td><a href="http://ws.mwatelescope.org/observation/obs/?obs_id={{ candidate.obs_id.observation_id }}"
-              target="_blank">{{ candidate.obs_id.observation_id }}</a></td>
-        </tr>
-        <tr>
-          <td>Time (UTC)</td>
-          <td>{{ time }}</td>
-        </tr>
-        <tr>
-          <td>Frequency (MHz)</td>
-          <td>{{ candidate.obs_id.cent_freq }}</td>
-        </tr>
-      </table>
-    </div>
-
-    <div class="col-3">
-      <form action="{% url 'candidate_update_rating' id=candidate.id %}" method="post">
-        {% csrf_token %}
-        <div class="field">
-          <h4>Choose classification:</h4>
-          {% for value, text in cand_type_choices %}
-          {% if value == "T" and not rating %}
-          <input checked="checked" class="form-check-input" type="radio" name="classification" id="{{ value }}"
-            value="{{ value }}">
-          {% elif value == rating.classification %}
-          <input checked="checked" class="form-check-input" type="radio" name="classification" id="{{ value }}"
-            value="{{ value }}">
-          {% else %}
-          <input class="form-check-input" type="radio" name="classification" id="{{ value }}" value="{{ value }}">
-          {% endif %}
-
-          <label class="form-check-label" for="{{ value }}">{{ text }}</label><br>
-          {% endfor %}
-        </div>
-        <div class="field">
-          <h4>Rating from 1(noise) to 5(clear candidate){% if rating %}(currently {{rating.rating}}){% endif %}</h4>
-          <div>
-            {% if rating.rating == 1 %}
-            <input type="submit" class="btn btn-success btn-lg" name="rating" value="1">
-            {% else %}
-            <input type="submit" class="btn btn-primary btn-lg" name="rating" value="1">
-            {% endif %}
-            {% if rating.rating == 2 %}
-            <input type="submit" class="btn btn-success btn-lg" name="rating" value="2">
-            {% else %}
-            <input type="submit" class="btn btn-primary btn-lg" name="rating" value="2">
-            {% endif %}
-            {% if rating.rating == 3 %}
-            <input type="submit" class="btn btn-success btn-lg" name="rating" value="3">
-            {% else %}
-            <input type="submit" class="btn btn-primary btn-lg" name="rating" value="3">
-            {% endif %}
-            {% if rating.rating == 4 %}
-            <input type="submit" class="btn btn-success btn-lg" name="rating" value="4">
-            {% else %}
-            <input type="submit" class="btn btn-primary btn-lg" name="rating" value="4">
-            {% endif %}
-            {% if rating.rating == 5 %}
-            <input type="submit" class="btn btn-success btn-lg" name="rating" value="5">
-            {% else %}
-            <input type="submit" class="btn btn-primary btn-lg" name="rating" value="5">
-            {% endif %}
-          </div>
-        </div>
-        <div class="field">
-          <h4>Notes</h4>
-          <textarea rows="5" id="notes" name="notes" placeholder="is it a known source?">{{candidate.notes}}</textarea>
-        </div>
-        <input type="hidden" name="id" value="">
-        <input type="hidden" name="username" value="{{user}}">
-      </form>
-      <button class="btn btn-info" onclick="window.history.go(-1)">Back to previous</button>
-      <a class="btn btn-info" href="/candidate_rating/random/">Skip</a>
-    </div>
-  </div>
-</div>
-
-<div class="row">
-  <div class="col-12 justify-content-center ">
-    <p class="h4">Search nearby within
-      <input id="arcmin" type="text" name="arcmin" value="{{arcmin_search}}" size="2">
-      arcmin
-      <button class="btn btn-primary" onclick="getAll()">Search</button>
-    </p>
-  </div>
-</div>
-
-<div class="row">
-  <div class="col">
-    <h4>Nearest within this project</h4>
-    <table>
-      <tr>
-        <td>Source name</td>
-        <td>{{ candidate.nks_name }}</td>
-      </tr>
-      <tr>
-        <td>Location</td>
-        <td>{{ candidate.nks_ra_hms }}, {{ candidate.nks_dec_dms }}</td>
-      </tr>
-      {% if candidate.can_nks_is_close %}
-      <tr>
-        {% else %}
-      <tr class="NegativeTransaction">
-        {% endif %}
-        <td>Sep (arcmin)</td>
-        <td>{{ sep_arcmin|floatformat:2 }}</td>
-      </tr>
-      <tr>
-        <td>Flux (Jy)</td>
-        <td>{{ candidate.nks_flux|floatformat:2 }}</td>
-      </tr>
-      <tr>
-        <td>Flux ratio</td>
-        <td>{{ candidate.can_nks_flux_rat|floatformat:2 }}</td>
-      </tr>
-    </table>
-  </div>
-
-  <div class="col">
-    <div id="nearestlocator">
-      <p>Loading ... </p>
-    </div>
-  </div>
-
-  <div class="col">
-    <div id="simbadlocator">
-      <p>Loading ...</p>
-    </div>
-  </div>
-
-  <div class="col">
-    <div id="pulsarlocator">
-      <p>Loading ... </p>
-    </div>
-    <!-- <h4>ATNF pulsars:</h4>
-      <table class="fl-table">
-        <tr>
-          <th>Name</th>
-          <th>Period (s)</th>
-          <th>DM (pc / cm^3)</th>
-          <th>S400 (mJy)</th>
-          <th>Sep (arcmin)</th>
-        </tr>
-        {% for result in atnf_result_table %}
-        <tr>
-          <td><a href="https://www.atnf.csiro.au/research/pulsar/psrcat/proc_form.php?version=1.67&startUserDefined=true&c1_val=&c2_val=&c3_val=&c4_val=&sort_attr=jname&sort_order=asc&condition=&pulsar_names={{ result.name|urlize }}&ephemeris=long&submit_ephemeris=Get+Ephemeris&coords_unit=raj%2Fdecj&radius=&coords_1=&coords_2=&style=Long+with+last+digit+error&no_value=*&fsize=3&x_axis=&x_scale=linear&y_axis=&y_scale=linear&state=query" style="text-decoration:None">{{ result.name }}</a></td>
-          <td>{{ result.period }}</td>
-          <td>{{ result.dm }}</td>
-          <td>{{ result.s400 }}</td>
-          <td>{{ result.sep|floatformat:2 }}</td>
-        </tr>
-        {% empty %}
-        <tr><td>No Sources found</td></tr>
-        {% endfor %}
-      </table> -->
-  </div>
-
-  <!-- <div class="col-3">
-    <div class="card">
-        <div class="card-content">
-            <h3>Transient VOEvents (within one hour):</h3>
-            <table class="fl-table">
-              <tr>
-                <th>Event type</th>
-                <th>Event source</th>
-                <th>ID</th>
-                <th>RA</th>
-                <th>Dec</th>
-                <th>Separation (arcmin)</th>
-                <th>XML file</th>
-              </tr>
-              {% for result in voevents %}
-                {% if object.ignored %}
-                  <tr class="grey-tr">
-                {% else %}
-                  <tr>
-                {% endif %}
-                <td>{% if resultsource_type is not None %} {{ result.source_type }}  {% endif %}</td>
-                <td>{{ result.telescope }} {{ result.event_type }}</td>
-                <td>{{ result.trig_id }}</td>
-                <td>{{ result.ra }}</td>
-                <td>{{ result.dec }}</td>
-                <td>{{ result.sep|floatformat:2 }}</td>
-                <td><a href="/voevent_view/{{ result.xml }}">View</a></td>
-              </tr>
-              {% empty %}
-              <tr><td>No Sources found</td></tr>
-              {% endfor %}
-            </table>
-        </div>
-      </div>
-  </div> -->
-
-</div>
-{% else %}
-<p>Candidate not Found!</p>
-{% endif %}
 {% endblock %}

@@ -2,6 +2,9 @@ from django.http import HttpResponse
 from astropy.io import fits
 import numpy as np
 
+import os
+import shutil
+
 
 def FITSTableType(val):
     """
@@ -48,3 +51,27 @@ def download_fits(request, queryset, table):
     tbhdu.writeto(response)
 
     return response
+
+
+def get_disk_space(path):
+
+    total, used, free = shutil.disk_usage(path)
+
+    total_mb = total / (1024**2)
+    used_mb = used / (1024**2)
+    free_mb = free / (1024**2)
+
+    return total_mb, used_mb, free_mb
+
+
+def count_files(directory):
+    """Recursively count the number of files in a directory.
+
+    :param path: Path to the directory to count the files.
+    :return: Number of files under the "path" directory."""
+
+    file_count = 0
+    for root, dirs, files in os.walk(directory):
+        file_count += len(files)
+
+    return file_count

@@ -24,15 +24,17 @@ from candidate_app import views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("page_admin/", views.page_admin, name="page_admin"),
     path("login/", views.LoginView.as_view(), name="login"),
     path("logout/", views.LogoutView.as_view(), name="logout"),
     path("", views.home_page, name="home_page"),
     path("token_manage/", views.token_manage, name="token_manage"),
     path("token_create/", views.token_create),
-    path("candidate_rating/<int:id>/", views.candidate_rating, name="candidate_rating"),
+    path("candidate_rating/<str:hash_id>/", views.candidate_rating, name="candidate_rating"),
     path("candidate_rating/random/", views.candidate_random, name="candidate_random"),
+    path("beam", views.render_beam_page, name="beam"),
     path(
-        "candidate_update_rating/<int:id>/",
+        "candidate_update_rating/<str:hash_id>/",
         views.candidate_update_rating,
         name="candidate_update_rating",
     ),
@@ -42,8 +44,9 @@ urlpatterns = [
         name="candidate_update_catalogue_query",
     ),
     path("candidate_table/", views.candidate_table),
+    path("clear_candidate_table_filter/", views.clear_candidate_table_filter, name="clear_candidate_table_filter"),
     path("survey_status/", views.survey_status),
-    path("voevent_view/<int:id>/", views.voevent_view, name="voevent_view"),
+    # path("voevent_view/<int:id>/", views.voevent_view, name="voevent_view"),
     path("session_settings/", views.session_settings),
     path("download_data/<str:table>/", views.download_data),
     path(
@@ -53,11 +56,9 @@ urlpatterns = [
     path("cone_search_simbad/", views.cone_search_simbad, name="cone_search_simbad"),
     path("cone_search_pulsars/", views.cone_search_pulsars, name="cone_search_pulsars"),
     path("cone_search/", views.cone_search, name="cone_search"),
-    # Upload a candidate
+    path("upload_observation/", views.upload_observation, name="upload_observation"),
+    path("upload_beam/", views.upload_beam, name="upload_beam"),
     path("upload_candidate/", views.upload_candidate, name="upload_candidate"),
-    # old ones
-    path("observation_create/", views.observation_create),
-    path("candidate_create/", views.candidate_create),
 ]
 
 # allow media files to be linked and viewed directly

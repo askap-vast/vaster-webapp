@@ -1,6 +1,8 @@
 from urllib.parse import urlencode
 from collections import OrderedDict
 
+import math
+
 from django import template
 
 register = template.Library()
@@ -31,3 +33,8 @@ def get_type_count(dictionary, key):
     # And edited for attributes
     # Grab the count got the key type but changing the attributes to a dictionary
     return dictionary.__dict__.get(key + "_count")
+
+
+@register.filter
+def is_not_nan_or_none(value):
+    return not math.isnan(value) or not value is None

@@ -1,0 +1,101 @@
+{% extends 'candidate_app/header.html' %}
+
+{% load utils %}
+
+{% block content %}
+
+
+<style>
+    disk-space-bar {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+</style>
+
+
+{% if user.is_staff %}
+
+<div class='disk-space-bar'>
+    <svg id="diskSpaceBar" width="500" height="50">
+        <!-- Background bar -->
+        <rect width="500" height="50" fill="gray" />
+        <!-- Foreground bar (initially hidden) -->
+        <rect id="usedSpaceBar" width="0" height="50" fill="blue" />
+    </svg>
+</div>
+
+<script>
+    // Get parameters from URL
+    let usedSpace = parseInt('{{used_disk_space}}') || 0;
+    let totalSpace = parseInt('{{total_disk_space}}') || 1; // Avoid division by zero
+
+    // Calculate the width of the used space bar
+    let usedSpaceWidth = (usedSpace / totalSpace) * 500; // Scale to SVG width (500)
+
+    // Set the width of the used space bar
+    document.getElementById('usedSpaceBar').setAttribute('width', usedSpaceWidth);
+</script>
+
+
+{% if project_obj_list %}
+
+<p>List of projects and attached observations</p>
+
+<div class='container-fluid'>
+
+    <!-- Display the space used for each project and observation -->
+    {% for project in project_obj_list %}
+    <div class='row'>
+
+        <div class='hstack'>
+            {% for obs in project.proj_obs %}
+            <div class='card'>
+
+                <div class='card-body'>
+
+
+                </div>
+
+
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+    {% endfor %}
+
+</div>
+
+<hr />
+
+<!-- Summary for each user ratings -->
+<div class='container-fluid'>
+
+    <!--  -->
+    {% comment %} {% for user in user_list %}
+    <div class='row'>
+
+        <!-- Total rating plot -->
+        <!-- Raings per user -->
+        <!-- Number of ratings over time ? -->
+
+    </div>
+    {% endfor %} {% endcomment %}
+
+</div>
+
+{% else %}
+
+<p> there are no project! Please upload using the upload_cand.py script </p>
+
+{% endif %}
+
+{% endif %}
+
+
+
+{% endblock %}
