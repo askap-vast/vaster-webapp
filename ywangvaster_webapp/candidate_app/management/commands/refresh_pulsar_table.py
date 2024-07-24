@@ -10,9 +10,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from candidate_app.models import ATNFPulsar
 
-ATNF_LINK = (
-    "https://www.atnf.csiro.au/research/pulsar/psrcat/downloads/psrcat_pkg.tar.gz"
-)
+ATNF_LINK = "https://www.atnf.csiro.au/research/pulsar/psrcat/downloads/psrcat_pkg.tar.gz"
 
 
 class Command(BaseCommand):
@@ -32,10 +30,13 @@ class Command(BaseCommand):
         db_dict = {}
         for ln in psrdb:
             line = ln.decode()
+
             if line.startswith("@-"):
                 print(db_dict[name])
                 dec, ra, lat, long, pos = None, None, None, None, None
                 name = None
+            elif line.startswith("# "):
+                print(f"This line is commented out - '{line}' ")
             elif "PSRJ" in line:
                 name = line.split()[1]
                 db_dict[name] = {}
@@ -57,9 +58,7 @@ class Command(BaseCommand):
             if (dec is not None) and (ra is not None):
                 pos = SkyCoord(ra, dec, unit=(u.hour, u.degree), frame="fk5")
             if (lat is not None) and (long is not None):
-                pos = SkyCoord(
-                    l=long, b=lat, unit=(u.degree, u.degree), frame="galactic"
-                ).transform_to("fk5")
+                pos = SkyCoord(l=long, b=lat, unit=(u.degree, u.degree), frame="galactic").transform_to("fk5")
 
             if pos is not None:
                 db_dict[name]["raj"] = pos.ra.degree
