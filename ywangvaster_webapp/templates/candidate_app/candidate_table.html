@@ -91,31 +91,60 @@
 
         <h4>Filter candidates by floats:</h4>
 
+
         <div class='row'>
-          {% if cand_values.chi_square.min|is_not_nan_or_none and cand_values.chi_square.max|is_not_nan_or_none %}
-          <div class='col d-flex justify-content-center'>
-            <multi-input-slider label="Chi square" id="chi_square" num-sliders="2"
-              slider-min="{{cand_values.chi_square.min}}" slider-max="{{cand_values.chi_square.max}}"
-              initial-values="[{{cand_values.chi_square.gte}}, {{cand_values.chi_square.lte}}]" />
-          </div>
-          {% endif %}
 
-          {% if cand_values.chi_square_sigma.min|is_not_nan_or_none and cand_values.chi_square_sigma.max|is_not_nan_or_none %}
-          <div class='col d-flex justify-content-center'>
-            <multi-input-slider label='Chi square sigma' id="chi_square_sigma" num-sliders="2"
-              slider-min="{{cand_values.chi_square_sigma.min}}" slider-max="{{cand_values.chi_square_sigma.max}}"
-              initial-values="[{{cand_values.chi_square_sigma.gte}}, {{cand_values.chi_square_sigma.lte}}]" />
-          </div>
-          {% endif %}
+          <div class='accordion' id='floats-filter-accordion'>
 
-          {% if cand_values.chi_square_log_sigma.min|is_not_nan_or_none and cand_values.chi_square_log_sigma.max|is_not_nan_or_none %}
-          <div class='col d-flex justify-content-center'>
-            <multi-input-slider label='Chi square log sigma' id="chi_square_log_sigma" num-sliders="2"
-              slider-min="{{cand_values.chi_square_log_sigma.min}}"
-              slider-max="{{cand_values.chi_square_log_sigma.max}}"
-              initial-values="[{{cand_values.chi_square_log_sigma.gte}}, {{cand_values.chi_square_log_sigma.lte}}]" />
+            <div class="accordion-item">
+
+              <h2 class="accordion-header" id="headingTwo">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo"
+                  aria-expanded="false" aria-controls="collapseTwo">
+                  Chi square
+                </button>
+              </h2>
+
+              <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo"
+                data-bs-parent="#accordionExample">
+                <div class='accordion-body d-flex'>
+
+
+                  {% if cand_values.chi_square.min|is_not_nan_or_none and cand_values.chi_square.max|is_not_nan_or_none %}
+                  <div class='col d-flex justify-content-center'>
+                    <multi-input-slider label="Chi square" id="chi_square" num-sliders="2"
+                      slider-min="{{cand_values.chi_square.min}}" slider-max="{{cand_values.chi_square.max}}"
+                      initial-values="[{{cand_values.chi_square.gte}}, {{cand_values.chi_square.lte}}]" />
+                  </div>
+                  {% endif %}
+
+                  {% if cand_values.chi_square_sigma.min|is_not_nan_or_none and cand_values.chi_square_sigma.max|is_not_nan_or_none %}
+                  <div class='col d-flex justify-content-center'>
+                    <multi-input-slider label='Chi square sigma' id="chi_square_sigma" num-sliders="2"
+                      slider-min="{{cand_values.chi_square_sigma.min}}"
+                      slider-max="{{cand_values.chi_square_sigma.max}}"
+                      initial-values="[{{cand_values.chi_square_sigma.gte}}, {{cand_values.chi_square_sigma.lte}}]" />
+                  </div>
+                  {% endif %}
+
+                  {% if cand_values.chi_square_log_sigma.min|is_not_nan_or_none and cand_values.chi_square_log_sigma.max|is_not_nan_or_none %}
+                  <div class='col d-flex justify-content-center'>
+                    <multi-input-slider label='Chi square log sigma' id="chi_square_log_sigma" num-sliders="2"
+                      slider-min="{{cand_values.chi_square_log_sigma.min}}"
+                      slider-max="{{cand_values.chi_square_log_sigma.max}}"
+                      initial-values="[{{cand_values.chi_square_log_sigma.gte}}, {{cand_values.chi_square_log_sigma.lte}}]" />
+                  </div>
+                  {% endif %}
+
+                </div>
+              </div>
+
+            </div>
+            {% comment %} end accordion item {% endcomment %}
           </div>
-          {% endif %}
+          {% comment %} end accordion {% endcomment %}
+
+
         </div>
 
         <hr />
@@ -227,11 +256,6 @@
 
     </div>
 
-    {% comment %} TODO {% endcomment %}
-    {% comment %} <button class="btn btn-primary"> Reset Form!</button> {% endcomment %}
-    <!-- TODO: Get the caching to work properly - Resetting the form can be just by refreshing the page.-->
-
-
   </div>
 
 </div>
@@ -240,15 +264,26 @@
 <table class="fl-table">
   <thead>
     <th>Name</th>
+
+    {% for filtered in filtered_columns %}
+    <th>{{ filtered }}</th>
+    {% endfor %}
+
     <th>RA (HH:MM:SS.SS)</th>
     <th>Dec (DD:MM:SS.SS)</th>
     <th>Obs ID</th>
     <th>Beam Index</th>
+
   </thead>
 
   {% for cand in page_obj %}
   <tr>
     <td><a href="/candidate_rating/{{cand.hash_id}}/">{{cand.name}}</a></td>
+
+    {% for filtered in filtered_columns %}
+    <td>{{ cand|get_attr:filtered|floatformat:2 }}</td>
+    {% endfor %}
+
     <td>{{cand.ra_str}}</td>
     <td>{{cand.dec_str}}</td>
     <td>{{cand.observation.id}}</td>
@@ -260,7 +295,6 @@
 {% else %}
 <p>No Candidates Found!</p>
 {% endif %}
-
 
 {% include "candidate_app/pagination.html" %}
 

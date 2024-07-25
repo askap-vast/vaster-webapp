@@ -1,6 +1,3 @@
-# from mwa_trigger.parse_xml import parsed_VOEvent
-import os
-import re
 import csv
 import json
 import logging
@@ -10,8 +7,6 @@ from uuid import uuid4
 from datetime import datetime, timedelta
 from typing import List, Optional, Tuple
 
-# import voeventdb.remote.apiv1 as apiv1
-import voeventparse
 from astropy import units
 from astropy.coordinates import Angle, SkyCoord
 from astropy.time import Time
@@ -33,16 +28,15 @@ from rest_framework.response import Response
 
 from ywangvaster_webapp.settings import MEDIA_ROOT
 
-
-from .utils import download_fits, get_disk_space
+from .utils import count_files, download_fits, get_disk_space
 
 from django.http import HttpRequest
 from django.views.generic import TemplateView, View
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-import base64
+
 from django.http import JsonResponse, HttpResponseForbidden
-from django.db.models import Min, Max, Q
+from django.db.models import Q
 
 from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import default_storage
@@ -50,23 +44,20 @@ from django.core.files.base import ContentFile
 
 from django.shortcuts import render
 
-# from voeventdb.remote.apiv1 import FilterKeys, OrderValues
-
 from . import forms, models, serializers
 
 logger = logging.getLogger(__name__)
 
 
+table_display_col_mapping = {
+    "chi_square": "Chi Square",
+}
+
+
 def home_page(request):
+    """Render the home page html."""
 
-    all_beams = models.Beam.objects.all()
-
-    for beam in all_beams:
-        print(beam.chisquare_fits)
-
-    candidates = models.Candidate.objects.all()
-
-    page_context = {"all_beams": all_beams, "candidates": candidates}
+    page_context = {}
 
     return render(request, "candidate_app/home_page.html", page_context)
 
@@ -77,8 +68,8 @@ def cone_search_simbad(request):  # , ra_deg, dec_deg, dist_arcmin):
     dist_arcmin = 2
     if request.method == "POST":
         data = json.loads(request.body.decode())
-        ra_deg = data.get("ra_deg", 0)
-        dec_deg = data.get("dec_deg", 0)
+        ra_deg = Angle(data.get("ra_str"), unit=units.hour).deg
+        dec_deg = Angle(data.get("dec_str"), unit=units.deg).deg
         dist_arcmin = float(data.get("dist_arcmin", 1))
 
     # limit query distance or we get very long timeouts
@@ -107,7 +98,7 @@ def cone_search_simbad(request):  # , ra_deg, dec_deg, dist_arcmin):
             )
     return render(
         request,
-        "candidate_app/simbad_table.html",
+        "candidate_app/nearby_object_tables/simbad.html",
         context={"simbad_result_table": simbad_result_table},
     )
 
@@ -115,44 +106,30 @@ def cone_search_simbad(request):  # , ra_deg, dec_deg, dist_arcmin):
 def cone_search(request):
     if request.method == "POST":
         data = json.loads(request.body.decode())
-        ra_deg = data.get("ra_deg", 0)
-        dec_deg = data.get("dec_deg", 0)
-        dist_arcmin = data.get("dist_arcmin", 1)
-        exclude = data.get("exclude_id", None)
+        ra_str = data.get("ra_str", 0)
+        dec_str = data.get("dec_str", 0)
+        dist_arcmin = float(data.get("dist_arcmin", 30))
+        exclude_hash_id = data.get("exclude_id", None)
         project = data.get("project", None)
 
-        # Find nearby candidates
-        table = models.Candidate.objects
+        table = models.Candidate.objects.all()
 
         # Restrict project if given
         if project:
-            table = table.filter(project__name=project)
+            table = table.filter(project__hash_id=project)
 
         # if we are given a candidate ID then exclude it from the results
-        if exclude:
-            table = table.exclude(id=exclude)
+        if exclude_hash_id:
+            table = table.exclude(hash_id=exclude_hash_id)
 
-        table = (
-            table.filter(
-                Q(
-                    Q3CRadialQuery(
-                        center_ra=ra_deg,
-                        center_dec=dec_deg,
-                        ra_col="ra",
-                        dec_col="dec",
-                        radius=float(dist_arcmin) / 60.0,
-                    )
-                )
-            ).annotate(  # do the distance calcs in the db
-                sep=Q3CDist(
-                    ra1=F("ra"),
-                    dec1=F("dec"),
-                    ra2=ra_deg,
-                    dec2=dec_deg,
-                )
-                # * 60  # arcsec -> degrees
-            )
-            # .order_by("sep")
+        table = filter_candidates_by_coords(
+            table,
+            ra_str,
+            dec_str,
+            ra_col="ra",
+            dec_col="dec",
+            arcmin_search_radius=dist_arcmin,
+            annotate=True,
         )
 
         table = table.values()
@@ -160,7 +137,7 @@ def cone_search(request):
         table = []
     return render(
         request,
-        "candidate_app/cone_search_table.html",
+        "candidate_app/nearby_object_tables/cone_search.html",
         context={"table": table},
     )
 
@@ -169,16 +146,21 @@ def cone_search_pulsars(request):
     if request.method == "POST":
         data = json.loads(request.body.decode())
         print(data)
-        ra_deg = float(data.get("ra_deg", 0))
-        dec_deg = float(data.get("dec_deg", 0))
+
+        ra_str = data.get("ra_str")
+        dec_str = data.get("dec_str")
+
+        ra = Angle(ra_str, unit=units.hour)
+        dec = Angle(dec_str, unit=units.deg)
         dist_arcmin = float(data.get("dist_arcmin", 1))
+
         # Perform atnf query
         table = (
             models.ATNFPulsar.objects.filter(
                 Q(
                     Q3CRadialQuery(
-                        center_ra=ra_deg,
-                        center_dec=dec_deg,
+                        center_ra=ra.deg,
+                        center_dec=dec.deg,
                         ra_col="raj",
                         dec_col="decj",
                         radius=dist_arcmin / 60.0,
@@ -186,13 +168,15 @@ def cone_search_pulsars(request):
                 )
             )
             .annotate(  # do the distance calcs in the db
+                ra_str=ra_str,
+                dec_str=dec_str,
                 sep=Q3CDist(
                     ra1=F("raj"),
                     dec1=F("decj"),
-                    ra2=ra_deg,
-                    dec2=dec_deg,
+                    ra2=ra.deg,
+                    dec2=dec.deg,
                 )
-                * 60  # arcsec -> degrees
+                * 60,  # arcsec -> degrees
             )
             .order_by("sep")
             .values()
@@ -203,20 +187,40 @@ def cone_search_pulsars(request):
 
     return render(
         request,
-        "candidate_app/atnf_pulsar_table.html",
+        "candidate_app/nearby_object_tables/atnf_pulsar.html",
         context={"table": table},
     )
 
 
 @login_required(login_url="/")
-def candidate_rating(request, hash_id, arcmin=2):
-    candidate = get_object_or_404(models.Candidate, hash_id=hash_id)
+def candidate_rating(request, cand_hash_id, arcmin=2):
+    candidate = get_object_or_404(models.Candidate, hash_id=cand_hash_id)
 
     # Convert time to readable format
     time = candidate.observation.obs_start
 
     # Grab any previous ratings
     rating = models.Rating.objects.filter(candidate=candidate, user=request.user).first()
+
+    rate_form = forms.RateCandidateForm()
+
+    # This is a filter request.
+    if request.method == "POST":
+
+        rate_form = forms.RateCandidateForm(request.POST)
+
+        print(f"trying to submit form for ------------------------- {cand_hash_id}")
+
+        # if rate_form.is_valid():
+
+        #     print(f"Attempting to create a rating form.")
+
+        # Read info from form
+        # Create the rating
+
+        # Refresh page to go to next candidate?
+
+        # Skip button??
 
     # # Convert seperation to arcminutes
     # if candidate.nks_sep_deg is None:
@@ -239,6 +243,7 @@ def candidate_rating(request, hash_id, arcmin=2):
     #     # FilterKeys.authored_until: time.tt.datetime + timedelta(days=1),
     #     FilterKeys.cone: cone,
     # }
+
     voevents = []
 
     converted_lc = []
@@ -250,13 +255,15 @@ def candidate_rating(request, hash_id, arcmin=2):
                 val = float(row[1]) * 1000.0
                 err = float(row[2]) * 1000.0
                 converted_lc.append([row[0], str(val), str(err)])
-            except ValueError:
-                converted_lc.append([row[0], 1000 * row[1], row[2]])
+            except ValueError as e:
+                print(f"Value error: {e}")
+                converted_lc.append([row[0], row[1], row[2]])
 
     context = {
         "candidate": candidate,
         "rating": rating,
         "time": time,
+        "rate_form": rate_form,
         # "sep_arcmin": sep_arcmin,
         "lightcurve_data": converted_lc,
         "arcmin_search": arcmin,
@@ -275,24 +282,27 @@ def candidate_rating(request, hash_id, arcmin=2):
 
 
 @login_required(login_url="/")
-def token_manage(request):
-    u = request.user
-    print("username: ", u)
-    token = Token.objects.filter(user=u).first()
+@api_view(["POST"])
+def get_token(request):
+    """Get the user's token using a POST request."""
 
-    # TODO: Create a token if one does not already exist
+    if request.method == "POST":
+        try:
+            create_new = json.loads(request.POST.get("create"))
 
-    return render(request, "candidate_app/token_manage.html", {"token": token})
+            token = Token.objects.filter(user=request.user).first()
 
+            # User doesn't have a token yet, create one
+            if token is None:
+                token = Token.objects.create(user=request.user)
 
-@login_required(login_url="/")
-def token_create(request):
-    u = request.user
-    token = Token.objects.filter(user=u)
-    if token.exists():
-        token.delete()
-    Token.objects.create(user=u)
-    return redirect(reverse("token_manage"))
+            if create_new:
+                token.delete()
+                token = Token.objects.create(user=request.user)
+
+            return JsonResponse({"token": token.key}, status=201)
+        except:
+            return JsonResponse({"Error: Unable to create token for user": request.user}, status=500)
 
 
 @login_required(login_url="/")
@@ -337,44 +347,23 @@ def candidate_update_rating(request, hash_id):
     return redirect(reverse("candidate_random"))
 
 
-@login_required(login_url="/")
-def render_beam_page(request: HttpRequest, hash_id: Optional[str] = None):
-    """"""
+# @login_required(login_url="/")
+# @api_view(["POST"])
+# @transaction.atomic
+# def candidate_update_catalogue_query(request, id):
+#     logger.debug(request.data)
+#     candidate = models.Candidate.objects.filter(id=id).first()
+#     if candidate is None:
+#         raise ValueError("Candidate not found")
+#     logger.debug("candidate obj %s", candidate)
 
-    if hash_id is None:
-        print("Displaying all beams")
-
-    # context = {
-    #     "candidate": candidate,
-    #     "rating": rating,
-    #     "time": time,
-    #     # "sep_arcmin": sep_arcmin,
-    #     "arcmin_search": arcmin,
-    #     "cand_type_choices": tuple((c.name, c.name) for c in models.Classification.objects.all()),
-    #     "voevents": voevents,
-    # }
-
-    context = {}
-
-    return render(request, "candidate_app/beam.html", context)
+#     arcmin = request.data.get("arcmin", None)
+#     if arcmin:
+#         logger.debug(f"New query with {arcmin}")
+#         return candidate_rating(request, id, arcmin=arcmin)
 
 
-@login_required(login_url="/")
-@api_view(["POST"])
-@transaction.atomic
-def candidate_update_catalogue_query(request, id):
-    logger.debug(request.data)
-    candidate = models.Candidate.objects.filter(id=id).first()
-    if candidate is None:
-        raise ValueError("Candidate not found")
-    logger.debug("candidate obj %s", candidate)
-
-    arcmin = request.data.get("arcmin", None)
-    if arcmin:
-        logger.debug(f"New query with {arcmin}")
-        return candidate_rating(request, id, arcmin=arcmin)
-
-
+### TODO: CHECK IF WE NEED THIS
 @login_required(login_url="/")
 def candidate_random(request):
     # Get session data for candidate ordering and inclusion settings
@@ -445,24 +434,57 @@ def filter_candidates_by_coords(
     dec_str: str,
     ra_col: str,
     dec_col: str,
-    arcmin_search_radius: int,
+    arcmin_search_radius: float,
+    annotate: Optional[bool] = False,
 ):
-    """Convert from str ra_hms and dec_dms to degrees and filter candidates that are withing the deep_arcminc_search_radius."""
+    """Convert from str ra_hms and dec_dms to degrees and filter candidates that are within the arcmin_search_radius."""
 
     if not (None in (ra_str, dec_str) or dec_str == "" or dec_str == ""):
         ra_deg = Angle(ra_str, unit=units.hour).deg
         dec_deg = Angle(dec_str, unit=units.deg).deg
-        filtered = incoming.filter(
-            Q(
-                Q3CRadialQuery(
-                    center_ra=ra_deg,
-                    center_dec=dec_deg,
-                    ra_col=ra_col,
-                    dec_col=dec_col,
-                    radius=arcmin_search_radius / 60.0,
+
+        if annotate:
+
+            filtered = (
+                incoming.filter(
+                    Q(
+                        Q3CRadialQuery(
+                            center_ra=ra_deg,
+                            center_dec=dec_deg,
+                            ra_col=ra_col,
+                            dec_col=dec_col,
+                            radius=arcmin_search_radius / 60.0,
+                        )
+                    )
+                )
+                .annotate(  # do the distance calcs in the db
+                    sep=Q3CDist(
+                        ra1=F(ra_col),
+                        dec1=F(dec_col),
+                        ra2=ra_deg,
+                        dec2=dec_deg,
+                    )
+                    * 60  # arcsec -> degrees # ???? How doe that turn into degrees???
+                )
+                .order_by("sep")
+            )
+
+            print(f"filtered candidates: {filtered}")
+
+        else:
+
+            filtered = incoming.filter(
+                Q(
+                    Q3CRadialQuery(
+                        center_ra=ra_deg,
+                        center_dec=dec_deg,
+                        ra_col=ra_col,
+                        dec_col=dec_col,
+                        radius=arcmin_search_radius / 60.0,
+                    )
                 )
             )
-        )
+
         return filtered
     else:
         print(f"Incoming variables did not pass the None or empty test - cols {ra_col} {dec_col}")
@@ -527,7 +549,7 @@ def candidate_table(request):
             if form.cleaned_data["observation_id"] is None:
                 observation_id_filter = None
             else:
-                observation_id_filter = form.cleaned_data["observation_id"].observation_id
+                observation_id_filter = form.cleaned_data["observation_id"]
 
             cleaned_data = {**form.cleaned_data}
             cleaned_data["observation_id"] = observation_id_filter
@@ -567,6 +589,7 @@ def candidate_table(request):
         # This is a dictionary of floats
         floats_filter_criteria = None
 
+    filtered_columns = set()
     if candidate_table_session_data:
         # Prefil form with previous session results
         form = forms.CandidateFilterForm(
@@ -603,6 +626,7 @@ def candidate_table(request):
                 and candidate_table_session_data[f"{variable}__gte"] != agg_min
             ):
                 floats_filter_criteria[f"{variable}__gte"] = candidate_table_session_data[f"{variable}__gte"]
+                filtered_columns.add(variable)
 
             # For the max side
             if (
@@ -610,6 +634,7 @@ def candidate_table(request):
                 and candidate_table_session_data[f"{variable}__lte"] != agg_max
             ):
                 floats_filter_criteria[f"{variable}__lte"] = candidate_table_session_data[f"{variable}__lte"]
+                filtered_columns.add(variable)
 
     # Gather all the cand types and prepare them as kwargs
     count_kwargs = {}
@@ -628,9 +653,8 @@ def candidate_table(request):
         candidates = candidates.filter(project__name=session_settings["project"])
         project = "Project " + session_settings["project"]
 
+    # These are the sliders that are used for filtering the candidates.
     if floats_filter_criteria:
-        print("++++++++++++++++++++++++++++++ float filter criteria ++++++++++++++++++++++++++")
-        print(floats_filter_criteria)
         candidates = candidates.filter(**{key: value for key, value in floats_filter_criteria.items()})
 
     # # Annotate with counts of different candidate type counts
@@ -659,8 +683,8 @@ def candidate_table(request):
     # candidates = candidates.order_by(asc_dec + order_by, "-avg_rating")
 
     # Obsid filter
-    if observation_id_filter is not None:
-        candidates = candidates.filter(obs_id__observation_id=observation_id_filter)
+    # if observation_id_filter is not None:
+    #     candidates = candidates.filter(obs_id__observation=observation_id_filter)
 
     # Filter candidate by cone search of
     candidates = filter_candidates_by_coords(
@@ -702,6 +726,7 @@ def candidate_table(request):
         "form": form,
         "project_name": project,
         "cand_values": cand_values,
+        "filtered_columns": filtered_columns,
     }
     return render(request, "candidate_app/candidate_table.html", content)
 
@@ -739,19 +764,19 @@ def session_settings(request):
     return render(request, "candidate_app/session_settings.html", context)
 
 
-def survey_status(request):
-    # Order by the column the user clicked or by observation_id by default
-    order_by = request.GET.get("order_by", "observation_id")
-    obs_list = (
-        models.Observation.objects.all()
-        .annotate(
-            candidates=Count("candidate"),
-            rated_candidates=Count("candidate", filter=Q(candidate__rating__isnull=False)),
-        )
-        .order_by(order_by)
-    )
-    context = {"obs": obs_list}
-    return render(request, "candidate_app/survey_status.html", context)
+# def survey_status(request):
+#     # Order by the column the user clicked or by observation_id by default
+#     order_by = request.GET.get("order_by", "observation_id")
+#     obs_list = (
+#         models.Observation.objects.all()
+#         .annotate(
+#             candidates=Count("candidate"),
+#             rated_candidates=Count("candidate", filter=Q(candidate__rating__isnull=False)),
+#         )
+#         .order_by(order_by)
+#     )
+#     context = {"obs": obs_list}
+#     return render(request, "candidate_app/survey_status.html", context)
 
 
 def download_csv(request, queryset, table):
@@ -772,6 +797,7 @@ def download_csv(request, queryset, table):
     return response
 
 
+# Unused
 def download_data(request, table):
     if table == "user":
         from django.contrib.auth import get_user_model
@@ -788,6 +814,21 @@ def download_data(request, table):
     response = download_fits(request, this_model.objects.all(), table)
     # response = download_csv(request, this_model.objects.all(), table)
     return response
+
+
+def ratings(request: HttpRequest):
+    """Render the ratings template."""
+
+    # Compile a list of ratings for the page,
+    # Paginate the ratings to x per page.
+
+    # Make data for echarts to plot the ratings
+
+    # Allow for a download button for the ratings for a project_obsID_subset, etc
+
+    context = {}
+
+    return render(request, "candidate_app/ratings.html", context)
 
 
 @api_view(["POST"])
@@ -822,16 +863,29 @@ def upload_observation(request):
 
                     # Create the project if it doesn't already exist.
                     if not models.Project.objects.filter(id=project_id).exists():
-                        uploaded_datetime = datetime.now()
+                        uploaded_datetime = datetime.now(timezone.utc)
+
+                        # Create the Upload metadata
+                        upload = models.Upload.objects.create(
+                            user=token.user,
+                            date=uploaded_datetime,
+                        )
+                        upload.save()
+
                         project = models.Project(
                             hash_id=uuid4(),
                             id=project_id,
                             description=f"Project created on {uploaded_datetime.isoformat()}",
+                            upload=upload,
                         )
                         project.save()
 
+                        print(f"Created project {project_id} in DB!")
+                    else:
+                        project = models.Project.objects.get(id=project_id)
+
                     obs = serializers.ObservationSerializer(data=request.data, context={"user": token.user})
-                    if models.Observation.objects.filter(id=request.data["id"]).exists():
+                    if models.Observation.objects.filter(project=project, id=request.data["id"]).exists():
                         return Response("Observation already created so skipping", status=status.HTTP_201_CREATED)
                     if obs.is_valid():
                         obs.save()
@@ -885,13 +939,15 @@ def upload_beam(request):
                 try:
 
                     # Check if beam has already been uploaded before.
-                    obs = models.Observation.objects.get(id=request.data["obs_id"])
-                    if models.Beam.objects.filter(observation=obs, index=request.data["index"]).exists():
+                    proj = models.Project.objects.get(id=request.data["proj_id"])
+                    obs = models.Observation.objects.get(project=proj, id=request.data["obs_id"])
+                    if models.Beam.objects.filter(project=proj, observation=obs, index=request.data["index"]).exists():
                         return Response(
                             f"Beam '{request.data['index']}' for obsservation '{request.data['obs_id']}' already created so skipping",
                             status=status.HTTP_200_OK,
                         )
 
+                    print("before serialiser for beam")
                     beam = serializers.BeamSerializer(data=request.data, context={"user": token.user})
 
                     if beam.is_valid():
@@ -944,7 +1000,15 @@ def upload_candidate(request):
                 print(f" --------------- Candidate uploaded by user: {token.user} --------------- ")
 
                 cand_obj_id = request.data["cand_obj_id"]
-                if models.Candidate.objects.filter(cand_obj_id=cand_obj_id).exists():
+                proj = models.Project.objects.get(id=request.data["proj_id"])
+                obs = models.Observation.objects.get(project=proj, id=request.data["obs_id"])
+                beam = models.Beam.objects.get(project=proj, observation=obs)
+                if models.Candidate.objects.filter(
+                    project=proj,
+                    observation=obs,
+                    beam=beam,
+                    cand_obj_id=cand_obj_id,
+                ).exists():
                     return Response(
                         f"Candidate '{cand_obj_id}' has already been uploaded/created so skipping",
                         status=status.HTTP_200_OK,
@@ -975,33 +1039,131 @@ def upload_candidate(request):
     return Response({"status": "error", "message": f"Not a POST request."}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@login_required(login_url="/")
 def page_admin(request: HttpRequest):
+    """Display a summary details about each project, observatio and the space used internal to the webapp."""
 
     # Order by the column the user clicked or by observation_id by default
     # order_by = request.GET.get("order_by", "")
 
-    print("************************** is user staff *********************************")
-    print(request.user.is_staff)
+    print(
+        f"************************** is user {request.user.id} staff: {request.user.is_staff} *********************************"
+    )
 
-    project_obj_list = models.Project.objects.all()
+    projects_obs = {}
+    for project in models.Project.objects.all():
 
-    print(project_obj_list)
+        obs_list = []
+        for obs in models.Observation.objects.filter(project=project):
 
-    # projects_obs = {}
-    # for project in project_obj_list:
-    #     projects_obs[project.id] = models.Observation.objects.filter(project_id=project.id)
+            temp = {}
+
+            beams = models.Beam.objects.filter(project=project, observation=obs)
+            candidates = models.Candidate.objects.filter(project=project, observation=obs)
+
+            temp["obj"] = obs
+            temp["num_beams"] = len(beams)
+            temp["num_cands"] = len(candidates)
+
+            obs_list.append(temp)
+
+        projects_obs[project.id] = obs_list
+
+    print("++++++++++++++++++++++++ project_obs ++++++++++++++++++++++++")
+    print(projects_obs)
 
     # Get disk space used by projects
     total_disk_space, used_disk_space, free_disk_space = get_disk_space(MEDIA_ROOT)
 
     context = {
-        "project_obj_list": project_obj_list,
+        "projects_obs": projects_obs,
         "free_disk_space": free_disk_space,
         "used_disk_space": used_disk_space,
         "total_disk_space": total_disk_space,
     }
 
     return render(request, "candidate_app/page_admin.html", context)
+
+
+@login_required(login_url="/")
+def delete(request: HttpRequest):
+    """Using a authorised POST request, delete records from the DB."""
+
+    if request.user.is_staff and "recordType" in request.POST:
+
+        record_type = request.POST.get("recordType")
+
+        if record_type == "project":
+            to_delete = request.POST.get("hashId")
+            print(f"Attempting to delete project: {to_delete}")
+
+            try:
+                # Delete project record and cascading objects
+                project = models.Project.objects.get(hash_id=to_delete)
+                project.delete()
+
+                return JsonResponse({"deleted_recordType": record_type, "deleted_hashId": to_delete}, status=201)
+            except:
+                return JsonResponse({"deleted_recordType": record_type, "deleted_hashId": to_delete}, status=500)
+
+        if record_type == "observation":
+            to_delete = request.POST.get("hashId")
+            print(f"Attempting to delete observation: {to_delete}")
+
+            try:
+                # Delete observation record and cascading records obs > beams > cands
+                observation = models.Observation.objects.get(hash_id=to_delete)
+                observation.delete()
+
+                return JsonResponse({"deleted_recordType": record_type, "deleted_hashId": to_delete}, status=201)
+            except:
+                return JsonResponse({"deleted_recordType": record_type, "deleted_hashId": to_delete}, status=500)
+
+        if record_type == "beam":
+            to_delete = request.POST.get("hashId")
+            print(f"Attempting to delete beam: {to_delete}")
+
+            try:
+                # Delete beam record and cascading records beams > cands
+                beam = models.Beam.objects.get(hash_id=to_delete)
+                beam.delete()
+
+                return JsonResponse({"deleted_recordType": record_type, "deleted_hashId": to_delete}, status=201)
+            except:
+                return JsonResponse({"deleted_recordType": record_type, "deleted_hashId": to_delete}, status=500)
+
+        if record_type == "candidate":
+            to_delete = request.POST.get("hashId")
+            print(f"Attempting to delete candidate: {to_delete}")
+
+            try:
+                # Delete beam record and cascading records beams > cands
+                beam = models.Candidate.objects.get(hash_id=to_delete)
+                beam.delete()
+
+                return JsonResponse({"deleted_recordType": record_type, "deleted_hashId": to_delete}, status=201)
+            except:
+                return JsonResponse({"deleted_recordType": record_type, "deleted_hashId": to_delete}, status=500)
+
+
+@login_required(login_url="/")
+def download_lightcurve_csv(request: HttpRequest, cand_hash_id: str):
+    """Download path for the candidate lightcurve csv file."""
+
+    if request.method == "GET":
+
+        candidate = get_object_or_404(models.Candidate, hash_id=cand_hash_id)
+
+        # Create the HttpResponse object with the appropriate CSV header.
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = f'attachment; filename="{candidate.name}_lightcurve.csv"'
+
+        writer = csv.writer(response)
+
+        for row in candidate.lightcurve_data:
+            writer.writerow(row)
+
+        return response
 
 
 class LoginView(TemplateView, View):

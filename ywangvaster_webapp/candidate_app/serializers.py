@@ -26,6 +26,8 @@ class ObservationSerializer(serializers.ModelSerializer):
 
         project = models.Project.objects.get(id=validated_data["proj_id"])
 
+        assert project is not None, f"Failed to find project {validated_data['proj_id']} DB."
+
         return models.Observation.objects.create(upload=upload, project=project, **validated_data)
 
 
@@ -42,8 +44,12 @@ class BeamSerializer(serializers.ModelSerializer):
         if "hash_id" not in validated_data:
             validated_data["hash_id"] = uuid.uuid4()
 
+        proj = models.Project.objects.get(id=validated_data["proj_id"])
+
+        assert proj is not None, f"Failed to find project {validated_data['proj_id']} DB."
+
         obs_id = validated_data.pop("obs_id")
-        observation = models.Observation.objects.get(id=obs_id)
+        observation = models.Observation.objects.get(project=proj, id=obs_id)
 
         assert observation is not None, f"Failed to find observation {obs_id} in DB."
 
@@ -53,9 +59,7 @@ class BeamSerializer(serializers.ModelSerializer):
             date=datetime.now(timezone.utc),
         )
 
-        project = models.Project.objects.get(id=validated_data["proj_id"])
-
-        return models.Beam.objects.create(observation=observation, project=project, upload=upload, **validated_data)
+        return models.Beam.objects.create(observation=observation, project=proj, upload=upload, **validated_data)
 
 
 class CandidateSerializer(serializers.ModelSerializer):
@@ -71,19 +75,25 @@ class CandidateSerializer(serializers.ModelSerializer):
         if "hash_id" not in validated_data:
             validated_data["hash_id"] = uuid.uuid4()
 
+        proj = models.Project.objects.get(id=validated_data["proj_id"])
+
+        assert proj is not None, f"Failed to find project {validated_data['proj_id']} DB."
+
         obs_id = validated_data.get("obs_id")
 
-        print(f"+++++++++++++++ serializer: OBS ID {obs_id} +++++++++++++++")
-        obs = models.Observation.objects.get(id=obs_id)
+        print(f"+++++++++++++++ candidate serializer: OBS ID {obs_id} +++++++++++++++")
+        obs = models.Observation.objects.get(id=obs_id, project=proj)
 
         assert obs is not None, f"Failed to find observation {obs_id} in DB."
 
         beam_index = validated_data.get("beam_index")
-        beam = models.Beam.objects.get(index=beam_index, observation=obs)
+        beam = models.Beam.objects.get(index=beam_index, observation=obs, project=proj)
 
-        print(f"+++++++++++++++ serializer: BEAM INDEX {beam_index} +++++++++++++++")
+        print(f"+++++++++++++++ candidate serializer: BEAM INDEX {beam_index} +++++++++++++++")
 
         assert beam is not None, f"Failed to find beam {beam_index} for {obs_id} in DB."
+
+        print(f"+++++++++++++++ candidate serializer: BEAM INDEX {beam_index} +++++++++++++++")
 
         # Create the Upload metadata
         upload = models.Upload.objects.create(
@@ -91,10 +101,8 @@ class CandidateSerializer(serializers.ModelSerializer):
             date=datetime.now(timezone.utc),
         )
 
-        project = models.Project.objects.get(id=validated_data["proj_id"])
-
         return models.Candidate.objects.create(
-            project=project,
+            project=proj,
             observation=obs,
             beam=beam,
             upload=upload,

@@ -4,60 +4,112 @@
 
 {% block content %}
 
-
 <style>
-    disk-space-bar {
-        font-family: Arial, sans-serif;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        margin: 0;
+    .disk-space-container {
+        padding-top: 20px;
+        width: 70%;
+        margin: 0 auto;
+        margin-bottom: -50px;
+    }
+
+    #diskSpaceBar {
+        width: 100%;
+        border-radius: 15px;
+        overflow: hidden;
+    }
+
+    #diskSpaceBar rect {
+        border-radius: 15px;
+        height: 50px;
+    }
+
+    #diskSpaceBar .background-bar {
+        border-radius: 15px;
+        fill: lightgray;
+    }
+
+    #diskSpaceBar .foreground-bar {
+        border-radius: 15px;
+        fill: #007bff;
+        border-radius: 15px;
     }
 </style>
 
 
 {% if user.is_staff %}
 
-<div class='disk-space-bar'>
-    <svg id="diskSpaceBar" width="500" height="50">
-        <!-- Background bar -->
-        <rect width="500" height="50" fill="gray" />
-        <!-- Foreground bar (initially hidden) -->
-        <rect id="usedSpaceBar" width="0" height="50" fill="blue" />
-    </svg>
+<div class='vstack gap-2'>
+
+    <div class="d-flex justify-content-center align-items-center" style='padding-top: 20px;'>
+        <h4>Total disk space used on host: {{used_disk_space|floatformat:1 }} Gb of {{total_disk_space|floatformat:1 }}
+            Gb
+        </h4>
+    </div>
+
+    <div class="d-flex justify-content-center align-items-center">
+
+        <div class="disk-space-container">
+            <svg id="diskSpaceBar">
+                <!-- Background bar -->
+                <rect class="background-bar" width="100%" height="50" />
+                <!-- Foreground bar (initially hidden) -->
+                <rect id="usedSpaceBar" class="foreground-bar" width="0" height="50" />
+            </svg>
+        </div>
+
+    </div>
+
 </div>
 
 <script>
     // Get parameters from URL
-    let usedSpace = parseInt('{{used_disk_space}}') || 0;
-    let totalSpace = parseInt('{{total_disk_space}}') || 1; // Avoid division by zero
+    let usedSpace = parseInt('{{ used_disk_space }}') || 0;
+    let totalSpace = parseInt('{{ total_disk_space }}') || 1; // Avoid division by zero
 
     // Calculate the width of the used space bar
-    let usedSpaceWidth = (usedSpace / totalSpace) * 500; // Scale to SVG width (500)
+    let usedSpaceWidth = (usedSpace / totalSpace) * 100; // Scale to percentage
 
     // Set the width of the used space bar
-    document.getElementById('usedSpaceBar').setAttribute('width', usedSpaceWidth);
+    document.getElementById('usedSpaceBar').setAttribute('width', usedSpaceWidth + '%');
 </script>
 
 
-{% if project_obj_list %}
+{% if projects_obs %}
 
 <p>List of projects and attached observations</p>
 
 <div class='container-fluid'>
 
     <!-- Display the space used for each project and observation -->
-    {% for project in project_obj_list %}
-    <div class='row'>
+    {% for project_id, obs_list in projects_obs.items %}
+    <div id='project-{{project_id}}' class='row mb-3'>
 
-        <div class='hstack'>
-            {% for obs in project.proj_obs %}
+        <hr />
+        <h4 style="margin: 20px;">Project {{project_id }} </h4>
+
+        <div class='hstack gap-3' style="padding-left: 8%; padding-right: 8%; margin: 10px">
+            {% for obs in obs_list %}
+
             <div class='card'>
 
+                <div class="card-header hstack gap-4 d-flex justify-content-between align-items-center">
+                    <span>Obs ID: {{ obs.obj.id }}</span>
+                    <button class="btn btn-danger"
+                        onclick="deleteRecords('{{obs.obj.id}}', '{{ obs.obj.hash_id }}', 'observation')">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                            <path
+                                d="M5.755,20.283,4,8H20L18.245,20.283A2,2,0,0,1,16.265,22H7.735A2,2,0,0,1,5.755,20.283ZM21,4H16V3a1,1,0,0,0-1-1H9A1,1,0,0,0,8,3V4H3A1,1,0,0,0,3,6H21a1,1,0,0,0,0-2Z" />
+                        </svg>
+                    </button>
+                </div>
+
                 <div class='card-body'>
-
-
+                    <p>Uploaded by: {{ obs.obj.upload.user }} </p>
+                    <p>Upload date: {{ obs.obj.upload.date}} </p>
+                    <p>N Beams: {{obs.num_beams}}</p>
+                    <p>N Cands: {{obs.num_cands}}</p>
+                    <p>Space used: (coming)</p>
+                    <p>N. Files: (coming)</p>
                 </div>
 
 
@@ -72,11 +124,12 @@
 
 <hr />
 
+{% comment %}
 <!-- Summary for each user ratings -->
 <div class='container-fluid'>
 
     <!--  -->
-    {% comment %} {% for user in user_list %}
+    {% for user in user_list %}
     <div class='row'>
 
         <!-- Total rating plot -->
@@ -84,18 +137,46 @@
         <!-- Number of ratings over time ? -->
 
     </div>
-    {% endfor %} {% endcomment %}
 
-</div>
+
+</div> {% endcomment %}
 
 {% else %}
 
 <p> there are no project! Please upload using the upload_cand.py script </p>
 
-{% endif %}
+{% endif %} {% comment %} if there are projects {% endcomment %}
 
-{% endif %}
+{% endif %} {% comment %} user.is_staff {% endcomment %}
 
-
+<script>
+    // Function to delete an observation from the DB. 
+    function deleteRecords(Id, hashId, recordType) {
+        let confirmStr =
+            `Are you sure you want to delete all records and files under ${recordType} - "${Id}" - "${hashId}" ?`;
+        if (confirm(confirmStr)) {
+            // Send AJAX post request to the delete URL.
+            $.ajax({
+                url: '{% url "delete" %}',
+                type: "POST",
+                data: {
+                    hashId: hashId,
+                    recordType: recordType,
+                    csrfmiddlewaretoken: $("[name=csrfmiddlewaretoken]").val(),
+                },
+                success: function (response) {
+                    console.log(response);
+                    alert(
+                        `Successfully deleted ${recordType} from the DB ${response["deleted_hashId"]}`
+                    );
+                },
+                error: function (error) {
+                    // Handle error response
+                    alert(`Error deleting ${recordType}: ${error.responseText}`);
+                },
+            });
+        }
+    }
+</script>
 
 {% endblock %}

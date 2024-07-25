@@ -20,4 +20,6 @@ COPY ./containers/web/entrypoint.sh /.
 # Install requirements for the web app
 RUN pip3 install -r /requirements.txt
 
+WORKDIR /ywangvaster_webapp
+
 ENTRYPOINT [ "/entrypoint.sh" ]

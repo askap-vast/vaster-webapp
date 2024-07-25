@@ -2,6 +2,8 @@ from django.http import HttpResponse
 from astropy.io import fits
 import numpy as np
 
+from django import template
+
 import os
 import shutil
 
@@ -54,14 +56,16 @@ def download_fits(request, queryset, table):
 
 
 def get_disk_space(path):
+    """Get the total used space in gigabytes for a particular path."""
 
     total, used, free = shutil.disk_usage(path)
 
-    total_mb = total / (1024**2)
-    used_mb = used / (1024**2)
-    free_mb = free / (1024**2)
+    # Convert to gb
+    total_gb = total / (1024**3)
+    used_gb = used / (1024**3)
+    free_gb = free / (1024**3)
 
-    return total_mb, used_mb, free_mb
+    return total_gb, used_gb, free_gb
 
 
 def count_files(directory):

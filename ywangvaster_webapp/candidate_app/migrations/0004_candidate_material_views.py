@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
 
     initial = False
 
-    dependencies = [("candidate_app", "0002_q3c")]
+    dependencies = [("candidate_app", "0003_q3c")]
 
     operations = [
         # Create the materialised view for the candidate min and max stats.

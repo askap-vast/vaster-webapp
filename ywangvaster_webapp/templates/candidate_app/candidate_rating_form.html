@@ -2,377 +2,284 @@
 
 {% block content %}
 
+<!-- Aladin sky applet -->
+<script type="text/javascript" src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8">
+</script>
+
 <style>
-  .sticky-rating-button {
+  #sidebar {
     position: fixed;
-    top: 8%;
-    right: 1%;
+    right: -20vw;
+    top: 12%;
+    width: 30vw;
+    height: 100vh;
+    background-color: #f8f9fa;
+    transition: right 0.3s ease;
+  }
+
+  #sidebar.sticky {
+    right: 0.5vw;
+  }
+
+  #stickyButton {
+    position: fixed;
+    right: 0vw;
+    top: 10%;
     transform: translateY(-50%);
-    z-index: 1050;
-    /* Make sure it’s above other content */
+    z-index: 1000;
   }
 
-  .modal.right .modal-dialog {
-    position: fixed;
-    top: 50%;
-    right: 2.5%;
-    transform: translateY(-50%) translateX(100%);
-
-    /* Adjust the width as needed */
-    height: 500px;
-    transition: transform 0.3s ease-out;
+  #mainContent {
+    transition: margin-right 0.3s ease;
+    width: 100%;
+    margin-left: 1.5vw;
   }
 
-  .modal.right.show .modal-dialog {
-    transform: translateY(-50%) translateX(0);
-  }
-
-  .modal-content {
-    height: 100%;
-    overflow-y: auto;
-  }
-
-  .modal-backdrop {
-    display: none;
-    z-index: 1040 !important;
+  #mainContent.expanded {
+    margin-right: 20%;
   }
 </style>
 
-<!-- Sticky Button -->
-<button type="button" class="btn btn-primary sticky-rating-button" data-toggle="modal" data-target="#rightModal">
-  Rate candidate
-</button>
+{% comment %} <button id="stickyButton" class="btn btn-primary">Toggle Sidebar</button> {% endcomment %}
 
-<!-- Make the modal open by default
-<script>
-  $(document).ready(function () {
-    $("#rightModal").modal('show');
+<div id="sidebar" class="sticky p-3">
 
-    $('body').removeClass('modal-open');
-    $('.modal-backdrop').remove();
-  });
-</script>
- -->
+  <div class='card'>
+    <div class='card-body'>
+      <h4>Rate: {{candidate.name}} </h4>
+      <form type='POST' action=''>
+        {{ rate_form.as_table }}
 
-<!-- Modal for rating the candidate -->
-<div class="modal right fade" id="rightModal" tabindex="-1" role="dialog" aria-labelledby="rightModalLabel"
-  aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="rightModalLabel">Candidate: {{ candidate.name }}</h5>
-        <button type="button" class="btn btn-danger" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <!-- Modal content goes here -->
-        <div class="container-fluid">
-          <div class="row">
-
-            <div class="col">
-              <form action="{% url 'candidate_update_rating' hash_id=candidate.hash_id %}" method="post">
-                {% csrf_token %}
-                <div class="field">
-                  <h4>Choose classification:</h4>
-                  {% for value, text in cand_type_choices %}
-                  {% if value == "T" and not rating %}
-                  <input checked="checked" class="form-check-input" type="radio" name="classification" id="{{ value }}"
-                    value="{{ value }}">
-                  {% elif value == rating.classification %}
-                  <input checked="checked" class="form-check-input" type="radio" name="classification" id="{{ value }}"
-                    value="{{ value }}">
-                  {% else %}
-                  <input class="form-check-input" type="radio" name="classification" id="{{ value }}"
-                    value="{{ value }}">
-                  {% endif %}
-
-                  <label class="form-check-label" for="{{ value }}">{{ text }}</label><br>
-                  {% endfor %}
-                </div>
-                <div class="field">
-                  <h4>Rating from 1(noise) to 5(clear candidate){% if rating %}(currently {{rating.rating}}){% endif %}
-                  </h4>
-                  <div>
-                    {% if rating.rating == 1 %}
-                    <input type="submit" class="btn btn-success btn-lg" name="rating" value="1">
-                    {% else %}
-                    <input type="submit" class="btn btn-primary btn-lg" name="rating" value="1">
-                    {% endif %}
-                    {% if rating.rating == 2 %}
-                    <input type="submit" class="btn btn-success btn-lg" name="rating" value="2">
-                    {% else %}
-                    <input type="submit" class="btn btn-primary btn-lg" name="rating" value="2">
-                    {% endif %}
-                    {% if rating.rating == 3 %}
-                    <input type="submit" class="btn btn-success btn-lg" name="rating" value="3">
-                    {% else %}
-                    <input type="submit" class="btn btn-primary btn-lg" name="rating" value="3">
-                    {% endif %}
-                    {% if rating.rating == 4 %}
-                    <input type="submit" class="btn btn-success btn-lg" name="rating" value="4">
-                    {% else %}
-                    <input type="submit" class="btn btn-primary btn-lg" name="rating" value="4">
-                    {% endif %}
-                    {% if rating.rating == 5 %}
-                    <input type="submit" class="btn btn-success btn-lg" name="rating" value="5">
-                    {% else %}
-                    <input type="submit" class="btn btn-primary btn-lg" name="rating" value="5">
-                    {% endif %}
-                  </div>
-                </div>
-                <div class="field">
-                  <h4>Notes</h4>
-                  <textarea rows="5" id="notes" name="notes"
-                    placeholder="is it a known source?">{{candidate.notes}}</textarea>
-                </div>
-                <input type="hidden" name="id" value="">
-                <input type="hidden" name="username" value="{{user}}">
-              </form>
-              <button class="btn btn-info" onclick="window.history.go(-1)">Back to previous</button>
-              <a class="btn btn-info" href="/candidate_rating/random/">Skip</a>
-            </div>
-          </div>
-        </div>
-      </div>
+        <button class='btn btn-primary' id='submit-rating' type='submit'>Rate!</button>
+      </form>
     </div>
   </div>
+
 </div>
 
-{% comment %} <script>
-  $(document).ready(function () {
-    // Ensure that the modal backdrop is disabled
-    $('#rightModal').modal({
-      backdrop: false
-    });
+<script>
+  document.getElementById('stickyButton').addEventListener('click', function () {
+    document.getElementById('sidebar').classList.toggle('sticky');
+    document.getElementById('mainContent').classList.toggle('expanded');
   });
-</script> {% endcomment %}
+</script>
 
+<div id="mainContent" class="expanded container mt-2">
 
+  {% if candidate %}
 
-{% if candidate %}
+  <!-- -->
+  {{ lightcurve_data|json_script:"lightcurve_data" }}
 
+  <div class="container-fluid">
 
-<!-- -->
-{{ lightcurve_data|json_script:"lightcurve_data" }}
+    <!-- This the summary of the candidate -->
+    <div class="row" style="padding: 2.5%">
+      <div class='card'>
+        <div class='card-body'>
 
-<title>Rating: {{ candidate.name }} </title>
+          <!-- Row of download buttons for the candidate content -->
+          <div class='hstack gap-2 flex-d justify-content-center align-items-center'>
 
-<div class="container-fluid">
-
-  <div class="row">
-    <div class="col-12">
-      <h2>Rate candidate {{ candidate.name }}</h2>
-      <h3> Project: {{candidate.project_id}} - Observation: {{candidate.obs_id}} </h3>
-    </div>
-  </div>
-
-  <!-- This the summary of the candidate -->
-
-
-  <div class="row" style="padding: 2.5%">
-    <div class='card'>
-      <div class='card-body'>
-
-        <div class='container-fluid'>
-          <div class='row'>
-
-            <div class="col" style="min-width: 500px">
-              <h3>Data</h3>
-
-              <h5>Download Candidate Data</h5>
-
-              <div class='hstack gap-2'>
-
-                {% if candidate.slices_fits %}
-                <div><a href="{{ candidate.slices_fits.url }}"><button class='btn btn-primary'>SLICES
-                      FITS</button></a>
-                </div>
-                {% endif %}
-                {% if candidate.deepcutout_fits %}
-                <div><a href="{{ candidate.deepcutout_fits.url }}"><button class='btn btn-primary'>DEEPCUT
-                      FITS</button></a>
-                </div>
-                {% endif %}
-                {% if candidate.lightcurve_data %}
-                <div><a href="{{ candidate.slices_fits.url }}"><button class='btn btn-success'>Lightcurve
-                      CSV (coming) </button></a>
-                </div>
-                {% endif %}
-
-              </div>
-
-              <br />
-
-              <h5>Summary</h5>
-
-              <table class="fl-table">
-                <tr>
-                  <td>MD Deep</td>
-                  <td>{{ candidate.md_deep|floatformat:3 }}</td>
-                </tr>
-
-              </table>
-
-              <div class="container-fluid">
-
-                <div class='row'>
-                  <div class='col' style="background: grey; border: 2px solid black;">
-                    Details
-
-                    <table class='fl-table'>
-                      <thead>
-                        <th>Ra</th>
-                        <th>Dec </th>
-                      </thead>
-
-                      <tr>
-                        <td>{{ candidate.ra_str }}</td>
-                        <td>{{ candidate.dec_str }}</td>
-                      </tr>
-                      <tr>
-                        <td>{{ candidate.ra|floatformat:7 }}</td>
-                        <td>{{ candidate.dec|floatformat:7 }}</td>
-                      </tr>
-
-                    </table>
-                  </div>
-
-                  <div class='col' style="background: grey; border: 2px solid black;">
-                    Statistics
-
-                    <table class='fl-table'>
-                      <thead>
-                        <th></th>
-                        <th>Value</th>
-                        <th>Sigma</th>
-                        <th>Log Sigma</th>
-                      </thead>
-
-                      <tr>
-                        <td>Chi^2</td>
-                        <td>{{ candidate.chi_square|floatformat:2 }}</td>
-                        <td>{{ candidate.chi_square_sigma|floatformat:2 }}</td>
-                        <td>{{ candidate.chi_square_log_sigma|floatformat:2 }}</td>
-                      </tr>
-                      <tr>
-                        <td>Peak map</td>
-                        <td>{{ candidate.peak_map|floatformat:2}}</td>
-                        <td>{{ candidate.peak_map_sigma|floatformat:2 }}</td>
-                        <td>{{ candidate.peak_map_log_sigma|floatformat:2 }}</td>
-                      </tr>
-                      <tr>
-                        <td>Gaussian map</td>
-                        <td>{{ candidate.gaussian_map|floatformat:2}}</td>
-                        <td>{{ candidate.gaussian_map_sigma|floatformat:2 }}</td>
-                        <td>-</td>
-                      </tr>
-                      <tr>
-                        <td>Standard map</td>
-                        <td>{{ candidate.std_map|floatformat:2}}</td>
-                        <td>-</td>
-                        <td>-</td>
-                      </tr>
-
-                    </table>
-                  </div>
-                </div>
-
-                <div class='row'>
-                  <div class='col' style="background: grey; border: 2px solid black;">
-                    Beam details
-
-                    <table class='fl-table'>
-                      <tr>
-                        <td>Ra</td>
-                        <td>{{ candidate.beam_ra }}</td>
-
-                      </tr>
-                      <tr>
-                        <td>Dec</td>
-                        <td>{{ candidate.beam_dec }}</td>
-                      </tr>
-
-                      <tr>
-                        <td>Sep Arcmin</td>
-                        <td>{{ candidate.bright_sep_arcmin|floatformat:3 }}</td>
-                      </tr>
-                      <tr>
-                        <td>Beam Sep Deg</td>
-                        <td>{{ candidate.beam_sep_deg|floatformat:3 }}</td>
-                      </tr>
-                    </table>
-                  </div>
-
-                  <div class='col' style="background: grey; border: 2px solid black;">
-                    Deep stats
-
-                    <table class='fl-table'>
-                      <tr>
-                        <td>Deep Sep Arcsec</td>
-                        <td>{{ candidate.deep_sep_arcsec|floatformat:3 }}</td>
-                      </tr>
-                      <tr>
-                        <td>Deep Num</td>
-                        <td>{{ candidate.deep_num|floatformat:3 }}</td>
-                      </tr>
-
-                      <tr>
-                        <td>Name</td>
-                        <td>{{ candidate.deep_name }}</td>
-                      </tr>
-                      <tr>
-                        <td>RA</td>
-                        <td>{{ candidate.deep_ra_deg|floatformat:7 }}</td>
-                      </tr>
-                      <tr>
-                        <td>Dec</td>
-                        <td>{{ candidate.deep_dec_deg|floatformat:7 }}</td>
-                      </tr>
-                      <tr>
-                        <td>Peak Flux</td>
-                        <td>{{ candidate.deep_peak_flux|floatformat:3 }}</td>
-                      </tr>
-                      <tr>
-                        <td>Int Flux</td>
-                        <td>{{ candidate.deep_int_flux|floatformat:3 }}</td>
-                      </tr>
-                    </table>
-                  </div>
-                </div>
-
-              </div>
-
+            {% if candidate.slices_fits %}
+            <div><a href=" {{ candidate.slices_fits.url }}"><button class='btn btn-primary'>SLICES FITS
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                    <path
+                      d="M11.292 16.706a1 1 0 0 0 1.416 0l3-3a1 1 0 0 0-1.414-1.414L13 13.586V4a1 1 0 0 0-2 0v9.586l-1.293-1.293a1 1 0 0 0-1.414 1.414zM17 19H7a1 1 0 0 0 0 2h10a1 1 0 0 0 0-2z"
+                      style="fill: #1c1b1e" />
+                  </svg></button></a>
             </div>
+            {% endif %}
+            {% if candidate.deepcutout_fits %}
+            <div><a href="{{ candidate.deepcutout_fits.url }}"><button class='btn btn-primary'>DEEPCUT
+                  FITS
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                    <path
+                      d="M11.292 16.706a1 1 0 0 0 1.416 0l3-3a1 1 0 0 0-1.414-1.414L13 13.586V4a1 1 0 0 0-2 0v9.586l-1.293-1.293a1 1 0 0 0-1.414 1.414zM17 19H7a1 1 0 0 0 0 2h10a1 1 0 0 0 0-2z"
+                      style="fill: #1c1b1e" />
+                  </svg></button></a>
+            </div>
+            {% endif %}
+            {% if candidate.lightcurve_data %}
+            <div>
+              <a href="/download_lightcurve/{{ candidate.hash_id }}">
+                <button class="btn btn-success">LIGHTCURVE CSV
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                    <path
+                      d="M11.292 16.706a1 1 0 0 0 1.416 0l3-3a1 1 0 0 0-1.414-1.414L13 13.586V4a1 1 0 0 0-2 0v9.586l-1.293-1.293a1 1 0 0 0-1.414 1.414zM17 19H7a1 1 0 0 0 0 2h10a1 1 0 0 0 0-2z"
+                      style="fill: #1c1b1e" />
+                  </svg>
+                </button>
+              </a>
+            </div>
+            {% endif %}
+          </div>
 
-            <div class='col' style="min-width: 500px">
-              <h3>Images</h3>
+          <br />
 
-              <div class='container-fluid'>
-                <div class='row'>
+          <div class='container-fluid'>
+            <div class='row'>
 
-                  <div class='col d-flex justify-content-center align-items-center'>
+              <!-- Column for data summary -->
+              <div class='col'>
 
-                    {% if lightcurve_data %}
-                    <div id="lightcurve_echarts" style="width: 100%; height: 600px; max-width: 900px"></div>
-                    {% else %}
-                    <div class='image-placeholder'
-                      style="width: 100%; height: 600px; background: grey; border: 2px solid black;">
-                      <p style="text-align: center; vertical-align: middle;">No lightcure data for ECharts to render</p>
-                    </div>
-                    {% endif %}
+                <h3>Summary</h3>
 
-                  </div>
-
+                <!-- TODO: Make this better -->
+                <div class='hstack gap-2'>
+                  <text>Coordinates</text>
+                  <text> RA: {{candidate.ra }} DEC: {{ candidate.dec_str }}
                 </div>
 
-                <hr />
+                <br />
 
-                <div class='row d-flex justify-content-center align-items-center'>
+                <div class='vstack gap-5'>
+
+                  Statistics
+                  <table class='fl-table'>
+                    <thead>
+                      <th></th>
+                      <th>Value</th>
+                      <th>Sigma</th>
+                      <th>Log Sigma</th>
+                    </thead>
+
+                    <tr>
+                      <td>Chi^2</td>
+                      <td>{{ candidate.chi_square|floatformat:3 }}</td>
+                      <td>{{ candidate.chi_square_sigma|floatformat:3 }}</td>
+                      <td>{{ candidate.chi_square_log_sigma|floatformat:3 }}</td>
+                    </tr>
+                    <tr>
+                      <td>Peak map</td>
+                      <td>{{ candidate.peak_map|floatformat:3}}</td>
+                      <td>{{ candidate.peak_map_sigma|floatformat:3 }}</td>
+                      <td>{{ candidate.peak_map_log_sigma|floatformat:3 }}</td>
+                    </tr>
+                    <tr>
+                      <td>Gaussian map</td>
+                      <td>{{ candidate.gaussian_map|floatformat:3}}</td>
+                      <td>{{ candidate.gaussian_map_sigma|floatformat:3 }}</td>
+                      <td>-</td>
+                    </tr>
+                    <tr>
+                      <td>Standard map</td>
+                      <td>{{ candidate.std_map|floatformat:3}}</td>
+                      <td>-</td>
+                      <td>-</td>
+                    </tr>
+
+                  </table>
+
+                  Spatial Details
+                  <table class='fl-table'>
+                    <thead>
+                      <th>
+                      </th>
+                      <th>Deep</th>
+                      <th>Beam</th>
+                      <th>Bright</th>
+                    </thead>
+
+                    <tr>
+                      <td>Ra</td>
+                      <td>{{ candidate.deep_ra_deg }}</td>
+                      <td>{{ candidate.beam_ra }} </td>
+                      <td> - </td>
+                    </tr>
+                    <tr>
+                      <td>Dec</td>
+                      <td>{{ candidate.deep_dec_deg }}</td>
+                      <td>{{ candidate.beam_dec }} </td>
+                      <td> - </td>
+                    </tr>
+
+                    <tr>
+                      <td>Sep</td>
+                      <td>{{ candidate.deep_sep_arcsec }}</td>
+                      <td>{{ candidate.beam_sep_deg }} </td>
+                      <td>{{ candidate.bright_sep_arcmin }}</td>
+                    </tr>
+                  </table>
+
+                  Deep stats
+
+                  <table class='fl-table'>
+                    <thead>
+                      <th>Name</th>
+                      <th>Value</th>
+                    </thead>
+
+                    <tr>
+                      <td>Deep name</td>
+                      <td>{{ candidate.deep_name }}</td>
+                    </tr>
+                    <tr>
+                      <td>Deep Num</td>
+                      <td>{{ candidate.deep_num }}</td>
+                    </tr>
+                    <tr>
+                      <td>Peak Flux</td>
+                      <td>{{ candidate.deep_peak_flux|floatformat:3 }}</td>
+                    </tr>
+                    <tr>
+                      <td>Int Flux</td>
+                      <td>{{ candidate.deep_int_flux|floatformat:3 }}</td>
+                    </tr>
+                    <tr>
+                      <td>MD Deep</td>
+                      <td>{{ candidate.md_deep|floatformat:3 }}</td>
+                    </tr>
+
+                  </table>
+
+                </div>
+              </div>
+
+              <!-- Column for images-->
+              <div class='col'>
+                <h3>Images</h3>
+
+                <div class='flex-d justify-content-center align-items-center'>
+
+                  {% if candidate.deepcutout_png %}
+                  <h5>Deep</h5>
+                  <img src="{{ candidate.deepcutout_png.url }}"
+                    style="width: 100%; height: 100%; max-width: 600px; max-height: 600px;">
+                  {% else %}
+                  <div class='image-placeholder'
+                    style="width: 100%; height: 300px; background: grey; border: 2px solid black;">
+                    <p style="text-align: center; vertical-align: middle;">No deepcut image to display.</p>
+                  </div>
+                  {% endif %}
+
 
                   {% if candidate.slices_gif %}
-                  <img src="{{ candidate.slices_gif.url }}"
-                    style="width: 100%; height: 100%; max-width: 650px; max-height: 600px;">
+
+                  <div class='vstack'>
+                    <h5>Slices</h5>
+                    <img src="{{ candidate.slices_gif.url }}"
+                      style="width: 100%; height: 100%; max-width: 600px; max-height: 600px;">
+
+                    {% comment %}
+
+                    <canvas id="gifCanvas"></canvas>
+
+                    <button onclick="playGif('gifCanvas')">Play</button>
+                    <button onclick="pauseGif('gifCanvas')">Pause</button>
+                    <button onclick="prevFrame('gifCanvas')">Previous Frame</button>
+                    <button onclick="nextFrame('gifCanvas')">Next Frame</button>
+
+                    {% endcomment %}
+
+                    <div class='hstack gap-2'>
+                      <button onclick="gifPrevFrame()">Prev Frame</button>
+                      <button onclick="gifPuase()">Pause</button>
+                      <button onclick="gifPlay()">Play</button>
+                      <button onclick="gifnextFrame()">Next Frame</button>
+                    </div>
+                  </div>
+
                   {% else %}
                   <div class='image-placeholder'
                     style="width: 100%; height: 300px; background: grey; border: 2px solid black;">
@@ -380,19 +287,163 @@
                   </div>
                   {% endif %}
 
-
-                  {% if candidate.deepcutout_png %}
-                  <img src="{{ candidate.deepcutout_png.url }}"
-                    style="width: 100%; height: 100%; max-width: 600px; max-height: 600px;">
-                  {% else %}
-                  <div class='image-placeholder'
-                    style="width: 100%; height: 300px; background: grey; border: 2px solid black;">
-                    <p style="text-align: center; vertical-align: middle;">No deepcut image to rdisplay.</p>
-                  </div>
-                  {% endif %}
-
                 </div>
 
+              </div>
+            </div>
+
+            <hr />
+
+            <!-- Javascript applets for candidate (ALADIN + ECHARTS) -->
+            <div class='row'>
+
+              <div class='col' style="width: 50%;">
+
+                <div id="aladin-lite-div" style="height: 100%; width: 100%"></div>
+
+              </div>
+
+              <div class='col' style="width: 50%;">
+
+                {% if lightcurve_data %}
+                <div id="lightcurve_echarts" style="width: 100%; height: 600px; max-width: 900px"></div>
+                {% else %}
+                <div class='image-placeholder'
+                  style="width: 100%; height: 600px; background: grey; border: 2px solid black;">
+                  <p style="text-align: center; vertical-align: middle;">No lightcure data for ECharts to
+                    render
+                  </p>
+                </div>
+                {% endif %}
+
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- This is the summary of the beam that found the candidate-->
+    <div class="row" style="padding: 2.5%">
+      <h3>Nearby objects</h3>
+      <div class='card'>
+        <div class='card-body'>
+
+          <div class="col-12 justify-content-center ">
+            <p class="h5">Search nearby within
+              <input id="arcmin" type="text" name="arcmin" value="{{arcmin_search}}" size="2">
+              arcmin
+              <button class="btn btn-primary" onclick="getAll()">Search</button>
+            </p>
+          </div>
+
+          <div class='container-fluid'>
+            <div class='row'>
+              <div class='col' style="height: 500px; overflow-y: auto">
+                <div id="simbadlocator">
+                  <p>Loading ...</p>
+                </div>
+              </div>
+              <div class='col' style="height: 500px; overflow-y: auto">
+                <div id="pulsarlocator">
+                  <p>Loading ... </p>
+                </div>
+              </div>
+              <div class='col' style="height: 500px; overflow-y: auto">
+                <div id="nearestlocator">
+                  <p>Loading ... </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- This is the summary of the beam that found the candidate-->
+    <div class="row" style="padding: 2.5%">
+      <h3>Statistical Maps</h3>
+      <div class='card' style="padding: 2.5%">
+        <div class='card-body'>
+
+          <div class='hstack gap-3 flex-d justify-content-center'>
+            {% if candidate.beam.std_fits %}
+            <div>
+              <a href="{{ candidate.beam.std_fits.url }}"><button class='btn btn-primary'>STD
+                  FITS
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                    <path
+                      d="M11.292 16.706a1 1 0 0 0 1.416 0l3-3a1 1 0 0 0-1.414-1.414L13 13.586V4a1 1 0 0 0-2 0v9.586l-1.293-1.293a1 1 0 0 0-1.414 1.414zM17 19H7a1 1 0 0 0 0 2h10a1 1 0 0 0 0-2z"
+                      style="fill: #1c1b1e" />
+                  </svg>
+                </button>
+              </a>
+            </div>
+            {% endif %}
+            {% if candidate.beam.peak_fits.url %}
+            <div>
+              <a href="{{ candidate.beam.peak_fits.url }}"><button class='btn btn-primary'>PEAK
+                  FITS
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                    <path
+                      d="M11.292 16.706a1 1 0 0 0 1.416 0l3-3a1 1 0 0 0-1.414-1.414L13 13.586V4a1 1 0 0 0-2 0v9.586l-1.293-1.293a1 1 0 0 0-1.414 1.414zM17 19H7a1 1 0 0 0 0 2h10a1 1 0 0 0 0-2z"
+                      style="fill: #1c1b1e" />
+                  </svg>
+                </button>
+              </a>
+            </div>
+            {% endif %}
+            {% if candidate.beam.chisquare_fits.url %}
+            <div>
+              <a href="{{ candidate.beam.chisquare_fits.url }}"><button class='btn btn-primary'>CHISQUARE
+                  FITS
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                    <path
+                      d="M11.292 16.706a1 1 0 0 0 1.416 0l3-3a1 1 0 0 0-1.414-1.414L13 13.586V4a1 1 0 0 0-2 0v9.586l-1.293-1.293a1 1 0 0 0-1.414 1.414zM17 19H7a1 1 0 0 0 0 2h10a1 1 0 0 0 0-2z"
+                      style="fill: #1c1b1e" />
+                  </svg>
+                </button>
+              </a>
+            </div>
+            {% endif %}
+          </div>
+
+          <br />
+
+          <div class='container-fluid'>
+            <div class='row'>
+              <div class='col-lg'>
+                {% if candidate.beam.chisquare_map1_png %}
+                Chi square map 1
+                <img src="{{ candidate.beam.chisquare_map1_png.url}}"
+                  style="width: 100%; height: 100%; object-fit: contain;">
+                {% endif %}
+              </div>
+
+              <div class='col-lg'>
+                {% if candidate.beam.chisquare_map2_png %}
+                Chi square map 2
+                <img src="{{ candidate.beam.chisquare_map2_png.url }}"
+                  style="width: 100%; height: 100%; object-fit: contain;">
+                {% endif %}
+              </div>
+            </div>
+            <div class='row'>
+              <div class='col-lg'>
+                {% if candidate.beam.peak_map1_png %}
+                Peak map 1
+                <img src="{{ candidate.beam.peak_map1_png.url }}"
+                  style="width: 100%; height: 100%;object-fit: contain;">
+                {% endif %}
+              </div>
+              <div class='col-lg'>
+                {% if candidate.beam.peak_map2_png %}
+                Peak map 2
+                <img src="{{ candidate.beam.peak_map2_png.url }}"
+                  style="width: 100%; height: 100%; object-fit: contain;">
+                {% endif %}
               </div>
             </div>
           </div>
@@ -400,127 +451,8 @@
         </div>
       </div>
     </div>
+
   </div>
-</div>
-
-
-
-<!-- This is the summary of the beam that found the candidate-->
-<div class="row" style="padding: 2.5%">
-  <h3>Nearby objects</h3>
-  <div class='card'>
-    <div class='card-body'>
-
-      <div class="col-12 justify-content-center ">
-        <p class="h5">Search nearby within
-          <input id="arcmin" type="text" name="arcmin" value="{{arcmin_search}}" size="2">
-          arcmin
-          <button class="btn btn-primary" onclick="getAll()">Search</button>
-        </p>
-      </div>
-
-      <div class='container-fluid'>
-        <div class='row'>
-          <div class='col' style="height: 500px; background-color: red; overflow-y: auto">
-
-            <div id="simbadlocator">
-              <p>Loading ...</p>
-            </div>
-
-          </div>
-          <div class='col' style="height: 500px; background-color: green">
-
-            <div id="pulsarlocator">
-              <p>Loading ... </p>
-            </div>
-
-          </div>
-          <div class='col' style="height: 500px; background-color: blue">
-
-            <div id="nearestlocator">
-              <p>Loading ... </p>
-            </div>
-
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- This is the summary of the beam that found the candidate-->
-<div class="row" style="padding: 2.5%">
-  <h3>Beam summary</h3>
-  <div class='card'>
-    <div class='card-body'>
-
-      <div class='hstack gap-3'>
-
-        <h5>Download Beam FITS: </h5>
-
-        {% if candidate.beam.std_fits %}
-        <div><a href="{{ candidate.beam.std_fits.url }}"><button class='btn btn-primary'>STD FITS</button></a>
-        </div>
-        {% endif %}
-        {% if candidate.beam.peak_fits.url %}
-        <div><a href="{{ candidate.beam.peak_fits.url }}"><button class='btn btn-primary'>PEAK FITS</button></a>
-        </div>
-        {% endif %}
-        {% if candidate.beam.chisquare_fits.url %}
-        <div><a href="{{ candidate.chisquare_fits.url }}"><button class='btn btn-primary'>CHISQUARE
-              FITS</button></a>
-        </div>
-        {% endif %}
-
-      </div>
-
-      <hr />
-
-      <div class='container-fluid'>
-        <div class='row'>
-          <div class='col-lg'>
-            {% if candidate.beam.chisquare_map1_png %}
-            <div class='vstack align-content-center'>
-              Chi square map 1
-              <img src="{{ candidate.beam.chisquare_map1_png.url}}"
-                style="width: 100%; height: 100%; max-width: 700px; max-height: 700px;">
-            </div>
-            {% endif %}
-          </div>
-
-          <div class='col-lg'>
-            {% if candidate.beam.chisquare_map2_png %}
-            <div class='vstack'>
-              Chi square map 2
-              <img src="{{ candidate.beam.chisquare_map2_png.url }}"
-                style="width: 100%; height: 100%; max-width: 700px; max-height: 700px;">
-            </div>
-            {% endif %}
-          </div>
-          <div class='col-lg'>
-            {% if candidate.beam.peak_map1_png %}
-            Peak map 1
-            <img src="{{ candidate.beam.peak_map1_png.url }}"
-              style="width: 100%; height: 100%; max-width: 700px; max-height: 700px;">
-            {% endif %}
-          </div>
-          <div class='col-lg'>
-            {% if candidate.beam.peak_map2_png %}
-            Peak map 2
-            <img src="{{ candidate.beam.peak_map2_png.url }}"
-              style="width: 100%; height: 100%; max-width: 700px; max-height: 700px;">
-            {% endif %}
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-</div>
-
-
 
 </div>
 
@@ -660,13 +592,14 @@
   });
 </script>
 
+<!-- Scripts for finding objects relative to candidates -->
 <script>
   async function getSimbad() {
     try {
       let simbadDiv = document.getElementById('simbadlocator');
       let arcmin = document.getElementById('arcmin').value
 
-      console.log(`Simbad - searching within ${arcmin} arcmin of {{candidate.ra}} {{candidate.dec}}`);
+      console.log(`Simbad - searching within ${arcmin} arcmin of {{candidate.ra_str}} {{candidate.dec_str}}`);
 
       simbadDiv.innerHTML = "<p>Loading SIMBAD search data ...</p>";
 
@@ -676,8 +609,8 @@
           'X-CSRFToken': '{{csrf_token }}',
         },
         body: JSON.stringify({
-          ra_deg: '{{ candidate.ra }}',
-          dec_deg: '{{ candidate.dec }}',
+          ra_str: '{{ candidate.ra_str }}',
+          dec_str: '{{ candidate.dec_str }}',
           dist_arcmin: arcmin
         })
       });
@@ -695,7 +628,8 @@
       let arcmin = document.getElementById('arcmin').value
 
       console.log(nearestDiv);
-      console.log(`Nearest in DB - Searching within ${arcmin} arcmin of {{candidate.ra}} {{candidate.dec}}`);
+      console.log(
+        `Nearest in DB - Searching within ${arcmin} arcmin of {{candidate.ra_str}} {{candidate.dec_str}}`);
 
       nearestDiv.innerHTML = "<p>Finding nearby candiates ...</p>";
 
@@ -705,17 +639,17 @@
           'X-CSRFToken': '{{csrf_token }}'
         },
         body: JSON.stringify({
-          ra_deg: '{{ candidate.ra }}',
-          dec_deg: '{{ candidate.dec }}',
+          ra_str: '{{ candidate.ra_str }}',
+          dec_str: '{{ candidate.dec_str }}',
           dist_arcmin: arcmin,
-          exclude_id: '{{ candidate.id }}',
-          project: '{{ candidate.project }}'
+          exclude_id: '{{ candidate.hash_id }}',
+          project: '{{ candidate.project_id }}'
         })
       });
 
       const data = await response.text();
-      console.log(data);
       nearestDiv.innerHTML = data;
+      console.log("Successfully got nearest candidates from project: {{ candidate.project_id }}")
     } catch (error) {
       console.log(error);
     }
@@ -727,7 +661,7 @@
       let arcmin = document.getElementById('arcmin').value
 
       console.log(pulsarDiv);
-      console.log(`Searching within ${arcmin} arcmin of {{candidate.ra}} {{candidate.dec}}`);
+      console.log(`Searching within ${arcmin} arcmin of {{candidate.ra_str}} {{candidate.dec_str}}`);
 
       pulsarDiv.innerHTML = "<p>Finding nearby candiates ...</p>";
 
@@ -737,13 +671,13 @@
           'X-CSRFToken': '{{csrf_token }}'
         },
         body: JSON.stringify({
-          ra_deg: '{{ candidate.ra }}',
-          dec_deg: '{{ candidate.dec }}',
+          ra_str: '{{ candidate.ra_str }}',
+          dec_str: '{{ candidate.dec_str }}',
           dist_arcmin: arcmin,
         })
       });
       const data = await response.text();
-      console.log(data);
+      // console.log(data);
       pulsarDiv.innerHTML = data;
     } catch (error) {
       console.log(error);
@@ -753,7 +687,7 @@
     try {
       getSimbad();
       getNearest();
-      // getPulsars();
+      //getPulsars();
     } catch (error) {
       console.log(error);
     }
@@ -762,5 +696,16 @@
 </script>
 
 
+<!-- Load the Aladin applet on the page looking at the coords of the candidate -->
+<script type="text/javascript">
+  let aladin;
+  A.init.then(() => {
+    aladin = A.aladin('#aladin-lite-div', {
+      survey: "P/DSS2/color",
+      fov: "{{candidate.deep_sep_arcsec|floatformat:2}}", // 1, // degress of field of view
+      target: "{{candidate.name}}",
+    });
+  });
+</script>
 
 {% endblock %}

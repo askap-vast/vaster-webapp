@@ -1,0 +1,60 @@
+{% extends 'candidate_app/header.html' %}
+
+{% load utils %}
+
+{% block content %}
+
+{% if user.is_staff %}
+
+on viewing for project - list only for each project.
+
+<div>
+
+    <p> List of all possible classifications in the DB </p>
+
+</div>
+
+<div id='ratings-plots' class='d-flex '>
+    <div id='counts-per-classification' style="background-color: red; width: 50%; height: 400px"> </div>
+    <div id='counts-per-user' style='background-color: blue; width: 50%; height: 400px'></div>
+</div>
+
+<br />
+
+<div id='filter-ratings' style='background-color: grey'>
+</div>
+
+<div id='ratings-table'>
+
+    <table class='fl-table'>
+        <thead>
+            <th>Name</th>
+            <th>Rating</th>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<!-- Summary for each user ratings -->
+<div class='container-fluid'>
+
+    <!--  -->
+    {% comment %} {% for user in user_list %}
+    <div class='row'>
+
+        <!-- Total rating plot -->
+        <!-- Raings per user -->
+        <!-- Number of ratings over time ? -->
+
+    </div>
+    {% endfor %} {% endcomment %}
+
+</div>
+
+{% endif %} {% comment %} user.is_staff {% endcomment %}
+
+<script>
+    // Using echarts to make plots for rating counts and counts per user etc.
+</script>
+
+{% endblock %}

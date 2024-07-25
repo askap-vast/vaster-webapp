@@ -7,26 +7,29 @@ class Migration(migrations.Migration):
 
     initial = False
 
-    dependencies = [("candidate_app", "0001_initial")]
+    dependencies = [("candidate_app", "0002_atnf_pulsars")]
 
     operations = [
         migrations.RunSQL(
             ["CREATE EXTENSION IF NOT EXISTS q3c;"],  # Apply Q3C Extension
             ["DROP EXTENSION IF EXISTS q3c;"],  # This is the SQL for reversing the DB if needed
         ),
-        # Index for the candidate's coordinates
+        # Create an q3c index for the candidate coordinates
         migrations.RunSQL(
             ["CREATE INDEX ON candidate_app_candidate (q3c_ang2ipix(ra, dec));"],
             ["DROP INDEX candidate_app_candidate_q3c_ang2ipix_idx;"],
         ),
+        # Cluster the records so that searching on the candidate coordinates is fastest.
         migrations.RunSQL(
             ["CLUSTER candidate_app_candidate_q3c_ang2ipix_idx ON candidate_app_candidate;"],
             [],
         ),
+        # Create an q3c index for the beam coordinates
         migrations.RunSQL(
             ["CREATE INDEX ON candidate_app_candidate (q3c_ang2ipix(beam_ra, beam_dec));"],
             ["DROP INDEX candidate_app_candidate_q3c_ang2ipix_idx;"],
         ),
+        # Create an index for the deep coordinates
         migrations.RunSQL(
             ["CREATE INDEX ON candidate_app_candidate (q3c_ang2ipix(deep_ra_deg, deep_dec_deg));"],
             ["DROP INDEX candidate_app_candidate_q3c_ang2ipix_idx;"],

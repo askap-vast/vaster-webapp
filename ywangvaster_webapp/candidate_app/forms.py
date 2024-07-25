@@ -164,3 +164,29 @@ class SessionSettingsForm(forms.Form):
                 "Please either order randomly or filter by candidates not "
                 "ranked recently."
             )
+
+
+confidence_choices = (
+    ("T", "True"),
+    ("F", "False"),
+    ("U", "Unsure"),
+)
+
+
+class RateCandidateForm(forms.Form):
+    """To create a rating record for a candidate."""
+
+    condifence = forms.ChoiceField(choices=confidence_choices)
+    classification = forms.ModelChoiceField(
+        queryset=models.Classification.objects.all(),
+        to_field_name="name",
+        label="Tags",
+    )
+    notes = forms.CharField(required=False, label="Notes")
+
+
+class ClassificationForm(forms.Form):
+    """Form to add a new classification to the DB"""
+
+    name = forms.CharField(required=True)
+    description = forms.CharField(required=True)

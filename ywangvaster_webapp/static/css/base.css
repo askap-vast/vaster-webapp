@@ -140,3 +140,8 @@ div.card {
     border-radius: 0.25em;
     white-space: nowrap;
 }
+
+/* Add a radius to the bootstrap cards */
+.styled-card {
+    border-radius: 20px;
+}

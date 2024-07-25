@@ -26,16 +26,28 @@ def cand_upload_path(instance, filename):
     return os.path.join(f"{instance.project.id}", f"{instance.obs_id}", f"{instance.beam.index}", filename)
 
 
+class Upload(models.Model):
+
+    hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="upload",
+        default=None,
+    )
+    date = models.DateTimeField(default=datetime.now, blank=True)
+
+
 class Project(models.Model):
 
     hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    id = models.CharField(verbose_name="id", max_length=64, blank=True, null=True)
-    name = models.CharField(verbose_name="Project name", max_length=64, blank=True, null=True, unique=True)
+    id = models.CharField(verbose_name="id", max_length=64, blank=True, null=True, unique=True)
+    name = models.CharField(verbose_name="Project name", max_length=64, blank=True, null=True)
     description = models.CharField(verbose_name="Description", max_length=256, blank=True, null=True)
 
-    def __str__(self):
-        return f"{self.name}"
+    # Meta data for when the object was uploaded / created
+    upload = models.ForeignKey(Upload, on_delete=models.CASCADE, related_name="proj_upload", default=None)
 
 
 class Filter(models.Model):
@@ -47,19 +59,7 @@ class Filter(models.Model):
     description = models.CharField(verbose_name="Description", max_length=256, blank=True, null=True)
 
     def __str__(self):
-        return f"{self.name}"
-
-
-class Upload(models.Model):
-
-    hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="upload",
-        default=None,
-    )
-    date = models.DateTimeField(default=datetime.now, blank=True)
+        return f"{self.id}"
 
 
 class Observation(models.Model):
@@ -141,6 +141,36 @@ class Beam(models.Model):
     peak_map2_png = models.FileField(upload_to=beam_upload_path, max_length=1024, blank=True, null=True)
     peak_fits = models.FileField(upload_to=beam_upload_path, max_length=1024, blank=True, null=True)
 
+    def delete(self, *args, **kwargs):
+        # Delete associated files
+        if self.final_cand_csv:
+            storage, path = self.final_cand_csv.storage, self.final_cand_csv.path
+            storage.delete(path)
+        if self.std_fits:
+            storage, path = self.std_fits.storage, self.std_fits.path
+            storage.delete(path)
+        if self.chisquare_map1_png:
+            storage, path = self.chisquare_map1_png.storage, self.chisquare_map1_png.path
+            storage.delete(path)
+        if self.chisquare_map2_png:
+            storage, path = self.chisquare_map2_png.storage, self.chisquare_map2_png.path
+            storage.delete(path)
+        if self.chisquare_fits:
+            storage, path = self.chisquare_fits.storage, self.chisquare_fits.path
+            storage.delete(path)
+        if self.peak_map1_png:
+            storage, path = self.peak_map1_png.storage, self.peak_map1_png.path
+            storage.delete(path)
+        if self.peak_map2_png:
+            storage, path = self.peak_map2_png.storage, self.peak_map2_png.path
+            storage.delete(path)
+        if self.peak_fits:
+            storage, path = self.peak_fits.storage, self.peak_fits.path
+            storage.delete(path)
+
+        # Call superclass delete method
+        super(Beam, self).delete(*args, **kwargs)
+
     def __str__(self):
         return f"{self.index}"
 
@@ -185,6 +215,8 @@ class Candidate(models.Model):
     dec_str = models.CharField(max_length=100)
     ra = models.FloatField()
     dec = models.FloatField()
+
+    # Candidate model stats
     chi_square = models.FloatField()
     chi_square_log_sigma = models.FloatField()
     chi_square_sigma = models.FloatField()
@@ -194,125 +226,50 @@ class Candidate(models.Model):
     gaussian_map = models.FloatField(null=True, blank=True)
     gaussian_map_sigma = models.FloatField(null=True, blank=True)
     std_map = models.FloatField()
-    md_deep = models.FloatField()
-    deep_sep_arcsec = models.FloatField()
-    deep_num = models.IntegerField()
+
+    # Bright separation
     bright_sep_arcmin = models.FloatField()
-    beam_sep_deg = models.FloatField()
+
+    # Beam coords and separation
     beam_ra = models.FloatField()
     beam_dec = models.FloatField()
-    deep_name = models.CharField(max_length=100)
+    beam_sep_deg = models.FloatField()
+
+    # Deep coords and separation
     deep_ra_deg = models.FloatField()
     deep_dec_deg = models.FloatField()
+    deep_sep_arcsec = models.FloatField()
+
+    # Deep statistics
+    deep_name = models.CharField(max_length=100)
+    deep_num = models.IntegerField()
     deep_peak_flux = models.FloatField()
     deep_int_flux = models.FloatField()
+    md_deep = models.FloatField()
 
-    # Old data structure from the gleam app.
-    #
-    # # Data in the fits file
-    # x_pix = models.FloatField(
-    #     blank=True,
-    #     null=True,
-    #     verbose_name="Candidate island central x pixel coordinate",
-    # )
-    # y_pix = models.FloatField(blank=True, null=True, verbose_name="Candidate island central pixel coordinate")
-    # ra_deg = models.FloatField(
-    #     blank=True,
-    #     null=True,
-    #     verbose_name="Candidate island central Right Ascension (deg)",
-    # )
-    # dec_deg = models.FloatField(blank=True, null=True, verbose_name="Candidate island central Declination (deg)")
-    # cent_sep_deg = models.FloatField(
-    #     blank=True,
-    #     null=True,
-    #     verbose_name="Candidate separation from observation central pointing (deg)",
-    # )
-    # rad_pix = models.FloatField(blank=True, null=True, verbose_name="Candidate island radius in pixels")
-    # rad_deg = models.FloatField(blank=True, null=True, verbose_name="Candidate island radius in degrees")
-    # area_pix = models.FloatField(blank=True, null=True, verbose_name="Candidate island area in pixels^2")
-    # can_peak_flux = models.FloatField(blank=True, null=True, verbose_name="Candidate peak flux in Jy")
-    # can_fluence = models.FloatField(blank=True, null=True, verbose_name="Candidate fluence in Jy s")
-    # can_beam = models.FloatField(
-    #     blank=True,
-    #     null=True,
-    #     verbose_name="Primary beam value at the candidate location",
-    # )
-    # can_det_stat = models.FloatField(
-    #     blank=True,
-    #     null=True,
-    #     verbose_name="Candidate detection statistic - arbitrary value returned by filter",
-    # )
-    # can_mod_ind = models.IntegerField(blank=True, null=True, verbose_name="Candidate modulation index")
-    # nks_name = models.CharField(max_length=64, blank=True, null=True, verbose_name="Nearest known source name")
-    # nks_x_pix = models.FloatField(
-    #     blank=True,
-    #     null=True,
-    #     verbose_name="Nearest known source x pixel coordinate in observation",
-    # )
-    # nks_y_pix = models.FloatField(
-    #     blank=True,
-    #     null=True,
-    #     verbose_name="Nearest known source y pixel coordinate in observation",
-    # )
-    # nks_ra_deg = models.FloatField(blank=True, null=True, verbose_name="Nearest known source Right Ascension (deg)")
-    # nks_dec_deg = models.FloatField(blank=True, null=True, verbose_name="Nearest known source Declination (deg)")
-    # nks_flux = models.FloatField(
-    #     blank=True,
-    #     null=True,
-    #     verbose_name="Nearest known source integrated flux density in Jy",
-    # )
-    # nks_res = models.FloatField(blank=True, null=True, verbose_name="")
-    # nks_res_dif = models.FloatField(
-    #     blank=True,
-    #     null=True,
-    #     verbose_name="Nearest known source number of std above mean residual",
-    # )
-    # nks_det_stat = models.FloatField(
-    #     blank=True,
-    #     null=True,
-    #     verbose_name="Nearest known source detection statistic " "- arbitrary value returned by filter",
-    # )
-    # nks_sep_pix = models.FloatField(
-    #     blank=True,
-    #     null=True,
-    #     verbose_name="Separation between candidate and known in pixels",
-    # )
-    # nks_sep_deg = models.FloatField(
-    #     blank=True,
-    #     null=True,
-    #     verbose_name="Separation between candidate and known in degrees",
-    # )
-    # can_nks_flux_rat = models.FloatField(blank=True, null=True, verbose_name="Ratio of candidate and known flux")
-    # can_nks_is_close = models.BooleanField(null=True, verbose_name="")
+    def delete(self, *args, **kwargs):
+        # Delete associated files
+        if self.lightcurve_png:
+            storage, path = self.lightcurve_png.storage, self.lightcurve_png.path
+            storage.delete(path)
+        if self.slices_gif:
+            storage, path = self.slices_gif.storage, self.slices_gif.path
+            storage.delete(path)
+        if self.slices_fits:
+            storage, path = self.slices_fits.storage, self.slices_fits.path
+            storage.delete(path)
+        if self.deepcutout_png:
+            storage, path = self.deepcutout_png.storage, self.deepcutout_png.path
+            storage.delete(path)
+        if self.deepcutout_fits:
+            storage, path = self.deepcutout_fits.storage, self.deepcutout_fits.path
+            storage.delete(path)
 
-    # # Coordinates converted to hms/dms
-    # ra_hms = models.CharField(
-    #     max_length=32,
-    #     blank=True,
-    #     null=True,
-    #     verbose_name="Candidate Right Ascension (HH:MM:SS)",
-    # )
-    # dec_dms = models.CharField(
-    #     max_length=32,
-    #     blank=True,
-    #     null=True,
-    #     verbose_name="Candidate Declination (DD:MM:SS)",
-    # )
-    # nks_ra_hms = models.CharField(
-    #     max_length=32,
-    #     blank=True,
-    #     null=True,
-    #     verbose_name="Nearest known source Right Ascension (HH:MM:SS)",
-    # )
-    # nks_dec_dms = models.CharField(
-    #     max_length=32,
-    #     blank=True,
-    #     null=True,
-    #     verbose_name="Nearest known source Declination (DD:MM:SS)",
-    # )
+        # Call superclass delete method
+        super(Candidate, self).delete(*args, **kwargs)
 
-    # def __str__(self):
-    #     return f"{self.id}_obs{self.obs_id.observation_id}_{self.filter.name}"
+    def __str__(self):
+        return f"{self.proj_id}_{self.obs_id}_beam{self.beam_index}_{self.name}"
 
 
 class Classification(models.Model):
@@ -333,8 +290,8 @@ class Rating(models.Model):
     candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name="rating", default=None)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
         related_name="rating",
+        on_delete=models.DO_NOTHING,
         default=None,
     )
 
@@ -351,9 +308,10 @@ class xml_ivorns(models.Model):
 
 
 class ATNFPulsar(models.Model):
-
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(verbose_name="Pulsar Name", max_length=32, blank=False, unique=True)
+    ra_str = models.CharField()
+    dec_str = models.CharField()
     decj = models.FloatField(verbose_name="Declination epoch (J2000, deg)")
     raj = models.FloatField(verbose_name="Right Ascension epoch (J2000, deg)")
     DM = models.FloatField(verbose_name="Dispersion Measure (cm^-3 pc)", blank=True, null=True)

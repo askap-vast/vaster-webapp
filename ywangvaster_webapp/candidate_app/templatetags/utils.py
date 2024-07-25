@@ -38,3 +38,8 @@ def get_type_count(dictionary, key):
 @register.filter
 def is_not_nan_or_none(value):
     return not math.isnan(value) or not value is None
+
+
+@register.filter
+def get_attr(obj, attr_name):
+    return getattr(obj, attr_name, None)
