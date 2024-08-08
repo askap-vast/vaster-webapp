@@ -2,39 +2,41 @@ from django import forms
 from django.core.exceptions import ValidationError
 from . import models
 
-ORDER_BY_CHOICES = (
-    ("id", "ID"),
-    ("avg_rating", "Rating"),
-    # ("num_ratings", "Count"),
-    # ("notes", "Notes"),
-    # ("transient_count", "N Tranisent"),
-    # ("airplane_count", "N Airplane"),
-    # ("rfi_count", "N RFI"),
-    # ("sidelobe_count", "N Sidelobe"),
-    # ("alias_count", "N Alias"),
-    # ("chgcentre_count", "N CHG Center"),
-    # ("scintillation_count", "N Scintillation"),
-    # ("pulsar_count", "N Pulsar"),
-    # ("other_count", "N Other"),
-    ("ra_hms", "RA"),
-    ("dec_dms", "Dec"),
-    ("obs_id", "Obs ID"),
-)
 
-ASC_DEC_CHOICES = (("", "Ascending"), ("-", "Decending"))
+confidence_choices = (
+    ("-", "----"),
+    ("T", "True"),
+    ("F", "False"),
+    ("U", "Unsure"),
+)
 
 
 class CandidateFilterForm(forms.Form):
 
+    def __init__(self, *args, **kwargs):
+        # Extract the selected project from the kwargs
+        selected_project_hash_id = kwargs.pop("selected_project_hash_id", None)
+        super().__init__(*args, **kwargs)
+
+        # Update the choices for observation_id based on the selected project
+        if selected_project_hash_id:
+            self.fields["observation"].queryset = models.Observation.objects.filter(project=selected_project_hash_id)
+        else:
+            self.fields["observation"].queryset = models.Observation.objects.all()
+
     rated = forms.BooleanField(required=False)
-    tags = forms.ModelChoiceField(
+    ratings_count = forms.IntegerField(required=False)
+
+    tag = forms.ModelChoiceField(
         models.Classification.objects.all(),
         empty_label="All classification tags",
         required=False,
     )
-    project_id = forms.ChoiceField(required=False)
-    observation_id = forms.ModelChoiceField(
-        models.Observation.objects.all(),
+
+    confidence = forms.ChoiceField(choices=confidence_choices, required=False, label="Confidence")
+
+    observation = forms.ModelChoiceField(
+        models.Observation.objects.none(),
         empty_label="All observations",
         required=False,
     )
@@ -105,65 +107,7 @@ class CandidateFilterForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        # if cleaned_data["column_display"]:
-        #     cleaned_data["column_display"] = cleaned_data["column_display"].name
         return cleaned_data
-
-    # rating_cutoff = forms.FloatField(required=False)
-    # observation_id = forms.ModelChoiceField(
-    #     models.Observation.objects.all(), empty_label="All observations", required=False
-    # )
-    # column_display = forms.ModelChoiceField(
-    #     queryset=models.Classification.objects.all(),
-    #     to_field_name="name",
-    #     empty_label="All columns",
-    #     required=False,
-    # )
-    # order_by = forms.ChoiceField(choices=ORDER_BY_CHOICES, required=False, initial="avg_rating")
-    # asc_dec = forms.ChoiceField(choices=ASC_DEC_CHOICES, required=False, initial="-")
-    # ra_hms = forms.CharField(required=False, max_length=64)
-    # dec_dms = forms.CharField(required=False, max_length=64)
-    # search_radius_arcmin = forms.FloatField(required=False, initial=2)
-
-
-SESSION_ORDER_CHOICES = (
-    ("rand", "Random"),
-    ("new", "Newest"),
-    ("old", "Oldest"),
-    ("brig", "Brightest"),
-    ("faint", "Faintest"),
-)
-SESSION_FILTER_CHOICES = (
-    ("unrank", "Unranked Candidates"),
-    ("old", "Candidates Not Ranked Recently"),
-    ("all", "All Candidates"),
-)
-
-
-class SessionSettingsForm(forms.Form):
-    ordering = forms.ChoiceField(choices=SESSION_ORDER_CHOICES, required=False, initial="rand")
-    filtering = forms.ChoiceField(choices=SESSION_FILTER_CHOICES, required=False, initial="unrank")
-    exclude_87 = forms.BooleanField(required=False)
-    exclude_118 = forms.BooleanField(required=False)
-    exclude_154 = forms.BooleanField(required=False)
-    exclude_184 = forms.BooleanField(required=False)
-    exclude_200 = forms.BooleanField(required=False)
-    exclude_215 = forms.BooleanField(required=False)
-
-    project = forms.ModelChoiceField(queryset=models.Project.objects.all(), to_field_name="name", empty_label=None)
-
-    def clean(self):
-        cleaned_data = super().clean()
-        # replace the project object with it's name
-        # since the project object will cause a "Not JSon serializable" error
-        cleaned_data["project"] = cleaned_data["project"].name
-        if cleaned_data.get("filtering") == "all" and cleaned_data.get("ordering") != "rand":
-            raise ValidationError(
-                "ERROR: You can not order all candidates by anything other than"
-                "random as it will always give you the same candidate. "
-                "Please either order randomly or filter by candidates not "
-                "ranked recently."
-            )
 
 
 confidence_choices = (
@@ -176,7 +120,7 @@ confidence_choices = (
 class RateCandidateForm(forms.Form):
     """To create a rating record for a candidate."""
 
-    condifence = forms.ChoiceField(choices=confidence_choices)
+    confidence = forms.ChoiceField(choices=confidence_choices, label="Confidence")
     classification = forms.ModelChoiceField(
         queryset=models.Classification.objects.all(),
         to_field_name="name",
@@ -185,8 +129,22 @@ class RateCandidateForm(forms.Form):
     notes = forms.CharField(required=False, label="Notes")
 
 
-class ClassificationForm(forms.Form):
-    """Form to add a new classification to the DB"""
+class ClassificationForm(forms.ModelForm):
+    """Form to add a new classification to the DB.
 
-    name = forms.CharField(required=True)
-    description = forms.CharField(required=True)
+    This can be done on the rate candidate page or in the Django admin page."""
+
+    class Meta:
+        model = models.Classification
+        fields = "__all__"
+
+
+class ProjectSelectForm(forms.Form):
+
+    selected_project_hash_id = forms.ModelChoiceField(
+        queryset=models.Project.objects.all(),
+        to_field_name="hash_id",
+        empty_label="All projects",
+        label="Project",
+        required=False,
+    )

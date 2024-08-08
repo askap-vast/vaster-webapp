@@ -1,5 +1,6 @@
 from urllib.parse import urlencode
 from collections import OrderedDict
+from datetime import datetime
 
 import math
 
@@ -43,3 +44,9 @@ def is_not_nan_or_none(value):
 @register.filter
 def get_attr(obj, attr_name):
     return getattr(obj, attr_name, None)
+
+
+@register.filter
+def isoformat(value: datetime):
+    """To return the iso date format from a Django datetime field."""
+    return value.isoformat()  # 'c' is the format string for ISO 8601 in Django

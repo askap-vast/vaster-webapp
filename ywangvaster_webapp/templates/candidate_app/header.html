@@ -6,7 +6,12 @@
   <meta charset="utf-8" />
   <link rel="stylesheet" type="text/css" href="{% static 'css/base.css' %}" />
   <script src={% static  "js/multiInputSlider.js" %}></script>
+  <script src={% static  "js/sortTable.js" %}></script>
   {% comment %} <script src={% static  "js/gifControl.js" %}></script> {% endcomment %}
+
+  {% comment %} <script src={% static "js/gifuct/deinterlace.js" %}></script> {% endcomment %}
+  {% comment %} <script src={% static "js/gifuct/index.js" %}></script> {% endcomment %}
+  {% comment %} <script src={% static "js/gifuct/lzw.js" %}></script> {% endcomment %}
 
   <!-- Bootstrap -->
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
@@ -30,6 +35,8 @@
   <!-- Echarts plotting script-->
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
+
   {% block head %} {% endblock head %}
 </head>
 
@@ -41,7 +48,7 @@
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+      <ul class="navbar-nav">
         {% comment %} <li class="nav-item">
           <a class="nav-link active" aria-current="page" href="/obs_summary/">Observations</a>
         </li>
@@ -49,23 +56,43 @@
           <a class="nav-link active" aria-current="page" href="/beam/">Beams</a>
         </li> {% endcomment %}
         <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/candidate_table/">Candidates</a>
+          <a class="nav-link active" aria-current="page" href="{% url 'candidates' %}">Candidates</a>
         </li>
+
         {% comment %}
         <li class="nav-item">
           <a class="nav-link active" aria-current="page" href="/session_settings/">Session Settings</a>
         </li> {% endcomment %}
         {% if user.is_staff %}
         <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/ratings/">Ratings</a>
+          <a class="nav-link active" aria-current="page" href="{% url 'rating_summary' %}">Ratings</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/page_admin/">Page Admin</a>
+          <a class="nav-link active" aria-current="page" href="{% url 'page_admin' %}">Page Admin</a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="{% url 'about' %}">About</a>
+        </li>
+
+
+        {% if user.is_authenticated %}
+        <li class='nav-item'>
+          <a class="nav-link active"> Viewing: {{ selected_project_id }}</a>
         </li>
         {% endif %}
+        {% endif %}
+
+
+
       </ul>
 
       <span class="navbar-text">
+
+        {% comment %} TODO Later - users can change their own pw {% endcomment %}
+        {% comment %} <a class="nav-link" href="{% url 'password_change' %}">Change Password</a> {% endcomment %}
+
+        {% comment %} Make the below a modal so that users can create their own accounts. {% endcomment %}
 
         {% if user.is_authenticated %}
         <div class='container-fluid'>
@@ -80,8 +107,6 @@
                 User Mangement
               </button>
             </div>
-            {% comment %} TODO Later - users can change their own pw {% endcomment %}
-            {% comment %} <a class="nav-link" href="{% url 'password_change' %}">Change Password</a> {% endcomment %}
 
             <div class="col-md-auto">
               <form class="form-inline d-inline" action="{% url 'logout' %}" method="POST">
@@ -138,90 +163,39 @@
       </div>
 
       <div class="modal-body">
-        <h2>Upload token</h2>
+
+        <h3>Projects</h3>
 
         <div class="vstack gap-3 align-items-center justify-content-center">
-          <text>Your token to use when uploading candidates to this webapp:</text>
-          <code id='tokenToUpdate' style="color: grey"> </code>
-          <button class="btn btn-primary" onclick="getToken('true')">Refresh token</button>
+          <text>Select a a project from the following list</text>
+
+          <form method="post" action="{% url 'project_select' %}">
+            {% csrf_token %}
+            {{ project_form }}
+            <button class="btn btn-primary" type="submit">Select</button>
+          </form>
+
         </div>
 
         <hr />
 
-        <h2>Session settings</h2>
-        <form method="post">
-          {% csrf_token %}
-          <!-- Display any errors from logging in -->
-          {% if form.errors %}
-          {% for field in form %}
-          {% for error in field.errors %}
-          <div class="alert alert-danger">
-            <strong>{{ error|escape }}</strong>
+        <h3>Upload token</h3>
+
+        <div class="vstack gap-3 align-items-center justify-content-center">
+          <div class='align-items-center justify-content-center'>
+            <p>Your token to use when uploading candidates to this webapp.</p>
+            <p style="color: red">If the token is refreshed, any old token is invalid.</p>
           </div>
-          {% endfor %}
-          {% endfor %}
-          {% for error in form.non_field_errors %}
-          <div class="alert alert-danger">
-            <strong>{{ error|escape }}</strong>
+          <div class="hstack gap-2 justify-content-center align-items-center">
+            <code id='tokenToUpdate' style="color: grey"> </code>
+            <button id='copyTokenButton' class='btn btn-success btn-sm' onClick="copyUserToken()">Copy</button>
           </div>
-          {% endfor %}
-          {% endif %}
+          <button class="btn btn-primary" onclick="getToken('true')">Refresh token</button>
 
-          <h4>Project selection</h4>
-          <p>Please choose which project to view</p>
-          <div class="form-check">
-            {% for value, text in projects %}
-            <input {% if value == form.project.value %} checked="checked" {% endif %} class="form-check-input"
-              type="radio" name="project" id="{{ value }}" value="{{ value }}">
-            <label class="form-check-label" for="{{ value }}">{{ text }}</label><br>
-            {% endfor %}
-          </div>
-
-          {% comment %} <h4>Candidate ordering</h4>
-          <div class="form-check">
-            {% for value, text in order_choices %}
-            <input {% if value == form.ordering.value %} checked="checked" {% endif %} class="form-check-input"
-              type="radio" name="ordering" id="{{ value }}" value="{{ value }}">
-            <label class="form-check-label" for="{{ value }}">{{ text }}</label><br>
-            {% endfor %}
-          </div> {% endcomment %}
-
-          {% comment %} <h4>Candidate filtering: ranking</h4>
-          <div class="form-check">
-            {% for value, text in filter_choices %}
-            <input {% if value == form.filtering.value %} checked="checked" {% endif %} class="form-check-input"
-              type="radio" name="filtering" id="{{ value }}" value="{{ value }}">
-            <label class="form-check-label" for="{{ value }}">{{ text }}</label><br>
-            {% endfor %}
-          </div> {% endcomment %}
-
-          {% comment %} <h4>Candidate filtering: observing frequency</h4>
-          <div class="form-check">
-            <input {% if form.exclude_87.value %} checked="checked" {% endif %} class="form-check-input" type="checkbox"
-              name="exclude_87" id="id_exclude_87">
-            <label class="form-check-label" for="id_exclude_87">Exclude 87 MHz</label><br>
-            <input {% if form.exclude_118.value %} checked="checked" {% endif %} class="form-check-input"
-              type="checkbox" name="exclude_118" id="id_exclude_118">
-            <label class="form-check-label" for="id_exclude_118">Exclude 118 MHz</label><br>
-            <input {% if form.exclude_154.value %} checked="checked" {% endif %} class="form-check-input"
-              type="checkbox" name="exclude_154" id="id_exclude_154">
-            <label class="form-check-label" for="id_exclude_154">Exclude 154 MHz</label><br>
-            <input {% if form.exclude_184.value %} checked="checked" {% endif %} class="form-check-input"
-              type="checkbox" name="exclude_184" id="id_exclude_184">
-            <label class="form-check-label" for="id_exclude_184">Exclude 184 MHz</label><br>
-            <input {% if form.exclude_200.value %} checked="checked" {% endif %} class="form-check-input"
-              type="checkbox" name="exclude_200" id="id_exclude_200">
-            <label class="form-check-label" for="id_exclude_200">Exclude 200 MHz</label><br>
-            <input {% if form.exclude_215.value %} checked="checked" {% endif %} class="form-check-input"
-              type="checkbox" name="exclude_215" id="id_exclude_215">
-            <label class="form-check-label" for="id_exclude_215">Exclude 215 MHz</label><br>
-          </div> {% endcomment %}
-
-          <input type="submit" class="btn btn-primary" name="Submit">
-        </form>
+        </div>
       </div>
     </div>
-  </div>0
+  </div>
 
 </div>
 
@@ -252,6 +226,21 @@
 
   // On page render, run the getToken function to give the user their upload token
   document.addEventListener('DOMContentLoaded', getToken(false))
+
+  async function copyUserToken() {
+
+    let tokenDiv = document.getElementById('tokenToUpdate');
+    navigator.clipboard.writeText(tokenDiv.innerText);
+
+    let button = document.getElementById('copyTokenButton')
+    let originalText = button.innerText;
+    button.innerText = "Copied!"
+
+    setTimeout(function () {
+      button.innerText = originalText;
+    }, 5000);
+
+  }
 </script>
 
 </html>

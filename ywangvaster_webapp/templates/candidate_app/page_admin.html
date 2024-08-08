@@ -73,48 +73,67 @@
     document.getElementById('usedSpaceBar').setAttribute('width', usedSpaceWidth + '%');
 </script>
 
+<hr />
 
-{% if projects_obs %}
-
-<p>List of projects and attached observations</p>
+<h3>Projects in local database</h3>
 
 <div class='container-fluid'>
 
     <!-- Display the space used for each project and observation -->
-    {% for project_id, obs_list in projects_obs.items %}
-    <div id='project-{{project_id}}' class='row mb-3'>
+    {% for item in annotated_projects %}
 
-        <hr />
-        <h4 style="margin: 20px;">Project {{project_id }} </h4>
+    <div id='project-{{item.project}}' class='row mb-3'>
 
-        <div class='hstack gap-3' style="padding-left: 8%; padding-right: 8%; margin: 10px">
-            {% for obs in obs_list %}
-
-            <div class='card'>
-
-                <div class="card-header hstack gap-4 d-flex justify-content-between align-items-center">
-                    <span>Obs ID: {{ obs.obj.id }}</span>
-                    <button class="btn btn-danger"
-                        onclick="deleteRecords('{{obs.obj.id}}', '{{ obs.obj.hash_id }}', 'observation')">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
-                            <path
-                                d="M5.755,20.283,4,8H20L18.245,20.283A2,2,0,0,1,16.265,22H7.735A2,2,0,0,1,5.755,20.283ZM21,4H16V3a1,1,0,0,0-1-1H9A1,1,0,0,0,8,3V4H3A1,1,0,0,0,3,6H21a1,1,0,0,0,0-2Z" />
-                        </svg>
-                    </button>
-                </div>
-
-                <div class='card-body'>
-                    <p>Uploaded by: {{ obs.obj.upload.user }} </p>
-                    <p>Upload date: {{ obs.obj.upload.date}} </p>
-                    <p>N Beams: {{obs.num_beams}}</p>
-                    <p>N Cands: {{obs.num_cands}}</p>
-                    <p>Space used: (coming)</p>
-                    <p>N. Files: (coming)</p>
-                </div>
-
-
+        <div class='hstack gap'>
+            <h4 style="margin: 20px;">{{item.project.id}}</h4>
+            <button class="btn btn-danger"
+                onclick="deleteRecords('{{item.project.id}}', '{{ item.project.hash_id }}', 'project')">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                    <path
+                        d="M5.755,20.283,4,8H20L18.245,20.283A2,2,0,0,1,16.265,22H7.735A2,2,0,0,1,5.755,20.283ZM21,4H16V3a1,1,0,0,0-1-1H9A1,1,0,0,0,8,3V4H3A1,1,0,0,0,3,6H21a1,1,0,0,0,0-2Z" />
+                </svg>
+            </button>
+        </div>
+        <div class='hstack gap-3'>
+            <div class='container-fluid'>
+                {% for obs in item.observations %}
+                <table class="table table-striped table-bordered table-hover justify-content-center align-items-center">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Obs ID</th>
+                            <th>Uploaded by</th>
+                            <th>Upload date</th>
+                            <th>#Beams</th>
+                            <th>#Candidates</th>
+                            <th>Space used</th>
+                            <th>#Files</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class='d-flex justify-content-center align-items-center'>
+                                <button class="btn btn-danger btn-sm"
+                                    onclick="deleteRecords('{{obs.id}}', '{{ obs.hash_id }}', 'observation')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                                        <path
+                                            d="M5.755,20.283,4,8H20L18.245,20.283A2,2,0,0,1,16.265,22H7.735A2,2,0,0,1,5.755,20.283ZM21,4H16V3a1,1,0,0,0-1-1H9A1,1,0,0,0,8,3V4H3A1,1,0,0,0,3,6H21a1,1,0,0,0,0-2Z" />
+                                    </svg>
+                                </button>
+                            </td>
+                            <td>{{ obs.id }}</td>
+                            <td>{{ obs.upload.user }}</td>
+                            <td>{{ obs.upload.date|isoformat }}</td>
+                            <td>{{ obs.beam_obs.all|length }}</td>
+                            <td>{{ obs.candidate_count }}</td>
+                            <td>(coming)</td>
+                            <td>(coming)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                {% endfor %}
             </div>
-            {% endfor %}
+
         </div>
 
     </div>
@@ -122,32 +141,7 @@
 
 </div>
 
-<hr />
-
-{% comment %}
-<!-- Summary for each user ratings -->
-<div class='container-fluid'>
-
-    <!--  -->
-    {% for user in user_list %}
-    <div class='row'>
-
-        <!-- Total rating plot -->
-        <!-- Raings per user -->
-        <!-- Number of ratings over time ? -->
-
-    </div>
-
-
-</div> {% endcomment %}
-
-{% else %}
-
-<p> there are no project! Please upload using the upload_cand.py script </p>
-
-{% endif %} {% comment %} if there are projects {% endcomment %}
-
-{% endif %} {% comment %} user.is_staff {% endcomment %}
+{% endif %}
 
 <script>
     // Function to delete an observation from the DB. 
@@ -169,6 +163,7 @@
                     alert(
                         `Successfully deleted ${recordType} from the DB ${response["deleted_hashId"]}`
                     );
+                    location.reload()
                 },
                 error: function (error) {
                     // Handle error response

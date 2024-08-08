@@ -64,13 +64,18 @@ class Command(BaseCommand):
                 db_dict[name]["raj"] = pos.ra.degree
                 db_dict[name]["decj"] = pos.dec.degree
 
+                db_dict[name]["ra_str"] = pos.ra.to_string(unit=u.hourangle, sep=":", precision=2)
+                db_dict[name]["dec_str"] = pos.dec.to_string(unit=u.deg, sep=":", precision=2)
+
         with transaction.atomic():
             ATNFPulsar.objects.all().delete()
             for rec in db_dict.keys():
                 psr = ATNFPulsar()
                 psr.name = rec
                 psr.raj = db_dict[rec]["raj"]
+                psr.ra_str = db_dict[rec]["ra_str"]
                 psr.decj = db_dict[rec]["decj"]
+                psr.dec_str = db_dict[rec]["dec_str"]
                 psr.DM = db_dict[rec].get("dm", None)
                 psr.p0 = db_dict[rec].get("p0", None)
                 psr.s400 = db_dict[rec].get("s400", None)

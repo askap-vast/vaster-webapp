@@ -1,0 +1,52 @@
+<table class="table table-striped table-hover">
+
+    <thead class="table-success" style='position: sticky; position: -webkit-sticky;'>
+
+        <th class="text-center" onclick="sortTable('nearby-objects-table-body', 0, 'string')">Name <span
+                class="sort-arrow" id="arrow-0"></span></th>
+        <th class="text-center" onclick="sortTable('nearby-objects-table-body', 1, 'string')">Database <span
+                class="sort-arrow" id="arrow-1"></span></th>
+        <th class="text-center" onclick="sortTable('nearby-objects-table-body', 2, 'string')">RA <span
+                class="sort-arrow" id="arrow-2"></span></th>
+        <th class="text-center" onclick="sortTable('nearby-objects-table-body', 3, 'string')">Dec <span
+                class="sort-arrow" id="arrow-3"></span></th>
+        <th class="text-center" onclick="sortTable('nearby-objects-table-body', 4, 'number')">Sep (arcmin) <span
+                class="sort-arrow sort-asc" id="arrow-4"></span></th>
+
+    </thead>
+
+    <tbody id='nearby-objects-table-body'>
+        {% for result in result_table %}
+        <tr>
+            <td class="text-center">
+
+                {% if result.from_db == 'Simbad' %}
+
+                <a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident={{ result.search_term }}&NbIdent=1&submit=submit+id"
+                    style="text-decoration:None">{{ result.name }}</a>
+
+                {% elif result.from_db == 'Local' %}
+
+                <a href={% url 'candidate_rating' result.hash_id %} style="text-decoration:None">{{ result.name }}</a>
+
+                {% elif result.from_db == 'ATNF' %}
+
+                <a href="https://www.atnf.csiro.au/research/pulsar/psrcat/proc_form.php?version=1.67&startUserDefined=true&c1_val=&c2_val=&c3_val=&c4_val=&sort_attr=jname&sort_order=asc&condition=&pulsar_names={{ result.name|urlize }}&ephemeris=long&submit_ephemeris=Get+Ephemeris&coords_unit=raj%2Fdecj&radius=&coords_1=&coords_2=&style=Long+with+last+digit+error&no_value=*&fsize=3&x_axis=&x_scale=linear&y_axis=&y_scale=linear&state=query"
+                    style="text-decoration:None">{{ result.name }}</a>
+
+                {% endif %}
+
+            </td>
+            <td class="text-center">{{result.from_db}}</td>
+            <td class="text-center">{{result.ra_str}}</td>
+            <td class="text-center">{{ result.dec_str }}</td>
+            <td class="text-center">{{ result.sep|floatformat:3 }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td class="text-center">No Sources found</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+
+</table>

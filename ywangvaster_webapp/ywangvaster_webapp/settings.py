@@ -14,6 +14,11 @@ from pathlib import Path
 import os
 import sys
 
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logging.debug("Settings file loaded")
+
 USE_TZ = True
 TIME_ZONE = "UTC"  # or 'Australia/(city)'
 
@@ -69,23 +74,6 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "ywangvaster_webapp.urls"
-
-TEMPLATES = [
-    {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.debug",
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
-                "ywangvaster_webapp.candidate_app.context_processors.get_projects",
-            ],
-        },
-    },
-]
 
 WSGI_APPLICATION = "ywangvaster_webapp.wsgi.application"
 
@@ -165,10 +153,13 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
+                # "ywangvaster_webapp.candidate_app.context_processors.get_projects",
+                "django.template.context_processors.media",
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "candidate_app.context_processors.project_form",
             ],
         },
     },

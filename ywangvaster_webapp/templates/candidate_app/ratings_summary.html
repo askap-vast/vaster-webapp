@@ -1,0 +1,211 @@
+{% extends 'candidate_app/header.html' %}
+
+{% load utils %}
+
+{% block content %}
+
+{% comment %} {% if user.is_staff %} {% endcomment %}
+
+{% if page_obj %}
+
+<!-- -->
+{{ ratings_per_user|json_script:"ratings_per_user" }}
+
+<!-- -->
+{{ ratings_per_tag|json_script:"ratings_per_tag" }}
+
+
+<div class='container-fluid' style="padding: 25px">
+
+    {% for project in selected_projects %}
+
+    <div class='row'>
+
+        <div class='col'>
+            <div id="chart-ratings-by-user-{{ project.id }}" style="width: 600px; height: 400px;"></div>
+
+        </div>
+
+        <div class='col'>
+
+            <div id="chart-ratings-by-classification-{{ project.id }}" style="width: 600px; height: 400px;"></div>
+
+        </div>
+
+        {% comment %} <div class='col'>
+
+            <div id="chart-candidates-rated-vs-unrated-{{ project.id }}" style="width: 600px; height: 400px;"></div>
+
+        </div> {% endcomment %}
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
+{% comment %} <div id='filter-ratings-form' style='background-color: grey; width: 100%; height: 500px'></div>
+{% endcomment %}
+
+<div id='ratings-table'>
+
+    <div class="container mt-5">
+        <table class="table table-striped table-hover">
+            <thead class="table-primary">
+                <tr>
+                    <th scope="col" onclick="sortTable('rating-summary-table-body', 0, 'string')">Project</th>
+                    <th scope="col" onclick="sortTable('rating-summary-table-body', 1, 'string')">Hash ID</th>
+                    <th scope="col" onclick="sortTable('rating-summary-table-body', 2, 'string')">Candidate</th>
+                    <th scope="col" onclick="sortTable('rating-summary-table-body', 3, 'string')">Rating</th>
+                    <th scope="col" onclick="sortTable('rating-summary-table-body', 4, 'string')">Tags</th>
+                    <th scope="col" onclick="sortTable('rating-summary-table-body', 5, 'string')">User</th>
+                    <th scope="col" onclick="sortTable('rating-summary-table-body', 6, 'date')">Date</th>
+                    <th scope="col" onclick="sortTable('rating-summary-table-body', 7, 'string')">Notes</th>
+                </tr>
+            </thead>
+            <tbody id='rating-summary-table-body'>
+                {% for rating in ratings %}
+                <tr>
+                    <td>{{ rating.candidate.project.id }}</td>
+                    <td>{{ rating.hash_id }}</td>
+                    <td>{{ rating.candidate }}</td>
+                    <td>{{ rating.rating }}</td>
+                    <td>{{ rating.tag }}</td>
+                    <td>{{ rating.user }}</td>
+                    <td>{{ rating.date|isoformat }}</td>
+                    <td>{{ rating.notes }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% include "candidate_app/pagination.html" %}
+
+{% else %}
+
+<h2>No ratings found!</h2>
+
+Start rating some candidates!
+
+{% endif %}
+
+<!-- Summary for each user ratings -->
+{% comment %} <div class='container-fluid'> {% endcomment %}
+
+    <!--  -->
+    {% comment %} {% for user in user_list %}
+    <div class='row'>
+
+        <!-- Total rating plot -->
+        <!-- Raings per user -->
+        <!-- Number of ratings over time ? -->
+
+    </div>
+    {% endfor %} {% endcomment %}
+
+    {% comment %} </div> {% endcomment %}
+
+
+
+<script type="text/javascript">
+    // Function to generate random colors
+    function getRandomColor() {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
+
+    // Data for the chart by user
+    let ratingsByUsers = JSON.parse(document.getElementById("ratings_per_user").textContent);
+    let ratingsByTags = JSON.parse(document.getElementById("ratings_per_tag").textContent);
+
+    for (let projectId in ratingsByUsers) {
+        if (ratingsByUsers.hasOwnProperty(projectId)) {
+            let ratingsByUser = ratingsByUsers[projectId];
+            let userNames = ratingsByUser.map(function (item) {
+                return item.user__username;
+            });
+            let userCounts = ratingsByUser.map(function (item) {
+                return item.count;
+            });
+            let userColors = userNames.map(() => getRandomColor());
+
+            // Initialize chart for ratings by user
+            let chartRatingsByUser = echarts.init(document.getElementById('chart-ratings-by-user-' + projectId));
+            let optionRatingsByUser = {
+                title: {
+                    text: 'Ratings per User'
+                },
+                tooltip: {},
+                xAxis: {
+                    type: 'category',
+                    data: userNames
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [{
+                    type: 'bar',
+                    data: userCounts.map((count, index) => ({
+                        value: count,
+                        itemStyle: {
+                            color: userColors[index]
+                        }
+                    }))
+                }]
+            };
+            chartRatingsByUser.setOption(optionRatingsByUser);
+        }
+    }
+
+    for (let projectId in ratingsByTags) {
+        if (ratingsByTags.hasOwnProperty(projectId)) {
+            let ratingsByTag = ratingsByTags[projectId];
+            let classificationNames = ratingsByTag.map(function (item) {
+                return item.tag__name;
+            });
+            let classificationCounts = ratingsByTag.map(function (item) {
+                return item.count;
+            });
+            let tagColors = classificationNames.map(() => getRandomColor());
+
+            // Initialize chart for ratings by classification
+            let chartRatingsByClassification = echarts.init(document.getElementById(
+                'chart-ratings-by-classification-' +
+                projectId));
+            let optionRatingsByClassification = {
+                animation: false,
+                title: {
+                    text: 'Ratings per Classification'
+                },
+                tooltip: {},
+                xAxis: {
+                    type: 'category',
+                    data: classificationNames
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [{
+                    type: 'bar',
+                    data: classificationCounts.map((count, index) => ({
+                        value: count,
+                        itemStyle: {
+                            color: tagColors[index]
+                        }
+                    }))
+                }]
+            };
+            chartRatingsByClassification.setOption(optionRatingsByClassification);
+        }
+    }
+</script>
+
+{% comment %} {% endif %} {% endcomment %}
+
+{% endblock %}

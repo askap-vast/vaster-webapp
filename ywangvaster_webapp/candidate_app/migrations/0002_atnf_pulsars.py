@@ -13,8 +13,8 @@ class Migration(migrations.Migration):
             fields=[
                 ("id", models.BigAutoField(primary_key=True, serialize=False)),
                 ("name", models.CharField(max_length=32, unique=True, verbose_name="Pulsar Name")),
-                ("ra_str", models.CharField()),
-                ("dec_str", models.CharField()),
+                ("ra_str", models.CharField(max_length=32)),
+                ("dec_str", models.CharField(max_length=32)),
                 ("decj", models.FloatField(verbose_name="Declination epoch (J2000, deg)")),
                 ("raj", models.FloatField(verbose_name="Right Ascension epoch (J2000, deg)")),
                 ("DM", models.FloatField(verbose_name="Dispersion Measure (cm^-3 pc)", blank=True, null=True)),

@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from datetime import datetime, timedelta
 from typing import List, Optional, Tuple
+from django.db.models import Value
 
 from astropy import units
 from astropy.coordinates import Angle, SkyCoord
@@ -21,6 +22,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django_q3c.expressions import Q3CRadialQuery, Q3CDist
+
+from django.db.models import OuterRef, Subquery, Max
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view
@@ -57,9 +60,138 @@ table_display_col_mapping = {
 def home_page(request):
     """Render the home page html."""
 
-    page_context = {}
+    return render(request, "candidate_app/home_page.html")
 
-    return render(request, "candidate_app/home_page.html", page_context)
+
+def about(request):
+    """Render the about html."""
+
+    return render(request, "candidate_app/about.html")
+
+
+def nearby_objects_table(request: HttpRequest):
+    """Render a table of nearby objects from the local DB, (filtered by project), Simbad and ATNF pulsars."""
+
+    dist_arcmin = 2
+    selected_project_hash_id = request.session.get("selected_project_hash_id")
+
+    if request.method == "POST":
+        data = json.loads(request.body.decode())
+
+        ra_str = data.get("ra_str")
+        dec_str = data.get("dec_str")
+        dist_arcmin = float(data.get("dist_arcmin", 1))
+        selected_project_hash_id = data.get("selected_project_hash_id")
+        exclude_hash_id = data.get("exclude_id")
+
+    result = []
+    simbad_results = get_simbad(ra_str, dec_str, dist_arcmin)
+
+    result.extend(simbad_results)
+
+    atnf_results = get_atnf(ra_str, dec_str, dist_arcmin)
+    result.extend(atnf_results)
+
+    if selected_project_hash_id or selected_project_hash_id != "":
+        incoming = models.Candidate.objects.filter(project_id=selected_project_hash_id)
+    else:
+        incoming = models.Candidate.objects.all()
+
+    # if we are given a candidate ID then exclude it from the results
+    if exclude_hash_id:
+        incoming = incoming.exclude(hash_id=exclude_hash_id)
+
+    local_db_results = filter_candidates_by_coords(
+        incoming,
+        ra_str,
+        dec_str,
+        ra_col="ra",
+        dec_col="dec",
+        arcmin_search_radius=dist_arcmin,
+        for_rating_table=True,
+    )
+
+    result.extend(local_db_results)
+
+    sorted_results = sorted(result, key=lambda x: x["sep"], reverse=False)
+
+    return render(
+        request,
+        "candidate_app/nearby_objects_table.html",
+        context={"result_table": sorted_results},
+    )
+
+
+def get_atnf(ra_str: str, dec_str, dist_arcmin: float = 1.0) -> List[dict]:
+    """Get a list of ANTF pulsars near coordindates"""
+
+    ra = Angle(ra_str, unit=units.hour)
+    dec = Angle(dec_str, unit=units.deg)
+
+    # Perform atnf query
+    table = (
+        models.ATNFPulsar.objects.filter(
+            Q(
+                Q3CRadialQuery(
+                    center_ra=ra.deg,
+                    center_dec=dec.deg,
+                    ra_col="raj",
+                    dec_col="decj",
+                    radius=dist_arcmin / 60.0,
+                )
+            )
+        )
+        .annotate(  # do the distance calcs in the db
+            sep=Q3CDist(
+                ra1=F("raj"),
+                dec1=F("decj"),
+                ra2=ra.deg,
+                dec2=dec.deg,
+            )
+            * 60,  # arcsec -> degrees
+            from_db=Value("ATNF"),
+        )
+        .order_by("sep")
+        .values()
+    )
+
+    return table
+
+
+def get_simbad(ra_str: str, dec_str: str, dist_arcmin: float = 1.0) -> List[dict]:
+    """Get a list of object next to candidate with ra_str and dec_str"""
+
+    ra_deg = Angle(ra_str, unit=units.hour).deg
+    dec_deg = Angle(dec_str, unit=units.deg).deg
+    dist_arcmin = float(dist_arcmin)
+
+    # limit query distance or we get very long timeouts
+    dist_arcmin = min(dist_arcmin, 60)
+
+    coord = SkyCoord(ra_deg, dec_deg, unit=(units.deg, units.deg), frame="icrs")
+    # Perform simbad query
+    raw_result_table = Simbad.query_region(coord, radius=dist_arcmin * units.arcmin)
+    simbad_result_table = []
+    # Reformat the result into the format we want
+    if raw_result_table:
+        for result in raw_result_table:
+            search_term = result["MAIN_ID"].replace("+", "%2B").replace(" ", "+")
+            simbad_coord = SkyCoord(result["RA"], result["DEC"], unit=(units.hour, units.deg), frame="icrs")
+            ra = simbad_coord.ra.to_string(unit=units.hour, sep=":")[:11]
+            dec = simbad_coord.dec.to_string(unit=units.deg, sep=":")[:11]
+            sep = coord.separation(simbad_coord).arcminute
+            simbad_result_table.append(
+                {
+                    "name": result["MAIN_ID"],
+                    "search_term": search_term,
+                    "ra_str": ra,
+                    "dec_str": dec,
+                    "sep": sep,
+                    "from_db": "Simbad",
+                }
+            )
+
+    return simbad_result_table
 
 
 def cone_search_simbad(request):  # , ra_deg, dec_deg, dist_arcmin):
@@ -192,6 +324,34 @@ def cone_search_pulsars(request):
     )
 
 
+def about(request: HttpRequest):
+    """The about page for the user to upload files."""
+
+    # If loggin in, get the users token for them and make it available, if not, dont give out the token.
+
+    context = {}
+
+    return render(request, "candidate_app/about.html", context)
+
+
+@login_required(login_url="/")
+def create_tag(request: HttpRequest):
+
+    if request.method == "POST":
+
+        new_tag = forms.ClassificationForm(request.POST)
+
+        print(f"Attempting to create new tag with request.POST: {request.POST}")
+
+        if new_tag.is_valid():
+
+            print(f"New tag is valid! Adding {request.POST['name']} DB.")
+
+            new_tag.save()
+
+            return redirect(request.META["HTTP_REFERER"])
+
+
 @login_required(login_url="/")
 def candidate_rating(request, cand_hash_id, arcmin=2):
     candidate = get_object_or_404(models.Candidate, hash_id=cand_hash_id)
@@ -203,52 +363,38 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
     rating = models.Rating.objects.filter(candidate=candidate, user=request.user).first()
 
     rate_form = forms.RateCandidateForm()
+    new_tag_form = forms.ClassificationForm()
 
-    # This is a filter request.
     if request.method == "POST":
 
         rate_form = forms.RateCandidateForm(request.POST)
 
-        print(f"trying to submit form for ------------------------- {cand_hash_id}")
+        if rate_form.is_valid():
 
-        # if rate_form.is_valid():
+            # Add tags to the rating (later there could be multiple tags per rating)
+            tag_id = request.POST.get("classification")
+            classification = models.Classification.objects.get(name=tag_id)
 
-        #     print(f"Attempting to create a rating form.")
+            rating = models.Rating(
+                hash_id=uuid4(),
+                candidate=candidate,
+                user=request.user,
+                rating=request.POST["confidence"],
+                notes=request.POST["notes"],
+                tag=classification,
+                date=datetime.now(),
+            )
 
-        # Read info from form
-        # Create the rating
+            rating.save()
 
-        # Refresh page to go to next candidate?
+            # TODO - change this to go to a random page for a candidate thats not been rated yet in same set of candidates
+            # This is done with the NEXT button??
 
-        # Skip button??
+            return redirect(request.META["HTTP_REFERER"])
 
-    # # Convert seperation to arcminutes
-    # if candidate.nks_sep_deg is None:
-    #     sep_arcmin = None
-    # else:
-    #     sep_arcmin = candidate.nks_sep_deg * 60
-
-    # Perform voevent database query
-    # https://voeventdbremote.readthedocs.io/en/latest/notebooks/00_quickstart.html
-    # conesearch skycoord and angle error
-    # cand_err = Angle(arcmin, unit=units.arcmin)
-    # cand_err = Angle(5,  unit=units.deg)
-    # cone = (cand_coord, cand_err)
-
-    # my_filters = {
-    #     FilterKeys.role: "observation",
-    #     FilterKeys.authored_since: time.tt.datetime - timedelta(hours=1),
-    #     FilterKeys.authored_until: time.tt.datetime + timedelta(hours=1),
-    #     # FilterKeys.authored_since: time.tt.datetime - timedelta(days=1),
-    #     # FilterKeys.authored_until: time.tt.datetime + timedelta(days=1),
-    #     FilterKeys.cone: cone,
-    # }
-
-    voevents = []
-
+    # Convert the lightcurve data to mJy and put into a form for Echarts to use.
     converted_lc = []
     if candidate.lightcurve_data is not None:
-        # Convert the lightcurve data to mJy
         converted_lc = []
         for row in candidate.lightcurve_data:
             try:
@@ -264,21 +410,12 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
         "rating": rating,
         "time": time,
         "rate_form": rate_form,
-        # "sep_arcmin": sep_arcmin,
+        "new_tag_form": new_tag_form,
         "lightcurve_data": converted_lc,
         "arcmin_search": arcmin,
         "cand_type_choices": tuple((c.name, c.name) for c in models.Classification.objects.all()),
-        "voevents": voevents,
     }
-    return render(request, "candidate_app/candidate_rating_form.html", context)
-
-
-# def voevent_view(request, id):
-#     ivorn = models.xml_ivorns.objects.filter(id=id).first().ivorn
-#     xml_packet = apiv1.packet_xml(ivorn)
-#     v = voeventparse.loads(xml_packet)
-#     xml_pretty_str = voeventparse.prettystr(v)
-#     return HttpResponse(xml_pretty_str, content_type="text/xml")
+    return render(request, "candidate_app/candidate_rating.html", context)
 
 
 @login_required(login_url="/")
@@ -347,85 +484,47 @@ def candidate_update_rating(request, hash_id):
     return redirect(reverse("candidate_random"))
 
 
-# @login_required(login_url="/")
-# @api_view(["POST"])
-# @transaction.atomic
-# def candidate_update_catalogue_query(request, id):
-#     logger.debug(request.data)
-#     candidate = models.Candidate.objects.filter(id=id).first()
-#     if candidate is None:
-#         raise ValueError("Candidate not found")
-#     logger.debug("candidate obj %s", candidate)
-
-#     arcmin = request.data.get("arcmin", None)
-#     if arcmin:
-#         logger.debug(f"New query with {arcmin}")
-#         return candidate_rating(request, id, arcmin=arcmin)
-
-
-### TODO: CHECK IF WE NEED THIS
+# ### TODO: CHECK IF WE NEED THIS
 @login_required(login_url="/")
 def candidate_random(request):
-    # Get session data for candidate ordering and inclusion settings
-    session_settings = request.session.get("session_settings", 0)
+    """"""
 
-    # deal with users who have no session settings
-    if not session_settings:
-        return render(request, "candidate_app/nothing_to_rate.html")
 
-    user = request.user
-    # choose all the candidates this user hasn't rated
-    next_cands = models.Candidate.objects.exclude(rating__user=user)
+#     # Get session data for candidate ordering and inclusion settings
+#     session_settings = request.session.get("session_settings", 0)
 
-    # filter based on selected project
-    next_cands = next_cands.filter(project__name=session_settings["project"])
+#     # deal with users who have no session settings
+#     if not session_settings:
+#         return render(request, "candidate_app/nothing_to_rate.html")
 
-    # Filter candidates based on ranking
-    if session_settings["filtering"] == "unrank":
-        # Get unrated candidates
-        next_cands = next_cands.filter(rating__isnull=True)
-        if not next_cands.exists():
-            return render(
-                request,
-                "candidate_app/nothing_to_rate.html",
-                {"project": session_settings["project"]},
-            )
-    elif session_settings["filtering"] == "old":
-        # Get candidates the user hasn't recently ranked
-        next_cands = next_cands.exclude(rating__date__gte=datetime.now() - timedelta(days=7))
-        if not next_cands.exists():
-            return render(
-                request,
-                "candidate_app/nothing_to_rate.html",
-                {"project": session_settings["project"]},
-            )
+#     user = request.user
+#     # choose all the candidates this user hasn't rated
+#     next_cands = models.Candidate.objects.exclude(rating__user=user)
 
-    # Filter based on observation frequencies (+/- 1 MHz)
-    if session_settings["exclude_87"]:
-        next_cands = next_cands.exclude(obs_id__cent_freq__lt=87.68 + 1, obs_id__cent_freq__gt=87.68 - 1)
-    if session_settings["exclude_118"]:
-        next_cands = next_cands.exclude(obs_id__cent_freq__lt=118.50 + 1, obs_id__cent_freq__gt=118.50 - 1)
-    if session_settings["exclude_154"]:
-        next_cands = next_cands.exclude(obs_id__cent_freq__lt=154.24 + 1, obs_id__cent_freq__gt=154.24 - 1)
-    if session_settings["exclude_184"]:
-        next_cands = next_cands.exclude(obs_id__cent_freq__lt=184.96 + 1, obs_id__cent_freq__gt=184.96 - 1)
-    if session_settings["exclude_200"]:
-        next_cands = next_cands.exclude(obs_id__cent_freq__lt=200.32 + 1, obs_id__cent_freq__gt=200.32 - 1)
-    if session_settings["exclude_215"]:
-        next_cands = next_cands.exclude(obs_id__cent_freq__lt=215.68 + 1, obs_id__cent_freq__gt=215.68 - 1)
+#     # filter based on selected project
+#     next_cands = next_cands.filter(project__name=session_settings["project"])
 
-    # Use session data to decide candidate order
-    if session_settings["ordering"] == "rand":
-        candidate = random.choice(list(next_cands))
-    elif session_settings["ordering"] == "new":
-        candidate = next_cands.order_by("-obs_id__starttime").first()
-    elif session_settings["ordering"] == "old":
-        candidate = next_cands.order_by("obs_id__starttime").first()
-    elif session_settings["ordering"] == "brig":
-        candidate = next_cands.order_by("-can_peak_flux").first()
-    elif session_settings["ordering"] == "faint":
-        candidate = next_cands.order_by("can_peak_flux").first()
-    return redirect(reverse("candidate_rating", args=(candidate.id,)))
+#     # Filter candidates based on ranking
+#     if session_settings["filtering"] == "unrank":
+#         # Get unrated candidates
+#         next_cands = next_cands.filter(rating__isnull=True)
+#         if not next_cands.exists():
+#             return render(
+#                 request,
+#                 "candidate_app/nothing_to_rate.html",
+#                 {"project": session_settings["project"]},
+#             )
+#     elif session_settings["filtering"] == "old":
+#         # Get candidates the user hasn't recently ranked
+#         next_cands = next_cands.exclude(rating__date__gte=datetime.now() - timedelta(days=7))
+#         if not next_cands.exists():
+#             return render(
+#                 request,
+#                 "candidate_app/nothing_to_rate.html",
+#                 {"project": session_settings["project"]},
+#             )
+
+#     return redirect(reverse("candidate_rating", args=(candidate.id,)))
 
 
 def filter_candidates_by_coords(
@@ -436,6 +535,7 @@ def filter_candidates_by_coords(
     dec_col: str,
     arcmin_search_radius: float,
     annotate: Optional[bool] = False,
+    for_rating_table: Optional[bool] = False,
 ):
     """Convert from str ra_hms and dec_dms to degrees and filter candidates that are within the arcmin_search_radius."""
 
@@ -471,6 +571,34 @@ def filter_candidates_by_coords(
 
             print(f"filtered candidates: {filtered}")
 
+        elif for_rating_table:
+
+            filtered = (
+                incoming.filter(
+                    Q(
+                        Q3CRadialQuery(
+                            center_ra=ra_deg,
+                            center_dec=dec_deg,
+                            ra_col=ra_col,
+                            dec_col=dec_col,
+                            radius=arcmin_search_radius / 60.0,
+                        )
+                    )
+                )
+                .annotate(  # do the distance calcs in the db
+                    sep=Q3CDist(
+                        ra1=F(ra_col),
+                        dec1=F(dec_col),
+                        ra2=ra_deg,
+                        dec2=dec_deg,
+                    )
+                    * 60,
+                    # arcsec -> degrees # ???? How doe that turn into degrees???
+                    from_db=Value(f"Local"),
+                )
+                .values()
+            )
+
         else:
 
             filtered = incoming.filter(
@@ -492,10 +620,34 @@ def filter_candidates_by_coords(
 
 
 @login_required(login_url="/")
-def clear_candidate_table_filter(request):
-    if "current_filter_data" in request.session:
+def clear_candidates_filter(request: HttpRequest):
+
+    if "current_filter_data" in request.session or "clear_filter_data" in request.POST:
         del request.session["current_filter_data"]
-    return redirect("/candidate_table/")
+
+    return redirect("/candidates/")
+
+
+@login_required(login_url="/")
+def project_select(request):
+
+    selected_project_hash_id = request.session.get("selected_project_hash_id")
+
+    if request.POST:
+
+        project_form = forms.ProjectSelectForm(request.POST)
+
+        if project_form.is_valid():
+
+            print(f"incoming post request - {request.POST}")
+
+            print(f"old project selected - {selected_project_hash_id}")
+
+            request.session["selected_project_hash_id"] = request.POST["selected_project_hash_id"]
+
+            print(f"setting selected_project_hash_id to {request.session['selected_project_hash_id']}")
+
+    return redirect(request.META["HTTP_REFERER"])
 
 
 FILTER_FORM_FLOAT_VARAIBLES = [
@@ -516,16 +668,38 @@ FILTER_FORM_FLOAT_VARAIBLES = [
     "deep_int_flux",
 ]
 
+# To later be replaced with maths characters that the html can recognise
+# variable in db: Label for html
+FILTER_FORM_FLOAT_VARAIBLES_DICT = {
+    "chi_square": "Chi Squared",
+    "chi_square_log_sigma": "Chi Square Log Sigma",
+    "chi_square_sigma": "Chi Square Sigma",
+    "peak_map": "Peak Map",
+    "peak_map_log_sigma": "Peak map log sigma",
+    "peak_map_sigma": "Peak map sigma",
+    "gaussian_map": "Gaussian Map",
+    "gaussian_map_sigma": "Gaussian map sigma",
+    "std_map": "Standard Map (units?)",
+    "md_deep": "Deep modulation (units?)",
+    "deep_sep_arcsec": "Deep separation (arcsec)",
+    "bright_sep_arcmin": "Bright separation (arcmin)",
+    "beam_sep_deg": "Beam separation (degrees)",
+    "deep_peak_flux": "Deep peak flux (units?)",
+    "deep_int_flux": "Deep initial flux (units?)",
+    "rated": "Rating count",
+}
+
 
 @login_required(login_url="/")
-def candidate_table(request):
+def candidate_table(request: HttpRequest):
 
     # Get session data to keep filters when changing page
-    session_settings = request.session.get("session_settings", 0)
     candidate_table_session_data = request.session.get("current_filter_data")
 
     # Get the max and mins from the materialised view table
     aggregates = models.CandidateMinMaxStats.objects.values().last()
+
+    selected_project_hash_id = request.session.get("selected_project_hash_id")
 
     cand_values = {}
     for variable in FILTER_FORM_FLOAT_VARAIBLES:
@@ -542,17 +716,37 @@ def candidate_table(request):
     # This is a filter request.
     if request.method == "POST":
 
-        form = forms.CandidateFilterForm(request.POST)
+        form = forms.CandidateFilterForm(
+            request.POST,
+            selected_project_hash_id=selected_project_hash_id,
+        )
 
         if form.is_valid():
 
-            if form.cleaned_data["observation_id"] is None:
-                observation_id_filter = None
-            else:
-                observation_id_filter = form.cleaned_data["observation_id"]
-
             cleaned_data = {**form.cleaned_data}
-            cleaned_data["observation_id"] = observation_id_filter
+
+            print("------------------------------------------------")
+            print(cleaned_data)
+
+            # Filter by observation.
+            if cleaned_data["observation"]:
+                cleaned_data["observation"] = str(form.cleaned_data["observation"].hash_id)
+                observation_filter = cleaned_data["observation"]
+
+            # Bool if candidates have been rated or not.
+            rated_filter = form.cleaned_data["rated"]
+
+            if cleaned_data["beam_index"]:
+                beam_index_filter = cleaned_data["beam_index"]
+
+            if cleaned_data["confidence"] and cleaned_data["confidence"] != "-":
+                confidence_filter = cleaned_data["confidence"]
+
+            # Serialize the Classification object to its hash_id
+            if cleaned_data["tag"]:
+                cleaned_data["tag"] = str(cleaned_data["tag"].hash_id)
+                tag_filter = cleaned_data["tag"]
+
             request.session["current_filter_data"] = cleaned_data
             candidate_table_session_data = cleaned_data
 
@@ -568,11 +762,16 @@ def candidate_table(request):
             deep_dec_str = candidate_table_session_data["deep_dec_str"]
             deep_arcmin_search_radius = candidate_table_session_data["deep_arcmin_search_radius"]
 
-    # Page is loaded normall
+    # Page is loaded normally
     else:
 
-        form = forms.CandidateFilterForm()
-        observation_id_filter = None
+        form = forms.CandidateFilterForm(selected_project_hash_id=selected_project_hash_id)
+
+        rated_filter = None
+        observation_filter = None
+        tag_filter = None
+        beam_index_filter = None
+        confidence_filter = None
 
         cand_ra_str = None
         cand_dec_str = None
@@ -594,7 +793,14 @@ def candidate_table(request):
         # Prefil form with previous session results
         form = forms.CandidateFilterForm(
             initial=candidate_table_session_data,
+            selected_project_hash_id=selected_project_hash_id,
         )
+
+        rated_filter = candidate_table_session_data["rated"]
+        observation_filter = candidate_table_session_data["observation"]
+        tag_filter = candidate_table_session_data["tag"]
+        beam_index_filter = candidate_table_session_data["beam_index"]
+        confidence_filter = candidate_table_session_data["confidence"]
 
         cand_ra_str = candidate_table_session_data["cand_ra_str"]
         cand_dec_str = candidate_table_session_data["cand_dec_str"]
@@ -636,55 +842,57 @@ def candidate_table(request):
                 floats_filter_criteria[f"{variable}__lte"] = candidate_table_session_data[f"{variable}__lte"]
                 filtered_columns.add(variable)
 
-    # Gather all the cand types and prepare them as kwargs
-    count_kwargs = {}
-    column_type_to_name = {}
-    for cand_type_tuple in [c.name for c in models.Classification.objects.all()]:
-        cand_type_short = cand_type_tuple
-        count_kwargs[f"{cand_type_short}_count"] = Count(
-            "rating", filter=Q(rating__classification__name=cand_type_short)
-        )
-        # Also create a column name
-        column_type_to_name[cand_type_short] = cand_type_short
+    if selected_project_hash_id:
+        # I don't remember the reason this didnt work well before, trying as is though.
+        #     if selected_project_hash_id and selected_project_hash_id != "":
+        # or selected_project_hash_id is not None:
 
-    candidates = models.Candidate.objects.all()
-    project = "All projects"
-    if session_settings:
-        candidates = candidates.filter(project__name=session_settings["project"])
-        project = "Project " + session_settings["project"]
+        print(f"Filtering for candidates with project hash_id: {selected_project_hash_id}")
+        candidates = models.Candidate.objects.all()
+        candidates = candidates.filter(project=selected_project_hash_id)
+
+    else:
+        candidates = models.Candidate.objects.all()
 
     # These are the sliders that are used for filtering the candidates.
     if floats_filter_criteria:
         candidates = candidates.filter(**{key: value for key, value in floats_filter_criteria.items()})
 
-    # # Annotate with counts of different candidate type counts
-    # candidates = candidates.annotate(
-    #     num_ratings=Count("rating"),
-    #     avg_rating=Avg("rating__rating"),
-    #     **count_kwargs,
-    # )
+    if confidence_filter is not None and confidence_filter != "-":
 
-    # If user only wants to display a single column annotate it and return it's name
-    # if column_display:
-    #     candidates = candidates.annotate(
-    #         selected_count=Count("rating", filter=Q(rating__classification__name=column_display)),
-    #     )
-    #     # # Filter data to only show candidates with at least one count
-    #     # candidates = candidates.filter(selected_count__gte=1)
-    #     selected_column = column_type_to_name[column_display]
-    # else:
-    #     selected_column = None
+        # Fetch all ratings with the specified confidence
+        all_ratings = models.Rating.objects.filter(rating=confidence_filter).distinct()
+        candidate_hash_ids = all_ratings.values_list("candidate__hash_id", flat=True)
+        candidates = models.Candidate.objects.filter(hash_id__in=candidate_hash_ids)
+        filtered_columns.add("rating.confidence")
 
-    # # Ratings filter
-    # if rating_cutoff is not None:
-    #     candidates = candidates.filter(avg_rating__gte=rating_cutoff)
+    # Tag / Classification filter
+    tag_filter_name = None
+    if tag_filter:
 
-    # Order by the column the user clicked or by avg_rating by default
-    # candidates = candidates.order_by(asc_dec + order_by, "-avg_rating")
+        # Bit of messing around here because can be multiple raitings for each candidate
+        candidates_unset = candidates.filter(rating__tag=tag_filter)
+        candidates_list = list(set(list(candidates_unset)))
+        candidate_hash_ids = [candidate.hash_id for candidate in candidates_list]
+        candidates = models.Candidate.objects.filter(hash_id__in=candidate_hash_ids)
+
+        filtered_columns.add("rating.tag.name")
+        tag_filter_name = models.Classification.objects.get(hash_id=tag_filter).name
+
+    # Ratings filter
+    if rated_filter:
+        candidates = candidates.annotate(rating_count=Count("rating")).filter(rating_count__gt=0)
+        filtered_columns.add("rating_count")
 
     # Obsid filter
-    # if observation_id_filter is not None:
-    #     candidates = candidates.filter(obs_id__observation=observation_id_filter)
+    if observation_filter:
+        candidates = candidates.filter(observation=observation_filter)
+        filtered_columns.add("observation.id")
+
+    if beam_index_filter is not None:  # Because index of 0 is treated as false
+        print(f"beam_index_filter: {beam_index_filter}")
+        candidates = candidates.filter(beam__index=beam_index_filter)
+        filtered_columns.add("beam.index")
 
     # Filter candidate by cone search of
     candidates = filter_candidates_by_coords(
@@ -724,59 +932,13 @@ def candidate_table(request):
     content = {
         "page_obj": page_obj,
         "form": form,
-        "project_name": project,
         "cand_values": cand_values,
         "filtered_columns": filtered_columns,
+        "column_labels": FILTER_FORM_FLOAT_VARAIBLES_DICT,
+        "tag_filter_name": tag_filter_name,
+        "confidence_filter": confidence_filter,
     }
     return render(request, "candidate_app/candidate_table.html", content)
-
-
-@login_required(login_url="/")
-def session_settings(request):
-    # Get session data to keep filters when changing page
-    session_settings = request.session.get("session_settings", 0)
-    # print(session_settings)
-
-    # Check filter form
-    if request.method == "POST":
-        # create a form instance and populate it with data from the request:
-        form = forms.SessionSettingsForm(request.POST)
-        # check whether it's valid:
-        if form.is_valid():
-            cleaned_data = {**form.cleaned_data}
-            request.session["session_settings"] = cleaned_data
-            # print("here", cleaned_data)
-    else:
-        if session_settings != 0:
-            # Prefil form with previous session results
-            form = forms.SessionSettingsForm(
-                initial=session_settings,
-            )
-        else:
-            form = forms.SessionSettingsForm()
-    context = {
-        "form": form,
-        "order_choices": form.fields["ordering"].choices,
-        "filter_choices": form.fields["filtering"].choices,
-        "project_choices": form.fields["project"].choices,
-    }
-
-    return render(request, "candidate_app/session_settings.html", context)
-
-
-# def survey_status(request):
-#     # Order by the column the user clicked or by observation_id by default
-#     order_by = request.GET.get("order_by", "observation_id")
-#     obs_list = (
-#         models.Observation.objects.all()
-#         .annotate(
-#             candidates=Count("candidate"),
-#             rated_candidates=Count("candidate", filter=Q(candidate__rating__isnull=False)),
-#         )
-#         .order_by(order_by)
-#     )
-#     context = {"obs": obs_list}
-#     return render(request, "candidate_app/survey_status.html", context)
 
 
 def download_csv(request, queryset, table):
@@ -797,38 +959,82 @@ def download_csv(request, queryset, table):
     return response
 
 
-# Unused
-def download_data(request, table):
-    if table == "user":
-        from django.contrib.auth import get_user_model
-
-        this_model = get_user_model()
-    elif table == "rating":
-        this_model = models.Rating
-    elif table == "candidate":
-        this_model = models.Candidate
-    elif table == "observation":
-        this_model = models.Observation
-    elif table == "filter":
-        this_model = models.Filter
-    response = download_fits(request, this_model.objects.all(), table)
-    # response = download_csv(request, this_model.objects.all(), table)
-    return response
-
-
-def ratings(request: HttpRequest):
+def rating_summary(request: HttpRequest):
     """Render the ratings template."""
 
-    # Compile a list of ratings for the page,
-    # Paginate the ratings to x per page.
+    selected_project_hash_id = request.session.get("selected_project_hash_id")
 
-    # Make data for echarts to plot the ratings
+    ### Echarts bar plots ###
 
-    # Allow for a download button for the ratings for a project_obsID_subset, etc
+    if selected_project_hash_id:
+        selected_projects = [models.Project.objects.get(hash_id=selected_project_hash_id)]
+    else:
+        selected_projects = models.Project.objects.all()
 
-    context = {}
+    print(f"selected_project_hash_id - {selected_project_hash_id}")
 
-    return render(request, "candidate_app/ratings.html", context)
+    # For echarts bar plots of the tags and ratings per user and tag/classification.
+    ratings_per_user = {}
+    ratings_per_tag = {}
+
+    for project in selected_projects:
+        # Convert QuerySet to list of dictionaries for ratings per user
+        users_per_project = list(
+            models.Rating.objects.filter(candidate__project=project)
+            .values("user__username")
+            .annotate(count=Count("hash_id"))
+        )
+        ratings_per_user[project.id] = users_per_project
+
+        # Convert QuerySet to list of dictionaries for ratings per tag
+        tags_per_project = list(
+            models.Rating.objects.filter(candidate__project=project)
+            .values("tag__name")
+            .annotate(count=Count("hash_id"))
+        )
+        ratings_per_tag[project.id] = tags_per_project
+
+    ### Ratings table ###
+
+    # Apply project filtering for ratings
+    ratings = models.Rating.objects.all()
+    if selected_project_hash_id and selected_project_hash_id != "":
+        ratings = ratings.filter(candidate__project__hash_id=selected_project_hash_id)
+
+    if request.method == "POST":
+
+        # Submitting a form for filtering the ratings
+
+        # get user id from the request
+        # number of ratings per candidate
+        # ratings for individual candidates
+
+        print(f"filtering request for ratings")
+
+        # Compile a list of ratings for the page,
+        # Paginate the ratings to x per page.
+
+        # Make data for echarts to plot the ratings
+
+        # Allow for a download button for the ratings for a project_obsID_subset, etc
+
+        # Convert ratings to JSON-like for
+
+    # Paginate
+    paginator = Paginator(ratings, 25)
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "page_obj": page_obj,
+        "ratings": ratings,
+        "ratings_per_user": ratings_per_user,
+        "ratings_per_tag": ratings_per_tag,
+    }
+
+    print(f"context for the ratings page: {context}")
+
+    return render(request, "candidate_app/ratings_summary.html", context)
 
 
 @api_view(["POST"])
@@ -1002,7 +1208,7 @@ def upload_candidate(request):
                 cand_obj_id = request.data["cand_obj_id"]
                 proj = models.Project.objects.get(id=request.data["proj_id"])
                 obs = models.Observation.objects.get(project=proj, id=request.data["obs_id"])
-                beam = models.Beam.objects.get(project=proj, observation=obs)
+                beam = models.Beam.objects.get(project=proj, observation=obs, index=request.data["beam_index"])
                 if models.Candidate.objects.filter(
                     project=proj,
                     observation=obs,
@@ -1043,6 +1249,13 @@ def upload_candidate(request):
 def page_admin(request: HttpRequest):
     """Display a summary details about each project, observatio and the space used internal to the webapp."""
 
+    selected_project_hash_id = request.session.get("selected_project_hash_id")
+
+    if selected_project_hash_id:
+        selected_projects = [models.Project.objects.get(hash_id=selected_project_hash_id)]
+    else:
+        selected_projects = models.Project.objects.all()
+
     # Order by the column the user clicked or by observation_id by default
     # order_by = request.GET.get("order_by", "")
 
@@ -1050,33 +1263,21 @@ def page_admin(request: HttpRequest):
         f"************************** is user {request.user.id} staff: {request.user.is_staff} *********************************"
     )
 
-    projects_obs = {}
-    for project in models.Project.objects.all():
+    annotated_projects = []
 
-        obs_list = []
-        for obs in models.Observation.objects.filter(project=project):
+    for project in selected_projects:
 
-            temp = {}
+        observations = project.obs_proj.annotate(candidate_count=Count("cand_obs"))
 
-            beams = models.Beam.objects.filter(project=project, observation=obs)
-            candidates = models.Candidate.objects.filter(project=project, observation=obs)
-
-            temp["obj"] = obs
-            temp["num_beams"] = len(beams)
-            temp["num_cands"] = len(candidates)
-
-            obs_list.append(temp)
-
-        projects_obs[project.id] = obs_list
-
-    print("++++++++++++++++++++++++ project_obs ++++++++++++++++++++++++")
-    print(projects_obs)
+        annotated_projects.append({"project": project, "observations": observations})
 
     # Get disk space used by projects
     total_disk_space, used_disk_space, free_disk_space = get_disk_space(MEDIA_ROOT)
 
+    print(annotated_projects)
+
     context = {
-        "projects_obs": projects_obs,
+        "annotated_projects": annotated_projects,
         "free_disk_space": free_disk_space,
         "used_disk_space": used_disk_space,
         "total_disk_space": total_disk_space,

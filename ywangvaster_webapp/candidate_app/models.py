@@ -49,6 +49,9 @@ class Project(models.Model):
     # Meta data for when the object was uploaded / created
     upload = models.ForeignKey(Upload, on_delete=models.CASCADE, related_name="proj_upload", default=None)
 
+    def __str__(self):
+        return f"{self.id}"
+
 
 class Filter(models.Model):
 
@@ -279,6 +282,9 @@ class Classification(models.Model):
     name = models.CharField(verbose_name="Classification", max_length=64, blank=True, null=True, unique=True)
     description = models.CharField(verbose_name="Description", max_length=256, blank=True, null=True)
 
+    # Tie classifcations to a project or make them global?
+    # project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="project")
+
     def __str__(self):
         return f"{self.name}"
 
@@ -286,7 +292,6 @@ class Classification(models.Model):
 class Rating(models.Model):
 
     hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-
     candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name="rating", default=None)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -294,12 +299,17 @@ class Rating(models.Model):
         on_delete=models.DO_NOTHING,
         default=None,
     )
-
     rating = models.CharField(max_length=1, choices=POSSIBLE_RATINGS, default=None)
-
-    tags = models.ManyToManyField(Classification, related_name="ratings", default=None)
-
+    tag = models.ForeignKey(Classification, on_delete=models.DO_NOTHING, related_name="rating", default=None)
     date = models.DateTimeField(default=datetime.now, blank=True)
+    notes = models.CharField(max_length=1024)
+
+    # TO-DO
+    # Link to other resource?
+
+    def __str__(self):
+        print("---------------", f"{self.rating}")
+        return f"{self.rating}"
 
 
 class xml_ivorns(models.Model):
@@ -310,8 +320,8 @@ class xml_ivorns(models.Model):
 class ATNFPulsar(models.Model):
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(verbose_name="Pulsar Name", max_length=32, blank=False, unique=True)
-    ra_str = models.CharField()
-    dec_str = models.CharField()
+    ra_str = models.CharField(max_length=32)
+    dec_str = models.CharField(max_length=32)
     decj = models.FloatField(verbose_name="Declination epoch (J2000, deg)")
     raj = models.FloatField(verbose_name="Right Ascension epoch (J2000, deg)")
     DM = models.FloatField(verbose_name="Dispersion Measure (cm^-3 pc)", blank=True, null=True)

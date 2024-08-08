@@ -39,11 +39,13 @@ urlpatterns = [
     #     name="candidate_update_catalogue_query",
     # ),
     # Randered templates
-    path("ratings/", views.ratings, name="ratings"),
-    path("candidate_table/", views.candidate_table),
-    path("clear_candidate_table_filter/", views.clear_candidate_table_filter, name="clear_candidate_table_filter"),
+    path("rating_summary/", views.rating_summary, name="rating_summary"),
+    path("candidates/", views.candidate_table, name="candidates"),
+    path("clear_candidates_filter/", views.clear_candidates_filter, name="clear_candidates_filter"),
     path("candidate_rating/<str:cand_hash_id>/", views.candidate_rating, name="candidate_rating"),
+    # path("candidate_rating/", views.candidate_rating, name="candidate_rating_form"),
     path("candidate_rating/random/", views.candidate_random, name="candidate_random"),
+    path("create_tag/", views.create_tag, name="create_tag"),
     # path("survey_status/", views.survey_status),
     # path("voevent_view/<int:id>/", views.voevent_view, name="voevent_view"),
     # path("session_settings/", views.session_settings),
@@ -52,10 +54,15 @@ urlpatterns = [
     #     "download_page/",
     #     TemplateView.as_view(template_name="candidate_app/download_page.html"),
     # ),
+    path("about/", views.about, name="about"),
     path("download_lightcurve/<str:cand_hash_id>", views.download_lightcurve_csv, name="download_lightcurve_csv"),
+    path("project_select/", views.project_select, name="project_select"),
+    # Original consearches
     path("cone_search_simbad/", views.cone_search_simbad, name="cone_search_simbad"),
     path("cone_search_pulsars/", views.cone_search_pulsars, name="cone_search_pulsars"),
     path("cone_search/", views.cone_search, name="cone_search"),
+    # Get nearby objects (all databases in one)
+    path("get_nearby_objects/", views.nearby_objects_table, name="get_nearby_objects"),
     # To get or create a token for a user by a post request
     path("get_token/", views.get_token, name="get_token"),
     # Add records to the DB using a POST request
@@ -64,6 +71,8 @@ urlpatterns = [
     path("upload_candidate/", views.upload_candidate, name="upload_candidate"),
     # Delete records from the DB
     path("delete/", views.delete, name="delete"),
+    # about page for the webapp
+    path("about/", views.about, name="about"),
 ]
 
 # This allows media files to be linked and viewed directly

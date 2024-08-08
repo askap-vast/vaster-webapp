@@ -3,7 +3,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 
-
 <!-- Container for the heatmap -->
 <div id="heatmap" style="width: 800px; height: 600px;"></div>
 <script>
@@ -107,113 +106,6 @@
 </script>
 
 
-<div id="main"></div>
-<div>Handles <input id="handles" type="range" min="1" max="5" value="1" /></div>
-<div>
-  Values
-  <pre id="values"></pre>
-</div>
-
-<script>
-  function create_slider(parent_id, values = [0.0, 1.0]) {
-    const parent = document.getElementById(parent_id);
-    parent.innerHTML = "";
-
-    if (!Array.isArray(values)) {
-      values = new Array(+values).fill(0);
-      values = values.map((v, i) => i / values.length);
-    }
-
-    function create_element(type = "div", styles = {}) {
-      const el = document.createElement(type);
-      Object.assign(el.style, styles);
-      return el;
-    }
-
-    const state = {
-      start: 0,
-      current: 0,
-      active: 0,
-    };
-
-    const outer = create_element("div", {
-      position: "relative",
-      width: "100px",
-      height: "10px",
-      backgroundColor: "gray",
-      left: "100px",
-      top: "100px",
-      borderRadius: "5px",
-    });
-    parent.appendChild(outer);
-
-    const shim = create_element("div", {
-      position: "fixed",
-      top: "0px",
-      left: "0px",
-      width: "100%",
-      height: "100%",
-      overflow: "hidden",
-      zIndex: "9999",
-      display: "none",
-    });
-    shim.addEventListener("mousemove", (event) => {
-      state.current = event.screenX;
-      render();
-    });
-    shim.addEventListener("mouseup", (event) => {
-      state.current = event.screenX;
-      render();
-      shim.style.display = "none";
-      inners[state.active].style.zIndex = "";
-    });
-    parent.appendChild(shim);
-
-    const inners = values.map((v, i) => {
-      const inner = create_element("div", {
-        position: "absolute",
-        top: "-6px",
-        left: `calc(${v * 100}% - 10px)`,
-        width: "20px",
-        height: "20px",
-        border: "solid black 1px",
-        borderRadius: "10px",
-        backgroundColor: "lightgray",
-      });
-      inner.addEventListener("mousedown", (event) => {
-        state.active = i;
-        state.current = event.screenX;
-        state.start = event.screenX;
-        shim.style.display = "block";
-        inner.style.zIndex = "2";
-      });
-      outer.appendChild(inner);
-      return inner;
-    });
-
-    function render() {
-      // clip the active value
-      const index = state.active;
-      const prev = index == 0 ? 0.0 : values[index - 1];
-      const next = index == values.length - 1 ? 1.0 : values[index + 1];
-      const delta = (state.current - state.start) / outer.offsetWidth;
-      let value = values[index] + delta;
-      if (value < prev) value = prev;
-      if (value > next) value = next;
-      values[index] = value;
-      state.start = state.current;
-      inners[state.active].style.left = `calc(${100 * value}% - 10px)`;
-      document.getElementById("values").innerText = values.map((v) => (+v).toFixed(2)).join(" , ");
-    }
-    render();
-  }
-
-  function render() {
-    create_slider("main", document.getElementById("handles").value);
-  }
-  document.getElementById("handles").oninput = render;
-  render();
-</script>
 
 <h2>Survey Status</h2>
 <p>
