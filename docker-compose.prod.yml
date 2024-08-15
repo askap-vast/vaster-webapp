@@ -15,14 +15,13 @@ x-environment: &environment
   # DJango settings
   DEBUG: False
   DJANGO_LOG_LEVEL: INFO
-  DJANGO_ALLOWED_HOSTS: localhost 0.0.0.0 [::1] ywangvaster.duckdns.org # Your production URL
+  DJANGO_ALLOWED_HOSTS: localhost 0.0.0.0 # Add your production URL here
   DJANGO_SUPERUSER_USERNAME:
   DJANGO_SUPERUSER_PASSWORD:
   DJANGO_SUPERUSER_EMAIL:
   DJANGO_SECRET_KEY: devkey
   PYTHONDONTWRITEBYTECODE: 1
   PYTHONUNBUFFERED: 1
-  SYSTEM_ENV: DEV
 
 networks:
   ywang_vaster-network:
@@ -75,6 +74,6 @@ services:
     volumes:
       - static_volume:/home/app/web/staticfiles
     ports:
-      - 80:80
+      - 80:8000
     depends_on:
       - web

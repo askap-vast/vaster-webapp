@@ -16,7 +16,7 @@ x-environment: &environment
   DEBUG: True
   SECRET_KEY: foo
   DJANGO_LOG_LEVEL: INFO
-  DJANGO_ALLOWED_HOSTS: localhost 0.0.0.0 [::1] # Your production URL
+  DJANGO_ALLOWED_HOSTS: localhost 0.0.0.0 [::1]
   DJANGO_SUPERUSER_USERNAME: admin
   DJANGO_SUPERUSER_PASSWORD: test
   DJANGO_SUPERUSER_EMAIL: none@nothing.com
