@@ -4,6 +4,7 @@ from datetime import datetime
 
 from django.db import models
 from django.conf import settings
+from django.utils.functional import cached_property
 
 
 POSSIBLE_RATINGS = (
@@ -52,17 +53,35 @@ class Project(models.Model):
     def __str__(self):
         return f"{self.id}"
 
+    @cached_property
+    def total_file_size_gb(self):
+        """Return the total size of all the files in gigabytes associated this record."""
+        total_size = 0
+        beams = Beam.objects.filter(project=self)
+        candidates = Candidate.objects.filter(project=self)
 
-class Filter(models.Model):
+        for beam in beams:
+            total_size += beam.total_file_size_bytes
 
-    hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+        for candidate in candidates:
+            total_size += candidate.total_file_size_bytes
 
-    id = models.CharField(verbose_name="id", max_length=64, blank=True, null=True)
-    name = models.CharField(verbose_name="Short Name", max_length=64, blank=True, null=True)
-    description = models.CharField(verbose_name="Description", max_length=256, blank=True, null=True)
+        return total_size / (1024.0**3)
 
-    def __str__(self):
-        return f"{self.id}"
+    @cached_property
+    def total_file_count(self):
+        """Return the total number of files that are for this record."""
+        total_file_count = 0
+        beams = Beam.objects.filter(observation=self)
+        candidates = Candidate.objects.filter(observation=self)
+
+        for beam in beams:
+            total_file_count += beam.total_file_count
+
+        for candidate in candidates:
+            total_file_count += candidate.total_file_count
+
+        return total_file_count
 
 
 class Observation(models.Model):
@@ -86,27 +105,38 @@ class Observation(models.Model):
     obs_name = models.CharField(max_length=128, blank=True, null=True, verbose_name="Observation name")
     obs_description = models.CharField(max_length=1024, blank=True, null=True, verbose_name="Observation description")
 
-    # starttime = models.BigIntegerField(verbose_name="Start Time (GPS sec)")
-    # stoptime = models.BigIntegerField(verbose_name="Stop Time (GPS sec)")
-    # ra_tile_dec = models.FloatField(blank=True, null=True, verbose_name="RA (deg)")
-    # dec_tile_dec = models.FloatField(blank=True, null=True, verbose_name="Dec (deg)")
-    # ra_tile_hms = models.CharField(max_length=32, blank=True, null=True, verbose_name="RA (HH:MM:SS)")
-    # dec_tile_dms = models.CharField(max_length=32, blank=True, null=True, verbose_name="Dec (DD:MM:SS)")
-    # projectid = models.CharField(max_length=16, blank=True, null=True)
-    # azimuth = models.FloatField(blank=True, null=True, verbose_name="Azimuth (deg)")
-    # elevation = models.FloatField(blank=True, null=True, verbose_name="Elevation (deg)")
-    # frequency_channels = models.CharField(
-    #     max_length=128,
-    #     blank=True,
-    #     null=True,
-    #     verbose_name="Frequency Channels (x1.28 MHz)",
-    # )
-    # cent_freq = models.FloatField(blank=True, null=True, verbose_name="Centre Frequency (MHz)")
-    # freq_res = models.IntegerField(blank=True, null=True, verbose_name="Frequency Resolution (KHz)")
-    # int_time = models.FloatField(blank=True, null=True, verbose_name="Integration Time (s)")
+    @cached_property
+    def total_file_size_gb(self):
+        """Return the total size of all the files in gigabytes associated with this record."""
+        total_size = 0
+        beams = Beam.objects.filter(observation=self)
+        candidates = Candidate.objects.filter(observation=self)
+
+        for beam in beams:
+            total_size += beam.total_file_size_bytes
+
+        for candidate in candidates:
+            total_size += candidate.total_file_size_bytes
+
+        return total_size / (1024.0**3)
+
+    @cached_property
+    def total_file_count(self):
+        """Return the total number of files that are for this record."""
+        total_file_count = 0
+        beams = Beam.objects.filter(observation=self)
+        candidates = Candidate.objects.filter(observation=self)
+
+        for beam in beams:
+            total_file_count += beam.total_file_count
+
+        for candidate in candidates:
+            total_file_count += candidate.total_file_count
+
+        return total_file_count
 
     def __str__(self):
-        return f"{self.id}"
+        return f"{self.id} ({self.project.id})"
 
 
 class Beam(models.Model):
@@ -131,6 +161,10 @@ class Beam(models.Model):
     # Only if the user wants to add information to the beam.
     description = models.CharField(verbose_name="Description", max_length=1024, blank=True, null=True)
 
+    # Totals for files attached to the object
+    total_file_count = models.IntegerField(blank=True, null=True)
+    total_file_size_bytes = models.BigIntegerField(blank=True, null=True)
+
     # Save the files for each beam.
     final_cand_csv = models.FileField(upload_to=beam_upload_path, max_length=1024, blank=True, null=True)
 
@@ -144,32 +178,24 @@ class Beam(models.Model):
     peak_map2_png = models.FileField(upload_to=beam_upload_path, max_length=1024, blank=True, null=True)
     peak_fits = models.FileField(upload_to=beam_upload_path, max_length=1024, blank=True, null=True)
 
+    FILE_FIELDS = [
+        "final_cand_csv",
+        "std_fits",
+        "chisquare_map1_png",
+        "chisquare_map2_png",
+        "chisquare_fits",
+        "peak_map1_png",
+        "peak_map2_png",
+        "peak_fits",
+    ]
+
     def delete(self, *args, **kwargs):
         # Delete associated files
-        if self.final_cand_csv:
-            storage, path = self.final_cand_csv.storage, self.final_cand_csv.path
-            storage.delete(path)
-        if self.std_fits:
-            storage, path = self.std_fits.storage, self.std_fits.path
-            storage.delete(path)
-        if self.chisquare_map1_png:
-            storage, path = self.chisquare_map1_png.storage, self.chisquare_map1_png.path
-            storage.delete(path)
-        if self.chisquare_map2_png:
-            storage, path = self.chisquare_map2_png.storage, self.chisquare_map2_png.path
-            storage.delete(path)
-        if self.chisquare_fits:
-            storage, path = self.chisquare_fits.storage, self.chisquare_fits.path
-            storage.delete(path)
-        if self.peak_map1_png:
-            storage, path = self.peak_map1_png.storage, self.peak_map1_png.path
-            storage.delete(path)
-        if self.peak_map2_png:
-            storage, path = self.peak_map2_png.storage, self.peak_map2_png.path
-            storage.delete(path)
-        if self.peak_fits:
-            storage, path = self.peak_fits.storage, self.peak_fits.path
-            storage.delete(path)
+        for field in self.FILE_FIELDS:
+            file_field = getattr(self, field)
+            if file_field:
+                storage, path = file_field.storage, file_field.path
+                storage.delete(path)
 
         # Call superclass delete method
         super(Beam, self).delete(*args, **kwargs)
@@ -196,6 +222,10 @@ class Candidate(models.Model):
     beam = models.ForeignKey(Beam, on_delete=models.CASCADE, related_name="cand_beams", default=None)
     observation = models.ForeignKey(Observation, on_delete=models.CASCADE, related_name="cand_obs", default=None)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="cand_proj", default=None)
+
+    # Totals for files attached to the object
+    total_file_count = models.IntegerField(blank=True, null=True)
+    total_file_size_bytes = models.BigIntegerField(blank=True, null=True)
 
     # Lightcurve
     lightcurve_data = models.JSONField(null=True, blank=True)
@@ -250,23 +280,21 @@ class Candidate(models.Model):
     deep_int_flux = models.FloatField()
     md_deep = models.FloatField()
 
+    FILE_FIELDS = [
+        "lightcurve_png",
+        "slices_gif",
+        "slices_fits",
+        "deepcutout_png",
+        "deepcutout_fits",
+    ]
+
     def delete(self, *args, **kwargs):
         # Delete associated files
-        if self.lightcurve_png:
-            storage, path = self.lightcurve_png.storage, self.lightcurve_png.path
-            storage.delete(path)
-        if self.slices_gif:
-            storage, path = self.slices_gif.storage, self.slices_gif.path
-            storage.delete(path)
-        if self.slices_fits:
-            storage, path = self.slices_fits.storage, self.slices_fits.path
-            storage.delete(path)
-        if self.deepcutout_png:
-            storage, path = self.deepcutout_png.storage, self.deepcutout_png.path
-            storage.delete(path)
-        if self.deepcutout_fits:
-            storage, path = self.deepcutout_fits.storage, self.deepcutout_fits.path
-            storage.delete(path)
+        for field in self.FILE_FIELDS:
+            file_field = getattr(self, field)
+            if file_field:
+                storage, path = file_field.storage, file_field.path
+                storage.delete(path)
 
         # Call superclass delete method
         super(Candidate, self).delete(*args, **kwargs)
@@ -282,7 +310,7 @@ class Classification(models.Model):
     name = models.CharField(verbose_name="Classification", max_length=64, blank=True, null=True, unique=True)
     description = models.CharField(verbose_name="Description", max_length=256, blank=True, null=True)
 
-    # Tie classifcations to a project or make them global?
+    # Attach classifcations to a project or make them global?
     # project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="project")
 
     def __str__(self):
@@ -308,7 +336,6 @@ class Rating(models.Model):
     # Link to other resource?
 
     def __str__(self):
-        print("---------------", f"{self.rating}")
         return f"{self.rating}"
 
 

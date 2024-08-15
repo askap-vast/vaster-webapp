@@ -8,7 +8,27 @@ def create_classification_entries(apps, schema_editor):
 
     Classification = apps.get_model("candidate_app", "Classification")
 
-    initial_data = [
+    initial = [
+        {
+            "hash_id": uuid.uuid4(),
+            "name": "Flaring star",
+            "description": "Radio flaring stars",
+        },
+        {
+            "hash_id": uuid.uuid4(),
+            "name": "Unknown",
+            "description": "Unknown objects, not in any catalogues",
+        },
+        {
+            "hash_id": uuid.uuid4(),
+            "name": "AGN",
+            "description": "Active Galactic Nuclei",
+        },
+        {
+            "hash_id": uuid.uuid4(),
+            "name": "IDV",
+            "description": "Intra-day variability, extreme scintillating AGN",
+        },
         {
             "hash_id": uuid.uuid4(),
             "name": "Noise",
@@ -16,8 +36,18 @@ def create_classification_entries(apps, schema_editor):
         },
         {
             "hash_id": uuid.uuid4(),
-            "name": "Aeroplane",
-            "description": "Aeroplane flying in way of beam during observation",
+            "name": "Sidelobes",
+            "description": "Sidelobes of a bright source",
+        },
+        {
+            "hash_id": uuid.uuid4(),
+            "name": "Artefacts",
+            "description": "Artefacts in the image, not a real object",
+        },
+        {
+            "hash_id": uuid.uuid4(),
+            "name": "Aeroplane or Satellite",
+            "description": "Aeroplane or Satellite flying in way of beam during observation",
         },
         {
             "hash_id": uuid.uuid4(),
@@ -26,17 +56,17 @@ def create_classification_entries(apps, schema_editor):
         },
         {
             "hash_id": uuid.uuid4(),
-            "name": "Pulsar - Uncatalogued",
+            "name": "New pulsar",
             "description": "Possible new pulsar detected",
         },
         {
             "hash_id": uuid.uuid4(),
-            "name": "Pulsar - Catalogued",
-            "description": "Already known and catalogued pulsar in exsiting DB",
+            "name": "Known pulsar",
+            "description": "Already known and catalogued pulsar in existing DB",
         },
     ]
 
-    for data in initial_data:
+    for data in initial:
         Classification.objects.create(**data)
 
 

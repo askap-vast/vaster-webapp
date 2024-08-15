@@ -10,14 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
-from pathlib import Path
 import os
 import sys
-
 import logging
-
-logging.basicConfig(level=logging.DEBUG)
-logging.debug("Settings file loaded")
+from pathlib import Path
 
 USE_TZ = True
 TIME_ZONE = "UTC"  # or 'Australia/(city)'
@@ -33,10 +29,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", None)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True  # os.environ.get("DEBUG", False)
+DEBUG = os.environ.get("DEBUG", False)
 
-# ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
-ALLOWED_HOSTS = ["*"]
+if DEBUG:
+    logging.basicConfig(level=logging.DEBUG)
+    logging.debug("Settings file loaded")
+
+LLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
 
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
@@ -102,6 +101,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {
+            "min_length": 8,  # Set your desired minimum length here
+        },
     },
     {
         "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",

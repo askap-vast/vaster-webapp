@@ -1,11 +1,13 @@
 {% extends 'candidate_app/header.html' %}
 
+{% load utils %}
+
 {% block content %}
+
+{% if candidate %}
 
 <!-- -->
 {{ lightcurve_data|json_script:"lightcurve_data" }}
-
-{% if candidate %}
 
 <!-- Modal for creating new tag -->
 <div class="modal" id="createNewTagModal" tabindex="-1" aria-labelledby="createNewTagModal" aria-hidden="true">
@@ -52,6 +54,46 @@
 
             <hr />
 
+            {% if prev_rating %}
+            <div id='prev_rating-{{prev_rating.hash_id}}' style="padding: 10px">
+
+              <text>Your previous rating for this candidate:</text>
+
+              <div class='vstack gap-2'>
+
+                <div class='hstack gap-2 d-flex'>
+                  <label class='fw-bold'>Confidence: </label>
+                  <text> {{ prev_rating.rating|get_label_mapping:CONFIDENCE_MAPPING }}</text>
+                </div>
+
+                <div class='hstack gap-2 d-flex'>
+                  <label class='fw-bold'>Classification: </label>
+                  <text> {{ prev_rating.tag }} </text>
+                </div>
+
+                <div class='hstack gap-2 d-flex'>
+                  <label class='fw-bold'>Date: </label>
+                  <text> {{ prev_rating.date }}</text>
+                </div>
+
+
+                <div class='vstack gap-2 d-flex'>
+                  <label class='fw-bold'>Notes: </label>
+                  {% if prev_rating.notes|length > 0 %}
+                  <text style="max-width: 300px; padding: 5px; border: 2px solid grey; border-radius: 5px;">
+                    {{ prev_rating.notes }}</text>
+                  {% endif %}
+                </div>
+
+
+              </div>
+
+            </div>
+
+            <hr />
+            {% endif %}
+
+
             <form type='POST' method="POST" action="{% url 'candidate_rating' candidate.hash_id %}">
 
               {% csrf_token %}
@@ -72,9 +114,16 @@
                   <textarea class="form-control" rows="5" id="notes" name="notes"></textarea>
                 </div>
 
-                <button class='btn btn-primary' id='submit-rating' type='submit'>Rate!</button>
+                {% if prev_rating %}
+                <button class='btn btn-primary' id='submit-rating' type='submit'>
+                  Update rating!
+                </button>
+                {% else %}
+                <button class='btn btn-primary' id='submit-rating' type='submit'>
+                  Rate
+                </button>
+                {% endif %}
               </div>
-
             </form>
 
           </div>
@@ -140,7 +189,7 @@
                     <!-- Column for data summary -->
                     <div class='col'>
 
-                      <div class='vstack gap-4'>
+                      <div class='vstack gap-4 justify-content-center align-items-center'>
 
                         <div class='container'>
                           <h3 style="padding-bottom: 20px;">Summary</h3>
@@ -151,20 +200,25 @@
                               <text>Dec {{ candidate.dec_str }}</text>
                             </div>
 
-                            <div class='vstack gap-2'>
+                            <div class='vstack gap-2 justify-content-center align-items-center'>
+                              <h5>Project</h5>
+                              <text> {{candidate.project.id}} </text>
+                            </div>
+
+                            <div class='vstack gap-2 justify-content-center align-items-center'>
                               <h5>SBID</h5>
                               <text> {{candidate.observation.id}} </text>
                             </div>
 
-                            <div class='vstack gap-2'>
+                            <div class='vstack gap-2 justify-content-center align-items-center'>
                               <h5>Beam index</h5>
                               <text>{{candidate.beam.index}}</text>
                             </div>
                           </div>
                         </div>
 
-                        <table class='table table-striped table-hover caption-top'>
-                          <caption>Statitics</caption>
+                        <table class='table table-striped table-bordered table-hover caption-top'>
+                          <caption>Statistics</caption>
                           <thead class='table-success'>
                             <th class="text-center"></th>
                             <th class="text-center">Value</th>
@@ -197,11 +251,17 @@
                               <td class="text-center">-</td>
                               <td class="text-center">-</td>
                             </tr>
+                            <tr>
+                              <td class="text-center">MD Deep</td>
+                              <td class="text-center">{{ candidate.md_deep|floatformat:3 }}</td>
+                              <td class="text-center">-</td>
+                              <td class="text-center">-</td>
+                            </tr>
                           </tbody>
 
                         </table>
 
-                        <table class='table table-striped table-hover caption-top'>
+                        <table class='table table-striped table-bordered table-hover caption-top'>
                           <caption>Spacial details</caption>
                           <thead class='table-success'>
 
@@ -214,14 +274,14 @@
                           <tbody>
                             <tr>
                               <td class="text-center">Ra</td>
-                              <td class="text-center">{{ candidate.deep_ra_deg }}</td>
-                              <td class="text-center">{{ candidate.beam_ra }} </td>
+                              <td class="text-center">{{ candidate.deep_ra_deg|floatformat:4 }}</td>
+                              <td class="text-center">{{ candidate.beam_ra|floatformat:4 }} </td>
                               <td class="text-center"> - </td>
                             </tr>
                             <tr>
                               <td class="text-center">Dec</td>
-                              <td class="text-center">{{ candidate.deep_dec_deg }}</td>
-                              <td class="text-center">{{ candidate.beam_dec }} </td>
+                              <td class="text-center">{{ candidate.deep_dec_deg|floatformat:4 }}</td>
+                              <td class="text-center">{{ candidate.beam_dec|floatformat:4 }} </td>
                               <td class="text-center"> - </td>
                             </tr>
 
@@ -234,8 +294,8 @@
                           </tbody>
                         </table>
 
-                        <table class='table table-striped table-hover caption-top'>
-                          <caption>Deep stats</caption>
+                        <table class='table table-striped table-bordered table-hover caption-top'>
+                          <caption>Deep statistics</caption>
                           <thead class='table-success'>
                             <th class="text-center">Name</th>
                             <th class="text-center">Value</th>
@@ -257,10 +317,6 @@
                             <tr>
                               <td class="text-center">Int Flux</td>
                               <td class="text-center">{{ candidate.deep_int_flux|floatformat:3 }}</td>
-                            </tr>
-                            <tr>
-                              <td class="text-center">MD Deep</td>
-                              <td class="text-center">{{ candidate.md_deep|floatformat:3 }}</td>
                             </tr>
                           </tbody>
 
@@ -288,7 +344,7 @@
                         </div>
                         {% else %}
                         <div class='image-placeholder'
-                          style="width: 100%; height: 300px; background: grey; border: 2px solid black;">
+                          style="width: 100%; height: 100%; max-width: 600px; max-height: 600px; min-width: 500px; min-height: 500px; background: grey; border: 2px solid black;">
                           <p style="text-align: center; vertical-align: middle;">No deepcut image to display.</p>
                         </div>
                         {% endif %}
@@ -301,9 +357,9 @@
                           <h5>Slices</h5>
                           {% if candidate.slices_gif %}
 
-                          <div class='vstack justify-content-center align-items-center' id='gif-and-buttons'>
+                          <div class='vstack gap-1 justify-content-center align-items-center' id='gif-and-buttons'>
 
-                            <canvas id="gifCanvas"></canvas>
+                            <canvas class="d-flex" id="gifCanvas" style="padding-left: 40px"></canvas>
                             <div class="controls">
                               <button class='btn btn-primary' id="playPauseBtn">Pause</button>
                               <input type="range" id="frameSlider" min="0" step="1">
@@ -336,7 +392,12 @@
 
                         <div class='col-lg order-1 order-lg-1'>
 
-                          <div id="aladin-lite-div" style="min-width: 450px; height: 500px; background-color: grey">
+                          <div id="aladin-lite-div" class="hstack gap-2 justify-content-center align-items-center p-3"
+                            style="min-width: 450px; height: 600px;">
+                            Loading Adlian Lite plugin
+                            <div class="spinner-border text-primary" role="status">
+                              <span class="visually-hidden"></span>
+                            </div>
                           </div>
 
                         </div>
@@ -346,7 +407,9 @@
                         <div class='col-lg order-2 order-lg-2'>
 
                           {% if lightcurve_data %}
-                          <div id="lightcurve_echarts" style="height: 500px; min-width: 450px"></div>
+                          {% comment %} <div id="lightcurve_echarts" style="height: 500px; min-width: 450px"></div>
+                          {% endcomment %}
+                          <div id="lightcurve_echarts" style="height: 600px; min-width: 450px"></div>
                           {% else %}
                           <div class='image-placeholder'
                             style=" width: 100%; height: 600px; background: grey; border: 2px solid black;">
@@ -374,7 +437,7 @@
             <div class='card'>
               <div class='card-body'>
 
-                <div class="hstack gap-2 justify-content-center">
+                <div class="hstack gap-2 justify-content-center" style="padding-bottom: 17px">
                   <form id="searchForm" onsubmit="return handleFormSubmit(event)">
                     <label for='arcmin-input'>Search nearby within arcmin </label>
                     <input id="arcmin-input" type="text" name="arcmin" value="{{arcmin_search}}" size="2">
@@ -383,7 +446,7 @@
                   </form>
                 </div>
 
-                <div id="nearbyobjectlocator" style="height: 500px; overflow-y: auto">
+                <div id="nearbyobjectlocator" style="min-height: 200px; max-height: 500px; overflow-y: auto">
                   <div class="justify-content-center align-items-center hstack gap-3">
                     <p>Loading</p>
                     <div class="spinner-border text-primary" role="status">
@@ -450,33 +513,57 @@
                   <div class='row'>
                     <div class='col-lg'>
                       {% if candidate.beam.chisquare_map1_png %}
-                      Chi square map 1
-                      <img src="{{ candidate.beam.chisquare_map1_png.url}}"
-                        style="width: 100%; height: 100%; object-fit: contain;">
+                      <div class='vstack gap-1 justify-content-center align-items-center'>
+                        <h5>Chi square map 1</h5>
+                        <img src="{{ candidate.beam.chisquare_map1_png.url}}"
+                          style="width: 100%; height: 100%; object-fit: contain;">
+                      </div>
+                      {% else %}
+                      <div style="background-color: grey; width: 500px; height: 500px">
+                        Placeholder for Chi square map 1 image
+                      </div>
                       {% endif %}
                     </div>
-
                     <div class='col-lg'>
-                      {% if candidate.beam.chisquare_map2_png %}
-                      Chi square map 2
-                      <img src="{{ candidate.beam.chisquare_map2_png.url }}"
-                        style="width: 100%; height: 100%; object-fit: contain;">
+                      {% if candidate.beam.peak_map1_png %}
+                      <div class='vstack gap-1 justify-content-center align-items-center'>
+                        <h5>Peak map 1</h5>
+                        <img src="{{ candidate.beam.peak_map1_png.url}}"
+                          style="width: 100%; height: 100%; object-fit: contain;">
+                      </div>
+                      {% else %}
+                      <div style="background-color: grey; width: 500px; height: 500px">
+                        Placeholder for Peak map 1 image
+                      </div>
                       {% endif %}
                     </div>
                   </div>
                   <div class='row'>
+
                     <div class='col-lg'>
-                      {% if candidate.beam.peak_map1_png %}
-                      Peak map 1
-                      <img src="{{ candidate.beam.peak_map1_png.url }}"
-                        style="width: 100%; height: 100%;object-fit: contain;">
+                      {% if candidate.beam.chisquare_map2_png %}
+                      <div class='vstack gap-1 justify-content-center align-items-center'>
+                        <h5>Chi square map 2</h5>
+                        <img src="{{ candidate.beam.chisquare_map2_png.url}}"
+                          style="width: 100%; height: 100%; object-fit: contain;">
+                      </div>
+                      {% else %}
+                      <div style="background-color: grey; width: 500px; height: 500px">
+                        Placeholder for Chi square map 2 image
+                      </div>
                       {% endif %}
                     </div>
                     <div class='col-lg'>
                       {% if candidate.beam.peak_map2_png %}
-                      Peak map 2
-                      <img src="{{ candidate.beam.peak_map2_png.url }}"
-                        style="width: 100%; height: 100%; object-fit: contain;">
+                      <div class='vstack gap-1 justify-content-center align-items-center'>
+                        <h5>Peak map 2</h5>
+                        <img src="{{ candidate.beam.peak_map2_png.url}}"
+                          style="width: 100%; height: 100%; object-fit: contain;">
+                      </div>
+                      {% else %}
+                      <div style="background-color: grey; width: 500px; height: 500px">
+                        Placeholder for Peak map 2 image
+                      </div>
                       {% endif %}
                     </div>
                   </div>
@@ -515,7 +602,7 @@
     return item[1];
   });
 
-  // Remove title  min/max find
+  // Remove title min/max find
   values.shift();
   let minValue = 0.95 * Math.min(...values);
   let maxValue = 1.05 * Math.max(...values);
@@ -549,41 +636,40 @@
     };
   }
 
-
   let option = {
     tooltip: {
-      trigger: 'item',
-
+      trigger: 'axis',
+      valueFormatter: function (input) {
+        let value = Number(input)
+        return value.toFixed(2);
+      },
     },
     animation: false,
     dataZoom: [{
       type: 'slider',
       xAxisIndex: [0],
       filterMode: 'filter',
-      // height: 12,
-      //bottom: 20,
-    }, ],
+    }],
+    height: 450,
     title: {
       text: 'Lightcurve Peak Flux',
       position: "center"
-    },
-    tooltip: {
-      trigger: 'axis'
     },
     xAxis: {
       type: 'time',
       datazoom: true,
       name: 'Time (UTC)',
       nameLocation: 'middle',
-      nameGap: 22
+      nameGap: 25
     },
     yAxis: {
       type: 'value',
       min: minValue,
       max: maxValue,
       axisLabel: {
-        formatter: function (value) {
-          return value.toFixed(1);
+        formatter: function (input) {
+          let value = Number(input)
+          return value.toFixed(2);
         },
         minInterval: 1,
       },
@@ -619,10 +705,6 @@
         z: 100
       },
     ],
-    tooltip: {
-      show: true,
-      trigger: "axis"
-    },
   };
 
   // Set the options to the chart
@@ -652,7 +734,7 @@
       console.log(`Searching within ${arcmin} arcmin of {{candidate.ra_str}} {{candidate.dec_str}}`);
 
       locatorDiv.innerHTML =
-        "<div class='justify-content-center align-items-center hstack gap-3'><p>Loading </p><div class='spinner-border text-primary' role='status'><span class='visually-hidden'>Loading</span></div></div>"
+        "<div class='hstack gap-2 justify-content-center align-items-center p-3'>Loading<div class='spinner-border text-primary' role='status'><span class='visually-hidden'></span></div></div>"
 
       const response = await fetch('/get_nearby_objects/', {
         method: 'POST',
@@ -677,10 +759,11 @@
   document.addEventListener('DOMContentLoaded', getNearbyObjectsTable())
 </script>
 
+{% if candidate.slices_gif.url %}
+
 <script type="module">
 
   // TODO: Make this a proper html component and import 
-
   import GIF from 'https://cdn.jsdelivr.net/npm/@fand/gifuct-js@1.0.0/+esm';
 
   let frames = [];
@@ -759,32 +842,11 @@
   });
 </script>
 
-<!-- Load the Aladin applet on the page looking at the coords of the candidate -->
-{% comment %} <script type="text/javascript">
-  // Wait until page is loaded and to download the Aladin script
-  window.onload = function () {
-    let script = document.createElement('script');
-    script.type = "text/javascript"
-    script.src = "https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js";
-    script.charset = "utf-8";
-    document.body.appendChild(script);
-
-
-    makeAladinWindow()
-  };
-
-  // let aladin;
-  //A.init.then(() => {
-  // aladin = A.aladin('#aladin-lite-div', {
-  //    survey: "P/DSS2/color",
-  //   fov: "{{candidate.deep_sep_arcsec|floatformat:2}}", // 1, // degress of field of view
-  //   target: "{{candidate.name}}",
-  // });
-  //});
-</script> {% endcomment %}
+{% endif %}
 
 <!-- Aladin sky applet -->
-<script type="text/javascript" src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8">
+<script type="text/javascript" src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8"
+  defer>
 </script>
 
 <script>
@@ -792,13 +854,17 @@
     makeAladinWindow()
   }
 
-  function makeAladinWindow() {
-    //let A;
+  async function makeAladinWindow() {
+
+    // Remove the loading spinner in the div 
+    let aladinDiv = document.getElementById('aladin-lite-div')
+    aladinDiv.innerHTML = ''
+
     let aladin;
     A.init.then(() => {
       aladin = A.aladin('#aladin-lite-div', {
         survey: "P/DSS2/color",
-        fov: "{{candidate.deep_sep_arcsec|floatformat:2}}", // 1, // degress of field of view
+        fov: 2 / 60, // 1, // degress of field of view
         target: "{{candidate.name}}",
       });
     });

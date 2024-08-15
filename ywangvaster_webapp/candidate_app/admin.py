@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Project, Observation, Candidate, Rating, Classification, Filter
+from .models import Project, Observation, Candidate, Rating, Classification
 
 
 class CandidateAdmin(admin.ModelAdmin):

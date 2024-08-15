@@ -1,8 +1,10 @@
-import re
+import sys
 import uuid
 from datetime import datetime, timezone
 from rest_framework import serializers
 from . import models
+
+from django.core.files.uploadedfile import InMemoryUploadedFile
 
 
 def remove_leading_zero(coord_str: str):
@@ -40,13 +42,34 @@ class ObservationSerializer(serializers.ModelSerializer):
         return models.Observation.objects.create(upload=upload, project=project, **validated_data)
 
 
+BEAM_FILE_FIELDS = [
+    "final_cand_csv",
+    "std_fits",
+    "chisquare_map1_png",
+    "chisquare_map2_png",
+    "chisquare_fits",
+    "peak_map1_png",
+    "peak_map2_png",
+    "peak_fits",
+]
+
+
 class BeamSerializer(serializers.ModelSerializer):
     hash_id = serializers.UUIDField(required=False)
     obs_id = serializers.CharField(write_only=True)
 
+    # total_file_count = serializers.IntegerField(write_only=True)
+    # total_file_size_bytes = serializers.IntegerField(write_only=True)
+
     class Meta:
         model = models.Beam
         fields = "__all__"
+
+    # def validate(self, data):
+    #     """Trim the unnecessary leading zero from the coordinate string."""
+    #     data["ra_str"] = remove_leading_zero(data.get("ra_str", ""))
+    #     data["dec_str"] = remove_leading_zero(data.get("dec_str", ""))
+    #     return data
 
     def create(self, validated_data):
         # Check if 'hash_id' is present; if not, generate a new UUID
@@ -62,6 +85,21 @@ class BeamSerializer(serializers.ModelSerializer):
 
         assert observation is not None, f"Failed to find observation {obs_id} in DB."
 
+        # Make counts for uploaded files and file sizes.
+        total_file_count = 0
+        total_file_size_bytes = 0
+        for file in BEAM_FILE_FIELDS:
+            uploaded_file: InMemoryUploadedFile = validated_data.get(file)
+            if uploaded_file is not None:
+                total_file_count += 1
+                total_file_size_bytes += uploaded_file.size
+        validated_data["total_file_count"] = total_file_count
+        validated_data["total_file_size_bytes"] = total_file_size_bytes
+
+        print(
+            f" ---- Number of files in beam: {total_file_count}. Number of bytes for beam files: {total_file_size_bytes} ---- "
+        )
+
         # Create the Upload metadata
         upload = models.Upload.objects.create(
             user=self.context["user"],
@@ -69,6 +107,15 @@ class BeamSerializer(serializers.ModelSerializer):
         )
 
         return models.Beam.objects.create(observation=observation, project=proj, upload=upload, **validated_data)
+
+
+CANDIDATE_FILE_FIELDS = [
+    "lightcurve_png",
+    "slices_gif",
+    "slices_fits",
+    "deepcutout_png",
+    "deepcutout_fits",
+]
 
 
 class CandidateSerializer(serializers.ModelSerializer):
@@ -79,10 +126,12 @@ class CandidateSerializer(serializers.ModelSerializer):
         model = models.Candidate
         fields = "__all__"
 
-    def validate(self, data):
-        # data["ra_str"] = remove_leading_zero(data.get("ra_str", ""))
-        # data["dec_str"] = remove_leading_zero(data.get("dec_str", ""))
-        return data
+    # Keep leading zero on coordinates
+    # def validate(self, data):
+    #     """Trim the unnecessary leading zero from the coordinate string."""
+    #     data["ra_str"] = remove_leading_zero(data.get("ra_str", ""))
+    #     data["dec_str"] = remove_leading_zero(data.get("dec_str", ""))
+    #     return data
 
     def create(self, validated_data):
         # Check if 'hash_id' is present; if not, generate a new UUID
@@ -101,6 +150,17 @@ class CandidateSerializer(serializers.ModelSerializer):
         beam = models.Beam.objects.get(index=beam_index, observation=obs, project=proj)
         print(f"+++++++++++++++ candidate serializer: BEAM INDEX {beam_index} +++++++++++++++")
         assert beam is not None, f"Failed to find beam {beam_index} for {obs_id} in DB."
+
+        # Make counts for uploaded files and file sizes.
+        total_file_count = 0
+        total_file_size_bytes = 0
+        for file in CANDIDATE_FILE_FIELDS:
+            uploaded_file: InMemoryUploadedFile = validated_data.get(file)
+            if uploaded_file is not None:
+                total_file_count += 1
+                total_file_size_bytes += uploaded_file.size
+        validated_data["total_file_count"] = total_file_count
+        validated_data["total_file_size_bytes"] = total_file_size_bytes
 
         # Create the Upload metadata
         upload = models.Upload.objects.create(

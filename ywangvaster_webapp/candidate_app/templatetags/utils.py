@@ -50,3 +50,8 @@ def get_attr(obj, attr_name):
 def isoformat(value: datetime):
     """To return the iso date format from a Django datetime field."""
     return value.isoformat()  # 'c' is the format string for ISO 8601 in Django
+
+
+@register.filter
+def get_label_mapping(value, mapping):
+    return mapping.get(value, value)

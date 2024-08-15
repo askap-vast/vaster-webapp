@@ -1,17 +1,22 @@
 <!DOCTYPE html>
 <html>
 
+
+
+{% block head %}
+
 <head>
   {% load static %}
   <meta charset="utf-8" />
+
+  <link rel="icon" href='/static/favicon.ico'>
+
   <link rel="stylesheet" type="text/css" href="{% static 'css/base.css' %}" />
   <script src={% static  "js/multiInputSlider.js" %}></script>
   <script src={% static  "js/sortTable.js" %}></script>
-  {% comment %} <script src={% static  "js/gifControl.js" %}></script> {% endcomment %}
 
-  {% comment %} <script src={% static "js/gifuct/deinterlace.js" %}></script> {% endcomment %}
-  {% comment %} <script src={% static "js/gifuct/index.js" %}></script> {% endcomment %}
-  {% comment %} <script src={% static "js/gifuct/lzw.js" %}></script> {% endcomment %}
+  {% comment %} TODO: Move the gif control into it's own html component. {% endcomment %}
+  {% comment %} <script src={% static  "js/gifControl.js" %}></script> {% endcomment %}
 
   <!-- Bootstrap -->
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
@@ -27,18 +32,16 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
   <!-- JQuery -->
-  {% comment %} <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js"
-    integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script> {% endcomment %}
-  {% comment %} <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> {% endcomment %}
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
 
   <!-- Echarts plotting script-->
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 
-  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
-
-  {% block head %} {% endblock head %}
 </head>
+
+{% endblock head %}
+
 
 <nav class="navbar navbar-expand-lg" style="background-color: #e3f2fd;">
   <div class="container-fluid">
@@ -49,20 +52,12 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
       <ul class="navbar-nav">
-        {% comment %} <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/obs_summary/">Observations</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/beam/">Beams</a>
-        </li> {% endcomment %}
+
+        {% if user.is_authenticated %}
         <li class="nav-item">
           <a class="nav-link active" aria-current="page" href="{% url 'candidates' %}">Candidates</a>
         </li>
 
-        {% comment %}
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/session_settings/">Session Settings</a>
-        </li> {% endcomment %}
         {% if user.is_staff %}
         <li class="nav-item">
           <a class="nav-link active" aria-current="page" href="{% url 'rating_summary' %}">Ratings</a>
@@ -75,8 +70,6 @@
           <a class="nav-link active" aria-current="page" href="{% url 'about' %}">About</a>
         </li>
 
-
-        {% if user.is_authenticated %}
         <li class='nav-item'>
           <a class="nav-link active"> Viewing: {{ selected_project_id }}</a>
         </li>
@@ -97,6 +90,17 @@
         {% if user.is_authenticated %}
         <div class='container-fluid'>
           <div class="row align-items-center gap-1">
+
+            <div class="col-md-auto">
+              {% if messages %}
+              {% for message in messages %}
+              <span class="text-warning navbar-text">
+                {{ message }}
+              </span>
+              {% endfor %}
+              {% endif %}
+            </div>
+
             <div class="col-md-auto">
               <span class="navbar-text active">{{ user.username }}</span>
             </div>
@@ -153,6 +157,8 @@
     </div>
 </nav>
 
+
+{% if user.is_authenticated %}
 <!-- Modal for the user management-->
 <div class="modal" id="manageModal" tabindex="-1" aria-labelledby="manageModalLabel" aria-hidden="true">
   <div class="modal-dialog">
@@ -179,6 +185,16 @@
 
         <hr />
 
+        <h3> Reset password</h3>
+
+        <form id='reset-user-password' method='post' action={% url 'change_password' %}>
+          {% csrf_token %}
+          {{ pw_reset_form }}
+          <button class='btn btn-primary' type="submit">Save changes</button>
+        </form>
+
+        <hr />
+
         <h3>Upload token</h3>
 
         <div class="vstack gap-3 align-items-center justify-content-center">
@@ -198,6 +214,8 @@
   </div>
 
 </div>
+
+{% endif %}
 
 <body>
   {% block content %} {% endblock %}

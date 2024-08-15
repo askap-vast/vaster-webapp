@@ -1,10 +1,12 @@
 from django import forms
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from . import models
 
+DjangoUserModel = get_user_model()
 
 confidence_choices = (
-    ("-", "----"),
+    (None, "----"),
     ("T", "True"),
     ("F", "False"),
     ("U", "Unsure"),
@@ -24,7 +26,24 @@ class CandidateFilterForm(forms.Form):
         else:
             self.fields["observation"].queryset = models.Observation.objects.all()
 
+    def _post_clean(self):
+        """Additional cleaning step after the form's clean method.
+
+        Used to get the hash_id's out of the model choice fields for serialisation in later steps of the candidate_table page.
+        """
+        super()._post_clean()
+
+        tag = self.cleaned_data.get("tag")
+        if tag:
+            self.cleaned_data["tag"] = str(tag.hash_id)
+
+        observation = self.cleaned_data.get("observation")
+        if observation:
+            self.cleaned_data["observation"] = str(observation.hash_id)
+
+    # TODO: Change this to be rated or unrated or both with a choice select.
     rated = forms.BooleanField(required=False)
+
     ratings_count = forms.IntegerField(required=False)
 
     tag = forms.ModelChoiceField(
@@ -124,7 +143,7 @@ class RateCandidateForm(forms.Form):
     classification = forms.ModelChoiceField(
         queryset=models.Classification.objects.all(),
         to_field_name="name",
-        label="Tags",
+        label="Tag",
     )
     notes = forms.CharField(required=False, label="Notes")
 
@@ -147,4 +166,44 @@ class ProjectSelectForm(forms.Form):
         empty_label="All projects",
         label="Project",
         required=False,
+    )
+
+
+class RatingFilterForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        # Extract the selected project from the kwargs
+        selected_project_hash_id = kwargs.pop("selected_project_hash_id", None)
+        super().__init__(*args, **kwargs)
+
+        # Update the choices for observation_id based on the selected project
+        if selected_project_hash_id:
+            self.fields["observation"].queryset = models.Observation.objects.filter(project=selected_project_hash_id)
+        else:
+            self.fields["observation"].queryset = models.Observation.objects.all()
+
+    observation = forms.ModelChoiceField(
+        models.Observation.objects.none(),
+        empty_label="All observations",
+        label="Observations",
+        required=False,
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+    tag = forms.ModelChoiceField(
+        queryset=models.Classification.objects.all(),
+        required=False,
+        label="Tag",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+    confidence = forms.ChoiceField(
+        choices=confidence_choices,
+        required=False,
+        label="Confidence",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+    user = forms.ModelChoiceField(
+        queryset=DjangoUserModel.objects.all(),
+        required=False,
+        label="User",
+        widget=forms.Select(attrs={"class": "form-control"}),
     )

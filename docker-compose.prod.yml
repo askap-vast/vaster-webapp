@@ -13,16 +13,16 @@ x-environment: &environment
   POSTGRES_PASSWORD: password
 
   # DJango settings
-  DEBUG: True
-  SECRET_KEY: foo
+  DEBUG: False
   DJANGO_LOG_LEVEL: INFO
-  DJANGO_ALLOWED_HOSTS: localhost 0.0.0.0 [::1] # Your production URL
-  DJANGO_SUPERUSER_USERNAME: admin
-  DJANGO_SUPERUSER_PASSWORD: test
-  DJANGO_SUPERUSER_EMAIL: none@nothing.com
+  DJANGO_ALLOWED_HOSTS: localhost 0.0.0.0 [::1] ywangvaster.duckdns.org # Your production URL
+  DJANGO_SUPERUSER_USERNAME:
+  DJANGO_SUPERUSER_PASSWORD:
+  DJANGO_SUPERUSER_EMAIL:
   DJANGO_SECRET_KEY: devkey
   PYTHONDONTWRITEBYTECODE: 1
   PYTHONUNBUFFERED: 1
+  SYSTEM_ENV: DEV
 
 networks:
   ywang_vaster-network:
@@ -40,10 +40,12 @@ services:
     build:
       context: .
       dockerfile: ./containers/db/Dockerfile
-    environment: *environment
     user: postgres
+    env_file:
+      - ./.env.dev
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready"]
       interval: 4s
@@ -56,13 +58,23 @@ services:
     build:
       context: .
       dockerfile: ./containers/web/Dockerfile
-    environment: *environment
     volumes:
       - ./ywangvaster_webapp:/ywangvaster_webapp
       - django_media:/ywangvaster_media
       - ./logs:/home/app/logs/
     ports:
-      - 80:8000
+      - 8000:8000
     depends_on:
       db:
         condition: service_healthy
+
+  nginx:
+    build:
+      context: .
+      dockerfile: ./containers/nginx/Dockerfile
+    volumes:
+      - static_volume:/home/app/web/staticfiles
+    ports:
+      - 80:80
+    depends_on:
+      - web

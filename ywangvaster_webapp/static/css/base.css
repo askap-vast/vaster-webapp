@@ -181,3 +181,12 @@ div.card {
 .sort-desc {
   border-bottom: 5px solid black;
 }
+
+/* Apply centering to all table elements */
+td,
+th {
+  text-align: center;
+}
+tr {
+  text-align: center;
+}

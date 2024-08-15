@@ -3,7 +3,8 @@
 
 # Only possible when using a Postgres 16 backend.
 
-# need to have these three RunSQL lines for each table that needs to be updated.
+# need to have these three RunSQL blocks for each table that needs to be updated.
+# The SQL to create the materialised view, the function to run the SQL to create the materialised view, and the trigger to run the function.
 
 from django.db import migrations, models
 

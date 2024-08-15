@@ -8,7 +8,6 @@ class MultiInputSlider extends HTMLElement {
     const style = document.createElement("style");
     style.textContent = `
         .multi-input-wrapper {
-,
             display: inline-block;
             padding: 15px;
             margin: 10px;
@@ -82,12 +81,9 @@ class MultiInputSlider extends HTMLElement {
     // Values is the unit scaled version, so need to back convert to
     // Initialise the array of values if not given.
 
-    // console.log(`initial values for ${sliderLabel} ${initialValues}`);
-
     let values = [];
     if (initialValues) {
       initialValues = JSON.parse(initialValues);
-      // console.log(initialValues.length);
       if (!(parseInt(numSliders) == 1)) {
         if (initialValues.length == parseInt(numSliders)) {
           values = initialValues.map((v, i) =>
@@ -178,12 +174,21 @@ class MultiInputSlider extends HTMLElement {
 
     values[0] = Number.isNaN(values[0]) ? 0.0 : values[0];
 
+    // Set the inital value from
+    // const inputs = inputContainer.querySelectorAll("input");
+    // values.forEach((value, i) => {
+    //   value = Number.isNaN(value) ? 0.0 : value;
+    //   inputs[i].value = (minMaxDiff * value + parseFloat(minSliderValue)).toFixed(2);
+    //   console.log("In !skipInputs:", value, inputs[i].value);
+    // });
+
     values.forEach((value, index) => {
       let inputDiv = this.createElement("div");
       inputDiv.classList.add("fieldWrapper");
 
       const input = this.createElement("input");
       input.value = value;
+      // console.log("the input.value in values.forEach", input.value);
       input.name = index === 0 ? `${elementId}__gte` : `${elementId}__lte`;
 
       if (elementId) {
@@ -206,7 +211,6 @@ class MultiInputSlider extends HTMLElement {
       input.addEventListener("input", (event) => {
         values[index] = parseFloat((event.target.value - minSliderValue) / minMaxDiff);
         this.value = values[index];
-        // console.log("I am index: ", index, "values['index']:", values[index]);
         render(true, index);
       });
 
@@ -229,7 +233,6 @@ class MultiInputSlider extends HTMLElement {
         index = 1;
       }
 
-      // console.log("index in render function", index, "incoming index:", incomingIndex)
       const prev = index === 0 ? 0.0 : values[index - 1];
       const next = index === values.length - 1 ? 1.0 : values[index + 1];
 
