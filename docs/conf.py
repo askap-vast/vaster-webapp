@@ -17,8 +17,8 @@ sys.path.insert(0, os.path.abspath('.'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'MWA Image Plane Transient Classifier'
-copyright = '2022, ADACS'
+project = 'Transient Candidate Classification in the ASKAP VASTER pipeline'
+copyright = '2024, ADACS'
 author = 'ADACS'
 
 # The full version, including alpha/beta/rc tags
