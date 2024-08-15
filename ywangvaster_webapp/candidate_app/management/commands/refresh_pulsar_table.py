@@ -64,8 +64,8 @@ class Command(BaseCommand):
                 db_dict[name]["raj"] = pos.ra.degree
                 db_dict[name]["decj"] = pos.dec.degree
 
-                db_dict[name]["ra_str"] = pos.ra.to_string(unit=u.hourangle, sep=":", precision=2)
-                db_dict[name]["dec_str"] = pos.dec.to_string(unit=u.deg, sep=":", precision=2)
+                db_dict[name]["ra_str"] = pos.ra.to_string(unit=u.hourangle, sep=":", precision=2, pad=True)
+                db_dict[name]["dec_str"] = pos.dec.to_string(unit=u.deg, sep=":", precision=2, pad=True)
 
         with transaction.atomic():
             ATNFPulsar.objects.all().delete()

@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 from rest_framework import serializers
 from . import models
 
+from django.utils import timezone
+
 from django.core.files.uploadedfile import InMemoryUploadedFile
 
 
@@ -32,7 +34,7 @@ class ObservationSerializer(serializers.ModelSerializer):
         # Create the Upload metadata
         upload = models.Upload.objects.create(
             user=self.context["user"],
-            date=datetime.now(timezone.utc),
+            date=timezone.now(),
         )
 
         project = models.Project.objects.get(id=validated_data["proj_id"])

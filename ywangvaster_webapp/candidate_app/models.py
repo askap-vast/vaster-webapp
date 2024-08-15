@@ -307,14 +307,14 @@ class Classification(models.Model):
 
     hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    name = models.CharField(verbose_name="Classification", max_length=64, blank=True, null=True, unique=True)
-    description = models.CharField(verbose_name="Description", max_length=256, blank=True, null=True)
+    name = models.CharField(verbose_name="Classification", max_length=256, blank=True, null=True, unique=True)
+    description = models.CharField(verbose_name="Description", max_length=1024, blank=True, null=True)
 
-    # Attach classifcations to a project or make them global?
+    # Attach classifcations to a project or just them global?
     # project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="project")
 
     def __str__(self):
-        return f"{self.name}"
+        return f"{self.name} - {self.description}"
 
 
 class Rating(models.Model):

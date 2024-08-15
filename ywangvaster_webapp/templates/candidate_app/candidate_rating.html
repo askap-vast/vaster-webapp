@@ -6,6 +6,8 @@
 
 {% if candidate %}
 
+<title>{{candidate.name}}</title>
+
 <!-- -->
 {{ lightcurve_data|json_script:"lightcurve_data" }}
 
@@ -29,14 +31,14 @@
             </div>
 
             <div class='fieldWrapper htstack gap-2'>
-              <label for="description">Notes:</label>
+              <label for="description">Description:</label>
               <textarea class="form-control" rows="2" id="description" name="description"></textarea>
             </div>
 
+            <div class="d-flex justify-content-end">
+              <button class='btn btn-primary' type='submit'>Add</button>
+            </div>
           </div>
-
-          <button class='btn btn-primary' type='submit'>Add</button>
-
         </form>
 
       </div>
@@ -76,23 +78,23 @@
                   <text> {{ prev_rating.date }}</text>
                 </div>
 
-
-                <div class='vstack gap-2 d-flex'>
+                <div class='hstack gap-2 d-flex'>
                   <label class='fw-bold'>Notes: </label>
                   {% if prev_rating.notes|length > 0 %}
-                  <text style="max-width: 300px; padding: 5px; border: 2px solid grey; border-radius: 5px;">
-                    {{ prev_rating.notes }}</text>
+                  <div style="max-width: 300px; max-height: 200px; overflow-y: auto">
+                    <text>
+                      {{ prev_rating.notes }}</text>
+                  </div>
                   {% endif %}
                 </div>
-
 
               </div>
 
             </div>
 
             <hr />
-            {% endif %}
 
+            {% endif %}
 
             <form type='POST' method="POST" action="{% url 'candidate_rating' candidate.hash_id %}">
 
@@ -103,8 +105,10 @@
                   {{ rate_form.confidence.label }} {{ rate_form.confidence }}
                 </div>
 
-                <div class='fieldWrapper htstack gap-2 justify-content-center align-items-center'>
-                  {{ rate_form.classification.label }} {{ rate_form.classification }}
+                <div class='fieldWrapper htstack gap-2 justify-content-center align-items-center'
+                  style='max-width: 80x;'>
+                  <label for="confidence">Confidence:</label>
+                  {{ rate_form.classification }}
                   <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal"
                     data-bs-target="#createNewTagModal">+</button>
                 </div>
@@ -333,22 +337,28 @@
 
                         <h3>Images</h3>
 
-                        {% if candidate.deepcutout_png %}
-
                         <div class='vstack justify-content-center align-items-center'>
 
                           <h5>Deep</h5>
-                          <img src="{{ candidate.deepcutout_png.url }}"
-                            style="width: 100%; height: 100%; max-width: 600px; max-height: 600px; min-width: 500px; min-height: 500px">
+                          {% if candidate.deepcutout_png %}
+
+                          <div class='vstack gap-1 justify-content-center align-items-center' id='gif-and-buttons'>
+
+                            <img src="{{ candidate.deepcutout_png.url }}"
+                              style="width: 100%; height: 100%; max-width: 600px; max-height: 600px; min-width: 500px; min-height: 500px">
+
+                          </div>
+
+                          {% else %}
+                          <div class='image-placeholder'
+                            style="width: 100%; height: 100%; max-width: 600px; max-height: 600px; min-width: 500px; min-height: 500px; background: grey; border: 2px solid black; border-radius: 5px">
+                            <p style="text-align: center; vertical-align: middle;">
+                              <p style="text-align: center; vertical-align: middle;">No deepcutout image to display.
+                              </p>
+                          </div>
+                          {% endif %}
 
                         </div>
-                        {% else %}
-                        <div class='image-placeholder'
-                          style="width: 100%; height: 100%; max-width: 600px; max-height: 600px; min-width: 500px; min-height: 500px; background: grey; border: 2px solid black;">
-                          <p style="text-align: center; vertical-align: middle;">No deepcut image to display.</p>
-                        </div>
-                        {% endif %}
-
 
                         <hr />
 
@@ -370,8 +380,9 @@
 
                           {% else %}
                           <div class='image-placeholder'
-                            style="width: 100%; height: 300px; background: grey; border: 2px solid black;">
-                            <p style="text-align: center; vertical-align: middle;">No slices gif to display.</p>
+                            style="width: 100%; height: 100%; max-width: 600px; max-height: 600px; min-width: 500px; min-height: 500px; background: grey; border: 2px solid black; border-radius: 5px">
+                            <p style="text-align: center; vertical-align: middle;">
+                              <p style="text-align: center; vertical-align: middle;">No slices gif to display.</p>
                           </div>
                           {% endif %}
 
@@ -407,9 +418,7 @@
                         <div class='col-lg order-2 order-lg-2'>
 
                           {% if lightcurve_data %}
-                          {% comment %} <div id="lightcurve_echarts" style="height: 500px; min-width: 450px"></div>
-                          {% endcomment %}
-                          <div id="lightcurve_echarts" style="height: 600px; min-width: 450px"></div>
+                          <div id="lightcurve_echarts" style="height: 600px; min-width: 505px; padding: 0px"></div>
                           {% else %}
                           <div class='image-placeholder'
                             style=" width: 100%; height: 600px; background: grey; border: 2px solid black;">
@@ -759,7 +768,7 @@
   document.addEventListener('DOMContentLoaded', getNearbyObjectsTable())
 </script>
 
-{% if candidate.slices_gif.url %}
+{% if candidate.slices_gif %}
 
 <script type="module">
 
@@ -860,9 +869,11 @@
     let aladinDiv = document.getElementById('aladin-lite-div')
     aladinDiv.innerHTML = ''
 
-    let aladin;
     A.init.then(() => {
-      aladin = A.aladin('#aladin-lite-div', {
+      let aladin = A.aladin('#aladin-lite-div', {
+        showCooGridControl: true,
+        showSimbadPointerControl: true,
+        showCooGrid: false,
         survey: "P/DSS2/color",
         fov: 2 / 60, // 1, // degress of field of view
         target: "{{candidate.name}}",

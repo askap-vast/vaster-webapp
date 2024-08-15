@@ -56,7 +56,7 @@ class MultiInputSlider extends HTMLElement {
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
-    if (["num-sliders", "slider-min", "slider-max", "inital-values"].includes(name) && oldValue !== newValue) {
+    if (["num-sliders", "slider-min", "slider-max", "initial-values"].includes(name) && oldValue !== newValue) {
       this.render();
     }
   }
@@ -78,14 +78,12 @@ class MultiInputSlider extends HTMLElement {
 
     let minMaxDiff = parseFloat(maxSliderValue) - parseFloat(minSliderValue);
 
-    // Values is the unit scaled version, so need to back convert to
-    // Initialise the array of values if not given.
-
+    // Initialize the array of values if not given.
     let values = [];
     if (initialValues) {
       initialValues = JSON.parse(initialValues);
-      if (!(parseInt(numSliders) == 1)) {
-        if (initialValues.length == parseInt(numSliders)) {
+      if (parseInt(numSliders) !== 1) {
+        if (initialValues.length === parseInt(numSliders)) {
           values = initialValues.map((v, i) =>
             v ? (parseFloat(v) - parseFloat(minSliderValue)) / minMaxDiff : i / (numSliders - 1)
           );
@@ -174,21 +172,12 @@ class MultiInputSlider extends HTMLElement {
 
     values[0] = Number.isNaN(values[0]) ? 0.0 : values[0];
 
-    // Set the inital value from
-    // const inputs = inputContainer.querySelectorAll("input");
-    // values.forEach((value, i) => {
-    //   value = Number.isNaN(value) ? 0.0 : value;
-    //   inputs[i].value = (minMaxDiff * value + parseFloat(minSliderValue)).toFixed(2);
-    //   console.log("In !skipInputs:", value, inputs[i].value);
-    // });
-
     values.forEach((value, index) => {
       let inputDiv = this.createElement("div");
       inputDiv.classList.add("fieldWrapper");
 
       const input = this.createElement("input");
       input.value = value;
-      // console.log("the input.value in values.forEach", input.value);
       input.name = index === 0 ? `${elementId}__gte` : `${elementId}__lte`;
 
       if (elementId) {
@@ -223,13 +212,11 @@ class MultiInputSlider extends HTMLElement {
     const render = (skipInputs = false, incomingIndex = null) => {
       values = values.map((v) => (Number.isNaN(v) ? 0.0 : v));
 
-      // Fix the selection slider mechanism
       let index = state.active;
 
-      // Need to do this because 0 is cast as false in JS
-      if (incomingIndex == 0) {
+      if (incomingIndex === 0) {
         index = 0;
-      } else if (incomingIndex == 1) {
+      } else if (incomingIndex === 1) {
         index = 1;
       }
 
@@ -275,6 +262,7 @@ class MultiInputSlider extends HTMLElement {
     const initialValues = this.getAttribute("initial-values") || null;
 
     if (container) {
+      container.innerHTML = ""; // Clear previous content
       this.createSlider(container, sliderLabel, numSliders, minSliderValue, maxSliderValue, initialValues);
     }
   }

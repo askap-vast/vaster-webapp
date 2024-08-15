@@ -1,7 +1,6 @@
 import csv
 import json
 import logging
-from datetime import datetime
 from typing import List, Optional
 from uuid import uuid4
 from urllib.parse import urlencode
@@ -37,11 +36,11 @@ from .utils import get_disk_space
 logger = logging.getLogger(__name__)
 
 
-table_display_col_mapping = {
-    "chi_square": "Chi Square",
+CONFIDENCE_MAPPING = {
+    "T": "True",
+    "F": "False",
+    "U": "Unsure",
 }
-
-CONFIDENCE_MAPPING = {"T": "True", "F": "False", "U": "Unsure"}
 
 
 def home_page(request):
@@ -246,7 +245,7 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
                 rating=request.POST["confidence"],
                 notes=request.POST["notes"],
                 tag=classification,
-                date=datetime.now(),
+                date=timezone.now(),
             )
 
             # TODO - change this to go to a random page for a candidate that's not been rated yet in same set of candidates
@@ -303,49 +302,6 @@ def get_token(request):
             return JsonResponse({"token": token.key}, status=201)
         except:
             return JsonResponse({"Error: Unable to create token for user": request.user}, status=500)
-
-
-# ### TODO: CHECK IF WE NEED THIS
-@login_required(login_url="/")
-def candidate_random(request):
-    """"""
-
-
-#     # Get session data for candidate ordering and inclusion settings
-#     session_settings = request.session.get("session_settings", 0)
-
-#     # deal with users who have no session settings
-#     if not session_settings:
-#         return render(request, "candidate_app/nothing_to_rate.html")
-
-#     user = request.user
-#     # choose all the candidates this user hasn't rated
-#     next_cands = models.Candidate.objects.exclude(rating__user=user)
-
-#     # filter based on selected project
-#     next_cands = next_cands.filter(project__name=session_settings["project"])
-
-#     # Filter candidates based on ranking
-#     if session_settings["filtering"] == "unrank":
-#         # Get unrated candidates
-#         next_cands = next_cands.filter(rating__isnull=True)
-#         if not next_cands.exists():
-#             return render(
-#                 request,
-#                 "candidate_app/nothing_to_rate.html",
-#                 {"project": session_settings["project"]},
-#             )
-#     elif session_settings["filtering"] == "old":
-#         # Get candidates the user hasn't recently ranked
-#         next_cands = next_cands.exclude(rating__date__gte=datetime.now() - timedelta(days=7))
-#         if not next_cands.exists():
-#             return render(
-#                 request,
-#                 "candidate_app/nothing_to_rate.html",
-#                 {"project": session_settings["project"]},
-#             )
-
-#     return redirect(reverse("candidate_rating", args=(candidate.id,)))
 
 
 def filter_candidates_by_coords(
@@ -505,25 +461,29 @@ FILTER_FORM_FLOAT_VARAIBLES = [
     "deep_int_flux",
 ]
 
-# To later be replaced with maths characters that the html can recognise
-# variable in db: Label for html
-FILTER_FORM_FLOAT_VARAIBLES_DICT = {
-    "chi_square": "Chi Squared",
-    "chi_square_log_sigma": "Chi Square Log Sigma",
+FILTER_CAND_VAR_MAPPING = {
+    "chi_square": "Chi Square",
     "chi_square_sigma": "Chi Square Sigma",
+    "chi_square_log_sigma": "Chi Square Log Sigma",
     "peak_map": "Peak Map",
-    "peak_map_log_sigma": "Peak map log sigma",
-    "peak_map_sigma": "Peak map sigma",
+    "peak_map_sigma": "Peak Map Sigma",
+    "peak_map_log_sigma": "Peak Map Log Sigma",
     "gaussian_map": "Gaussian Map",
-    "gaussian_map_sigma": "Gaussian map sigma",
-    "std_map": "Standard Map (units?)",
-    "md_deep": "Deep modulation (units?)",
-    "deep_sep_arcsec": "Deep separation (arcsec)",
-    "bright_sep_arcmin": "Bright separation (arcmin)",
-    "beam_sep_deg": "Beam separation (degrees)",
-    "deep_peak_flux": "Deep peak flux (units?)",
-    "deep_int_flux": "Deep initial flux (units?)",
-    "rated": "Rating count",
+    "gaussian_map_sigma": "Gaussian Map Sigma",
+    "std_map": "Std Map",
+    "bright_sep_arcmin": "Bright Sep Arcmin",
+    "beam_sep_deg": "Beam Sep Deg",
+    "deep_int_flux": "Deep Int Flux",
+    "deep_peak_flux": "Deep Peak Flux",
+    "deep_sep_arcsec": "Deep Sep Arcsec",
+    "md_deep": "Md Deep",
+    "rated": "Rating Count",
+    "observation.id": "Observation",
+    "beam.index": "Beam Index",
+    "deep_num": "Deep Num",
+    "rating_count": "Rating Count",
+    "rating.confidence": "Rating Confidence",
+    "rating.tag.name": "Rating Tag",
 }
 
 
@@ -692,6 +652,11 @@ def candidate_table(request: HttpRequest):
         candidates = candidates.filter(beam__index=inputs_to_filter["beam_index"])
         filtered_columns.add("beam.index")
 
+    # Deep num filtering
+    if "deep_num" in inputs_to_filter:  # Because index of 0 is treated as false
+        candidates = candidates.filter(deep_num=inputs_to_filter["deep_num"])
+        filtered_columns.add("deep_num")
+
     # Filter candidate by cone search
     if (
         candidate_table_session_data["cand_ra_str"]
@@ -752,7 +717,7 @@ def candidate_table(request: HttpRequest):
         "default_float_values": default_float_values,
         "updated_float_values": candidate_table_session_data,
         "filtered_columns": filtered_columns,
-        "column_labels": FILTER_FORM_FLOAT_VARAIBLES_DICT,
+        "column_labels": FILTER_CAND_VAR_MAPPING,
         "tag_filter_name": tag_filter_name,
         "confidence_filter": confidence_filter,
     }
@@ -787,43 +752,91 @@ def download_rating_csv(request, queryset, table, candidate_fields=None):
     return response
 
 
-def rating_summary(request: HttpRequest):
-    """Render the ratings template."""
+DEFAULT_RATINGS_INPUT = {
+    "tag": None,
+    "confidence": "",
+    "observation": None,
+    "user": None,
+}
+
+
+def ratings_summary(request: HttpRequest):
+    """Render the rating summary template."""
 
     selected_project_hash_id = request.session.get("selected_project_hash_id")
     print(f"selected_project_hash_id - {selected_project_hash_id}")
+
+    current_ratings_fitler = request.session.get("current_ratings_fitler", DEFAULT_RATINGS_INPUT)
 
     if selected_project_hash_id:
         ratings = models.Rating.objects.filter(candidate__project=selected_project_hash_id)
     else:
         ratings = models.Rating.objects.all()
 
-    # Handle CSV download
-    if request.GET.get("download") == "csv":
-        # print
-        return download_rating_csv(request, ratings, "ratings_summary")
+    default_rating_inputs = {
+        "tag": None,
+        "confidence": "",
+        "observation": None,
+        "user": None,
+    }
 
     ### Ratings table ###
 
+    # From the URL for the filter
+    if request.method == "GET" and request.GET:
+        current_ratings_fitler.update(request.GET.dict())
+
+        # Update the form values with the variables from url decode.
+        form = forms.RatingFilterForm(
+            selected_project_hash_id=selected_project_hash_id,
+            initial=current_ratings_fitler,
+        )
+
     # Handle the filter form
     if request.method == "POST":
-        form = forms.RatingFilterForm(selected_project_hash_id, request.POST)
-        if form.is_valid():
-            if form.cleaned_data["observation"]:
-                ratings = ratings.filter(candidate__observation=form.cleaned_data["observation"])
-            if form.cleaned_data["tag"]:
-                ratings = ratings.filter(tag=form.cleaned_data["tag"])
-            if form.cleaned_data["confidence"]:
-                ratings = ratings.filter(rating=form.cleaned_data["confidence"])
-            if form.cleaned_data["user"]:
-                ratings = ratings.filter(user__username=form.cleaned_data["user"])
+        form = forms.RatingFilterForm(request.POST, selected_project_hash_id=selected_project_hash_id)
 
-            # if form.cleaned_data["date_from"]:
-            #     ratings = ratings.filter(date__gte=form.cleaned_data["date_from"])
-            # if form.cleaned_data["date_to"]:
-            #     ratings = ratings.filter(date__lte=form.cleaned_data["date_to"])
+        if form.is_valid():
+
+            cleaned_data = {**form.cleaned_data}
+            request.session["current_ratings_fitler"] = cleaned_data
+            current_ratings_fitler = cleaned_data
+
+            # Filter the  inputs, see if they are different from the default values.
+            url_dictionary = get_new_values_diff(default_rating_inputs, cleaned_data)
+
+            # Make the query string
+            query_string = urlencode(url_dictionary)
+
+            print(f"======================================= {query_string}")
+
+            return redirect(f"{request.path}?{query_string}")
+
     else:
-        form = forms.RatingFilterForm(selected_project_hash_id=selected_project_hash_id)
+        form = forms.RatingFilterForm(
+            selected_project_hash_id=selected_project_hash_id,
+            initial=current_ratings_fitler,
+        )
+
+    inputs_to_filter = get_new_values_diff(default_rating_inputs, current_ratings_fitler)
+
+    # Filter the ratings
+    if "observation" in inputs_to_filter:
+        ratings = ratings.filter(candidate__observation=inputs_to_filter["observation"])
+
+    if "tag" in inputs_to_filter:
+        ratings = ratings.filter(tag=inputs_to_filter["tag"])
+
+    if "confidence" in inputs_to_filter:
+        ratings = ratings.filter(rating=inputs_to_filter["confidence"])
+
+    if "user" in inputs_to_filter:
+        ratings = ratings.filter(user__username=inputs_to_filter["user"])
+
+    # Handle CSV download
+    if request.method == "GET":
+        if request.GET.get("download") == "csv":
+            return download_rating_csv(request, ratings, "ratings_summary")
 
     ### Echarts bar plots ###
 
@@ -851,6 +864,15 @@ def rating_summary(request: HttpRequest):
     print(f"context for the ratings page: {context}")
 
     return render(request, "candidate_app/ratings_summary.html", context)
+
+
+@login_required(login_url="/")
+def clear_ratings_filter(request: HttpRequest):
+
+    if "current_ratings_fitler" in request.session or "clear_filter_data" in request.POST:
+        del request.session["current_ratings_fitler"]
+
+    return redirect("/ratings_summary/")
 
 
 @api_view(["POST"])
@@ -884,7 +906,7 @@ def upload_observation(request):
 
                     # Create the project if it doesn't already exist.
                     if not models.Project.objects.filter(id=project_id).exists():
-                        uploaded_datetime = datetime.now(timezone.utc)
+                        uploaded_datetime = timezone.now()
 
                         # Create the Upload metadata
                         upload = models.Upload.objects.create(
@@ -1060,9 +1082,24 @@ def upload_candidate(request):
     return Response({"status": "error", "message": f"Not a POST request."}, status=status.HTTP_400_BAD_REQUEST)
 
 
+PROJECT_COLOURS = [
+    "#5470C6",
+    "#91CC75",
+    "#FAC858",
+    "#EE6666",
+    "#73C0DE",
+    "#3BA272",
+    "#FC8452",
+    "#9A60B4",
+    "#FF6E76",
+    "#EA7CCC",
+    "#D9A0F7",
+]
+
+
 @login_required(login_url="/")
-def page_admin(request: HttpRequest):
-    """Display a summary details about each project, observation and the space used internal to the webapp."""
+def site_admin(request):
+    """Display a summary details about each project, observation, and the space used internal to the webapp."""
 
     selected_project_hash_id = request.session.get("selected_project_hash_id")
 
@@ -1071,20 +1108,30 @@ def page_admin(request: HttpRequest):
     else:
         selected_projects = models.Project.objects.all()
 
-    annotated_projects = []
+    # Get disk space used by projects
+    total_disk_space, used_disk_space, free_disk_space = get_disk_space(MEDIA_ROOT)
 
+    annotated_projects = []
+    colour_count = 0
     for project in selected_projects:
+
+        project_used_of_total = (project.total_file_size_gb / total_disk_space) * 100 if used_disk_space else 0
+
         observations = project.obs_proj.annotate(
             candidate_count=Count("cand_obs"),
             rated_candidate_count=Count("cand_obs__rating"),
         )
 
-        annotated_projects.append({"project": project, "observations": observations})
+        annotated_projects.append(
+            {
+                "project": project,
+                "observations": observations,
+                "project_used_of_total": project_used_of_total,
+                "project_colour": PROJECT_COLOURS[(colour_count + 1) % len(PROJECT_COLOURS)],
+            }
+        )
 
-    # Get disk space used by projects
-    total_disk_space, used_disk_space, free_disk_space = get_disk_space(MEDIA_ROOT)
-
-    print(annotated_projects)
+        colour_count += 1
 
     context = {
         "annotated_projects": annotated_projects,
@@ -1093,7 +1140,7 @@ def page_admin(request: HttpRequest):
         "total_disk_space": total_disk_space,
     }
 
-    return render(request, "candidate_app/page_admin.html", context)
+    return render(request, "candidate_app/site_admin.html", context)
 
 
 @login_required(login_url="/")
@@ -1194,6 +1241,7 @@ def download_lightcurve_csv(request: HttpRequest, cand_hash_id: str):
         return response
 
 
+# Poor name but has to be different than "ChangePassword" because is used by Django.
 class AppChangePassword(TemplateView, View):
 
     def get(self, request, *args, **kwargs):

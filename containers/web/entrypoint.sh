@@ -28,4 +28,4 @@ else
 fi 
 
 # This runs the web app locally through Django - this will change to nginx later
-python3 manage.py runserver 0.0.0.0:8000
+python3 manage.py runserver 0.0.0.0:80

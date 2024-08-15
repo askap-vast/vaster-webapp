@@ -4,212 +4,89 @@
 
 {% block content %}
 
-<title>Candidate Table</title>
-<h1>Fitler Candidates</h1>
+<title>Filter Candidates</title>
+<h1>Filter Candidates</h1>
 
-
-<div class='container-fluid' style="width:85%; margin: 0 auto; padding-bottom: 30px; background-color:#f8f8f8; ">
+<div class='container-fluid'
+  style="width:85%; margin: 0 auto; padding-bottom: 1px;  padding-top: 15px; background-color: #D3D3D3; border-radius: 5px; margin-bottom: 20px">
 
   <form id='candidate-filter-form' method="post">
     {% csrf_token %}
 
-    <div class='row'>
+    <div class='accordion' id='filter-accordion'>
 
-      <div class='col'>
+      <div class='accordion-item'>
 
-        <h5>Observation</h5>
+        <h2 class="accordion-header" id="categories-heading">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+            data-bs-target="#filter-category-panel" aria-expanded="true" aria-controls="filter-category-panel">
+            Categories
+          </button>
+        </h2>
 
-        <div class='col hstack gap-2 '>
-          <div class="fieldWrapper">
-            {{ form.observation.errors }}
-            <label for="{{ form.observation.id_for_label }}">SBID:</label>
-            {{ form.observation }}
-          </div>
-        </div>
+        <div id="filter-category-panel" class="accordion-collapse collapse show" aria-labelledby="categories-heading"
+          data-bs-parent="#filter-category-panel">
+          <div class='accordion-body d-flex'>
 
-      </div>
+            <div class='container-fluid'>
 
-      <div class='col'>
+              <div class="row">
+                <div class='col'>
 
-        <h5>Beam index</h5>
-
-        <div class='fieldWrapper'>
-          {{ form.beam_index.errors }}
-          <label for="{{ form.beam_index.id_for_label }}">Beam:</label>
-          {{ form.beam_index }}
-        </div>
-      </div>
-
-      <div class='col'>
-
-        <h5>Ratings</h5>
-
-        <div class='vstack gap-2' style="padding-bottom: 10px">
-          <div class="fieldWrapper">
-            <label for="{{ form.rated.id_for_label }}">Rated:</label>
-            {{ form.rated }}
-          </div>
-
-          <div class="fieldWrapper">
-            <label for="{{ form.confidence.id_for_label }}">Confidence:</label>
-            {{ form.confidence }}
-          </div>
-
-          <div class="fieldWrapper">
-            {{ form.tag.errors }}
-            <label for="{{ form.tag.id_for_label }}">Has tag</label>
-            {{ form.tag }}
-          </div>
-        </div>
-
-      </div>
-
-    </div>
-
-    <div class='row'>
-
-      <div class='accordion' id='filter-accordion'>
-
-        {% comment %} <div class='accordion-item'>
-
-          <h2 class="accordion-header" id="ratings-heading">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-              data-bs-target="#filter-ratings-panel" aria-expanded="false" aria-controls="filter-ratings-panel">
-              Ratings
-            </button>
-          </h2>
-
-          <div id="filter-ratings-panel" class="accordion-collapse collapse" aria-labelledby="ratings-heading"
-            data-bs-parent="#filter-ratings-panel">
-            <div class='accordion-body d-flex'>
-              <div class='container-fluid'>
-                <div class='row'>
+                  <h5>Observation</h5>
 
                   <div class='col hstack gap-2 '>
                     <div class="fieldWrapper">
-                      <label for="{{ form.rated.id_for_label }}">Has been rated:</label>
+                      {{ form.observation.errors }}
+                      <label for="{{ form.observation.id_for_label }}">SBID:</label>
+                      {{ form.observation }}
+                    </div>
+                  </div>
+
+                </div>
+
+                <div class='col'>
+
+                  <h5>Beam index</h5>
+
+                  <div class='fieldWrapper'>
+                    {{ form.beam_index.errors }}
+                    <label for="{{ form.beam_index.id_for_label }}">Beam:</label>
+                    {{ form.beam_index }}
+                  </div>
+                </div>
+
+                <div class='col'>
+
+                  <h5>Deep Num</h5>
+
+                  <div class='fieldWrapper'>
+                    {{ form.deep_num.errors }}
+                    <label for="{{ form.deep_num.id_for_label }}">Deep:</label>
+                    {{ form.deep_num }}
+                  </div>
+                </div>
+
+                <div class='col'>
+
+                  <h5>Ratings</h5>
+
+                  <div class='vstack gap-2' style="padding-bottom: 10px">
+                    <div class="fieldWrapper">
+                      <label for="{{ form.rated.id_for_label }}">Rated:</label>
                       {{ form.rated }}
                     </div>
 
-                    or
-
                     <div class="fieldWrapper">
-                      <label for="{{ form.ratings_count.id_for_label }}">Number of ratings = </label>
-                      <input type="number" name="ratings_count" id="id_ratings_count">
+                      <label for="{{ form.confidence.id_for_label }}">Confidence:</label>
+                      {{ form.confidence }}
                     </div>
 
                     <div class="fieldWrapper">
                       {{ form.tag.errors }}
-                      <label for="{{ form.tag.id_for_label }}">Select rating tags to filter</label>
+                      <label for="{{ form.tag.id_for_label }}">Tag</label>
                       {{ form.tag }}
                     </div>
-
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div> {% endcomment %}
-
-        {% comment %} <div class='accordion-item'>
-
-          <h2 class="accordion-header" id="beam-heading">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-              data-bs-target="#filter-beam-panel" aria-expanded="false" aria-controls="filter-beam-panel">
-              Beam
-            </button>
-          </h2>
-
-          <div id="filter-beam-panel" class="accordion-collapse collapse" aria-labelledby="beam-heading"
-            data-bs-parent="#filter-beam-panel">
-            <div class='accordion-body d-flex'>
-
-              <div class='container-fluid'>
-                <div class='row'>
-                  <div class='col'>
-                    <h4>Filter by beam index</h4>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div> {% endcomment %}
-
-        <div class='accordion-item'>
-
-          <h2 class="accordion-header" id="coordinates-heading">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-              data-bs-target="#filter-coord-panel" aria-expanded="false" aria-controls="filter-coord-panel">
-              Cone search (Coordinates)
-            </button>
-          </h2>
-
-          <div id="filter-coord-panel" class="accordion-collapse collapse" aria-labelledby="coordinates-heading"
-            data-bs-parent="#filter-coord-panel">
-            <div class='accordion-body d-flex'>
-
-              <div class='container-fluid'>
-                <div class='row'>
-                  <div class='col'>
-                    <h4>Candidate position:</h4>
-                    <div class="fieldWrapper">
-                      {{ form.cand_ra_str.errors }}
-                      <label for="{{ form.cand_ra_str.id_for_label }}">RA (HH:MM:SS):</label>
-                      {{ form.cand_ra_str }}
-                    </div>
-                    <div class="fieldWrapper">
-                      {{ form.cand_dec_str.errors }}
-                      <label for="{{ form.cand_dec_str.id_for_label }}">Dec (DD:MM:SS):</label>
-                      {{ form.cand_dec_str }}
-                    </div>
-                    <div class="fieldWrapper">
-                      {{ form.cand_arcmin_search_radius.errors }}
-                      <label for="{{ form.cand_arcmin_search_radius.id_for_label }}">Candidate search radius
-                        (arcmin):</label>
-                      {{ form.cand_arcmin_search_radius }}
-                    </div>
-                  </div>
-
-                  <div class='col'>
-                    <h4>Beam position:</h4>
-                    <div class="fieldWrapper">
-                      {{ form.beam_ra_str.errors }}
-                      <label for="{{ form.beam_ra_str.id_for_label }}">RA (HH:MM:SS):</label>
-                      {{ form.beam_ra_str }}
-                    </div>
-                    <div class="fieldWrapper">
-                      {{ form.beam_dec_str.errors }}
-                      <label for="{{ form.beam_dec_str.id_for_label }}">Dec (DD:MM:SS):</label>
-                      {{ form.beam_dec_str }}
-                    </div>
-                    <div class="fieldWrapper">
-                      {{ form.beam_arcmin_search_radius.errors }}
-                      <label for="{{ form.beam_arcmin_search_radius.id_for_label }}">Beam search radius
-                        (arcmin):</label>
-                      {{ form.beam_arcmin_search_radius }}
-                    </div>
-                  </div>
-
-                  <div class='col'>
-                    <h4>Deep position:</h4>
-                    <div class="fieldWrapper">
-                      {{ form.deep_ra_str.errors }}
-                      <label for="{{ form.deep_ra_str.id_for_label }}">RA (HH:MM:SS):</label>
-                      {{ form.deep_ra_str }}
-                    </div>
-                    <div class="fieldWrapper">
-                      {{ form.deep_dec_str.errors }}
-                      <label for="{{ form.deep_dec_str.id_for_label }}">Dec (DD:MM:SS):</label>
-                      {{ form.deep_dec_str }}
-                    </div>
-                    <div class="fieldWrapper">
-                      {{ form.deep_arcmin_search_radius.errors }}
-                      <label for="{{ form.deep_arcmin_search_radius.id_for_label }}">Deep search radius
-                        (arcmin):</label>
-                      {{ form.deep_arcmin_search_radius }}
-                    </div>
                   </div>
 
                 </div>
@@ -219,179 +96,259 @@
 
         </div>
 
-        <div class="accordion-item">
-
-          <h2 class="accordion-header" id="statistics-heading">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-              data-bs-target="#filter-float-panel" aria-expanded="false" aria-controls="filter-float-panel">
-              Candidate statistics
-            </button>
-          </h2>
-
-          <div id="filter-float-panel" class="accordion-collapse collapse" aria-labelledby="statistics-heading"
-            data-bs-parent="#filter-float-panel">
-            <div class='accordion-body d-flex'>
-
-              <div class='container-fluid'>
-                <div class='row'>
-                  {% if default_float_values.chi_square__gte|is_not_nan_or_none and default_float_values.chi_square__lte|is_not_nan_or_none %}
-                  <div class='col d-flex justify-content-center'>
-                    <multi-input-slider label="Chi square" id="chi_square" num-sliders="2"
-                      slider-min="{{default_float_values.chi_square__gte}}"
-                      slider-max="{{default_float_values.chi_square__lte}}"
-                      initial-values="[{{updated_float_values.chi_square__gte}}, {{updated_float_values.chi_square__lte}}]" />
-                  </div>
-                  {% endif %}
-
-                  {% if default_float_values.chi_square_sigma__gte|is_not_nan_or_none and default_float_values.chi_square_sigma__lte|is_not_nan_or_none %}
-                  <div class='col d-flex justify-content-center'>
-                    <multi-input-slider label='Chi square sigma' id="chi_square_sigma" num-sliders="2"
-                      slider-min="{{default_float_values.chi_square_sigma__gte}}"
-                      slider-max="{{default_float_values.chi_square_sigma__lte}}"
-                      initial-values="[{{updated_float_values.chi_square_sigma__gte}}, {{updated_float_values.chi_square_sigma__lte}}]" />
-                  </div>
-                  {% endif %}
-
-                  {% if default_float_values.chi_square_log_sigma__gte|is_not_nan_or_none and default_float_values.chi_square_log_sigma__lte|is_not_nan_or_none %}
-                  <div class='col d-flex justify-content-center'>
-                    <multi-input-slider label='Chi square log sigma' id="chi_square_log_sigma" num-sliders="2"
-                      slider-min="{{default_float_values.chi_square_log_sigma__gte}}"
-                      slider-max="{{default_float_values.chi_square_log_sigma__lte}}"
-                      initial-values="[{{updated_float_values.chi_square_log_sigma__gte}}, {{updated_float_values.chi_square_log_sigma__lte}}]" />
-                  </div>
-                  {% endif %}
-                </div>
-
-                <hr />
-
-                <div class='row'>
-                  {% if default_float_values.peak_map__gte|is_not_nan_or_none and default_float_values.peak_map__lte|is_not_nan_or_none %}
-                  <div class='col d-flex justify-content-center'>
-                    <multi-input-slider label='Peak map' id="peak_map" num-sliders="2"
-                      slider-min="{{default_float_values.peak_map__gte}}"
-                      slider-max="{{default_float_values.peak_map__lte}}"
-                      initial-values="[{{updated_float_values.peak_map__gte}}, {{updated_float_values.peak_map__lte}}]" />
-                  </div>
-                  {% endif %}
-
-                  {% if default_float_values.peak_map_sigma__gte|is_not_nan_or_none and default_float_values.peak_map_sigma__lte|is_not_nan_or_none %}
-                  <div class='col d-flex justify-content-center'>
-                    <multi-input-slider label='Peak map sigma' id="peak_map_sigma" num-sliders="2"
-                      slider-min="{{default_float_values.peak_map_sigma__gte}}"
-                      slider-max="{{default_float_values.peak_map_sigma__lte}}"
-                      initial-values="[{{updated_float_values.peak_map_sigma__gte}}, {{updated_float_values.peak_map_sigma__lte}}]" />
-                  </div>
-                  {% endif %}
-
-                  {% if default_float_values.peak_map_log_sigma__gte|is_not_nan_or_none and default_float_values.peak_map_log_sigma__lte|is_not_nan_or_none %}
-                  <div class='col d-flex justify-content-center'>
-                    <multi-input-slider label='Peak map log sigma' id="peak_map_log_sigma" num-sliders="2"
-                      slider-min="{{default_float_values.peak_map_log_sigma__gte}}"
-                      slider-max="{{default_float_values.peak_map_log_sigma__lte}}"
-                      initial-values="[{{updated_float_values.peak_map_log_sigma__gte}}, {{updated_float_values.peak_map_log_sigma__lte}}]" />
-                  </div>
-                  {% endif %}
-                </div>
-
-                <hr />
-
-                <div class='row'>
-                  {% if default_float_values.gaussian_map__gte|is_not_nan_or_none and default_float_values.gaussian_map__lte|is_not_nan_or_none %}
-                  <div class='col d-flex justify-content-center'>
-                    <multi-input-slider label='Gaussian map' id="gaussian_map" num-sliders="2"
-                      slider-min="{{default_float_values.gaussian_map__gte}}"
-                      slider-max="{{default_float_values.gaussian_map__lte}}"
-                      initial-values="[{{updated_float_values.gaussian_map__gte}}, {{updated_float_values.gaussian_map__lte}}]" />
-                  </div>
-                  {% endif %}
-
-                  {% if default_float_values.gaussian_map_sigma__gte|is_not_nan_or_none and default_float_values.gaussian_map_sigma__lte|is_not_nan_or_none %}
-                  <div class='col d-flex justify-content-center'>
-                    <multi-input-slider label='Gaussian map sigma' id="gaussian_map_sigma" num-sliders="2"
-                      slider-min="{{default_float_values.gaussian_map_sigma__gte}}"
-                      slider-max="{{default_float_values.gaussian_map_sigma__lte}}"
-                      initial-values="[{{updated_float_values.gaussian_map_sigma__gte}}, {{updated_float_values.gaussian_map_sigma__lte}}]" />
-                  </div>
-                  {% endif %}
-
-                  {% if default_float_values.std_map__gte|is_not_nan_or_none and default_float_values.std_map__lte|is_not_nan_or_none %}
-                  <div class='col d-flex justify-content-center'>
-                    <multi-input-slider label='Std map' id="std_map" num-sliders="2"
-                      slider-min="{{default_float_values.std_map__gte}}"
-                      slider-max="{{default_float_values.std_map__lte}}"
-                      initial-values="[{{updated_float_values.std_map__gte}}, {{updated_float_values.std_map__lte}}]" />
-                  </div>
-                  {% endif %}
-                </div>
-
-                <hr />
-
-                <div class='row'>
-                  {% if default_float_values.beam_sep_deg__gte|is_not_nan_or_none and default_float_values.beam_sep_deg__lte|is_not_nan_or_none %}
-                  <div class='col d-flex justify-content-center'>
-                    <multi-input-slider label='Beam sep deg' id="beam_sep_deg" num-sliders="2"
-                      slider-min="{{default_float_values.beam_sep_deg__gte}}"
-                      slider-max="{{default_float_values.beam_sep_deg__lte}}"
-                      initial-values="[{{updated_float_values.beam_sep_deg__gte}}, {{updated_float_values.beam_sep_deg__lte}}]" />
-                  </div>
-                  {% endif %}
-
-                  {% if default_float_values.md_deep__gte|is_not_nan_or_none and default_float_values.md_deep__lte|is_not_nan_or_none %}
-                  <div class='col d-flex justify-content-center'>
-                    <multi-input-slider label='MD deep' id="md_deep" num-sliders="2"
-                      slider-min="{{default_float_values.md_deep__gte}}"
-                      slider-max="{{default_float_values.md_deep__lte}}"
-                      initial-values="[{{updated_float_values.md_deep__gte}}, {{updated_float_values.md_deep__lte}}]" />
-                  </div>
-                  {% endif %}
-
-                  {% if default_float_values.deep_sep_arcsec__gte|is_not_nan_or_none and default_float_values.deep_sep_arcsec__lte|is_not_nan_or_none %}
-                  <div class='col d-flex justify-content-center'>
-                    <multi-input-slider label='Deep sep arcsec' id="deep_sep_arcsec" num-sliders="2"
-                      slider-min="{{default_float_values.deep_sep_arcsec__gte}}"
-                      slider-max="{{default_float_values.deep_sep_arcsec__lte}}"
-                      initial-values="[{{updated_float_values.deep_sep_arcsec__gte}}, {{updated_float_values.deep_sep_arcsec__lte}}]" />
-                  </div>
-                  {% endif %}
-
-                  {% if default_float_values.deep_peak_flux__gte|is_not_nan_or_none and default_float_values.deep_peak_flux__lte|is_not_nan_or_none %}
-                  <div class='col d-flex justify-content-center'>
-                    <multi-input-slider label='Deep peak flux' id="deep_peak_flux" num-sliders="2"
-                      slider-min="{{default_float_values.deep_peak_flux__gte}}"
-                      slider-max="{{default_float_values.deep_peak_flux__lte}}"
-                      initial-values="[{{updated_float_values.deep_peak_flux__gte}}, {{updated_float_values.deep_peak_flux__lte}}]" />
-                  </div>
-                  {% endif %}
-
-                  {% if default_float_values.deep_int_flux__gte|is_not_nan_or_none and default_float_values.deep_int_flux__lte|is_not_nan_or_none %}
-                  <div class='col d-flex justify-content-center'>
-                    <multi-input-slider label='Deep int flux' id="deep_int_flux" num-sliders="2"
-                      slider-min="{{default_float_values.deep_int_flux__gte}}"
-                      slider-max="{{default_float_values.deep_int_flux__lte}}"
-                      initial-values="[{{updated_float_values.deep_int_flux__gte}}, {{updated_float_values.deep_int_flux__lte}}]" />
-                  </div>
-                  {% endif %}
-
-                  {% if default_float_values.bright_sep_arcmin__gte|is_not_nan_or_none and default_float_values.bright_sep_arcmin__lte|is_not_nan_or_none %}
-                  <div class='col d-flex justify-content-center'>
-                    <multi-input-slider label='Bright sep (arcmin)' id="bright_sep_arcmin" num-sliders="2"
-                      slider-min="{{default_float_values.bright_sep_arcmin__gte}}"
-                      slider-max="{{default_float_values.bright_sep_arcmin__lte}}"
-                      initial-values="[{{updated_float_values.bright_sep_arcmin__gte}}, {{updated_float_values.bright_sep_arcmin__lte}}]" />
-                  </div>
-                  {% endif %}
-
-                </div>
-              </div>
-
-
-            </div>
-          </div>
-
-        </div>
-        {% comment %} end accordion item {% endcomment %}
       </div>
-      {% comment %} end accordion {% endcomment %}
+
+      <div class='accordion-item'>
+
+        <h2 class="accordion-header" id="coordinates-heading">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+            data-bs-target="#filter-coord-panel" aria-expanded="false" aria-controls="filter-coord-panel">
+            Cone search
+          </button>
+        </h2>
+
+        <div id="filter-coord-panel" class="accordion-collapse collapse" aria-labelledby="coordinates-heading"
+          data-bs-parent="#filter-coord-panel">
+          <div class='accordion-body d-flex'>
+
+            <div class='container-fluid'>
+              <div class='row'>
+                <div class='col'>
+                  <h4>Candidate position:</h4>
+                  <div class="fieldWrapper">
+                    {{ form.cand_ra_str.errors }}
+                    <label for="{{ form.cand_ra_str.id_for_label }}">RA (HH:MM:SS):</label>
+                    {{ form.cand_ra_str }}
+                  </div>
+                  <div class="fieldWrapper">
+                    {{ form.cand_dec_str.errors }}
+                    <label for="{{ form.cand_dec_str.id_for_label }}">Dec (DD:MM:SS):</label>
+                    {{ form.cand_dec_str }}
+                  </div>
+                  <div class="fieldWrapper">
+                    {{ form.cand_arcmin_search_radius.errors }}
+                    <label for="{{ form.cand_arcmin_search_radius.id_for_label }}">Candidate search radius
+                      (arcmin):</label>
+                    {{ form.cand_arcmin_search_radius }}
+                  </div>
+                </div>
+
+                <div class='col'>
+                  <h4>Beam position:</h4>
+                  <div class="fieldWrapper">
+                    {{ form.beam_ra_str.errors }}
+                    <label for="{{ form.beam_ra_str.id_for_label }}">RA (HH:MM:SS):</label>
+                    {{ form.beam_ra_str }}
+                  </div>
+                  <div class="fieldWrapper">
+                    {{ form.beam_dec_str.errors }}
+                    <label for="{{ form.beam_dec_str.id_for_label }}">Dec (DD:MM:SS):</label>
+                    {{ form.beam_dec_str }}
+                  </div>
+                  <div class="fieldWrapper">
+                    {{ form.beam_arcmin_search_radius.errors }}
+                    <label for="{{ form.beam_arcmin_search_radius.id_for_label }}">Beam search radius
+                      (arcmin):</label>
+                    {{ form.beam_arcmin_search_radius }}
+                  </div>
+                </div>
+
+                <div class='col'>
+                  <h4>Deep position:</h4>
+                  <div class="fieldWrapper">
+                    {{ form.deep_ra_str.errors }}
+                    <label for="{{ form.deep_ra_str.id_for_label }}">RA (HH:MM:SS):</label>
+                    {{ form.deep_ra_str }}
+                  </div>
+                  <div class="fieldWrapper">
+                    {{ form.deep_dec_str.errors }}
+                    <label for="{{ form.deep_dec_str.id_for_label }}">Dec (DD:MM:SS):</label>
+                    {{ form.deep_dec_str }}
+                  </div>
+                  <div class="fieldWrapper">
+                    {{ form.deep_arcmin_search_radius.errors }}
+                    <label for="{{ form.deep_arcmin_search_radius.id_for_label }}">Deep search radius
+                      (arcmin):</label>
+                    {{ form.deep_arcmin_search_radius }}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="accordion-item">
+
+        <h2 class="accordion-header" id="statistics-heading">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+            data-bs-target="#filter-float-panel" aria-expanded="false" aria-controls="filter-float-panel">
+            Candidate statistics
+          </button>
+        </h2>
+
+        <div id="filter-float-panel" class="accordion-collapse collapse" aria-labelledby="statistics-heading"
+          data-bs-parent="#filter-float-panel">
+          <div class='accordion-body d-flex'>
+
+            <div class='container-fluid'>
+              <div class='row'>
+                {% if default_float_values.chi_square__gte|is_not_nan_or_none and default_float_values.chi_square__lte|is_not_nan_or_none %}
+                <div class='col d-flex justify-content-center'>
+                  <multi-input-slider label="Chi square" id="chi_square" num-sliders="2"
+                    slider-min="{{default_float_values.chi_square__gte}}"
+                    slider-max="{{default_float_values.chi_square__lte}}"
+                    initial-values="[{{updated_float_values.chi_square__gte}}, {{updated_float_values.chi_square__lte}}]" />
+                </div>
+                {% endif %}
+
+                {% if default_float_values.chi_square_sigma__gte|is_not_nan_or_none and default_float_values.chi_square_sigma__lte|is_not_nan_or_none %}
+                <div class='col d-flex justify-content-center'>
+                  <multi-input-slider label='Chi square sigma' id="chi_square_sigma" num-sliders="2"
+                    slider-min="{{default_float_values.chi_square_sigma__gte}}"
+                    slider-max="{{default_float_values.chi_square_sigma__lte}}"
+                    initial-values="[{{updated_float_values.chi_square_sigma__gte}}, {{updated_float_values.chi_square_sigma__lte}}]" />
+                </div>
+                {% endif %}
+
+                {% if default_float_values.chi_square_log_sigma__gte|is_not_nan_or_none and default_float_values.chi_square_log_sigma__lte|is_not_nan_or_none %}
+                <div class='col d-flex justify-content-center'>
+                  <multi-input-slider label='Chi square log sigma' id="chi_square_log_sigma" num-sliders="2"
+                    slider-min="{{default_float_values.chi_square_log_sigma__gte}}"
+                    slider-max="{{default_float_values.chi_square_log_sigma__lte}}"
+                    initial-values="[{{updated_float_values.chi_square_log_sigma__gte}}, {{updated_float_values.chi_square_log_sigma__lte}}]" />
+                </div>
+                {% endif %}
+              </div>
+
+              <hr />
+
+              <div class='row'>
+                {% if default_float_values.peak_map__gte|is_not_nan_or_none and default_float_values.peak_map__lte|is_not_nan_or_none %}
+                <div class='col d-flex justify-content-center'>
+                  <multi-input-slider label='Peak map' id="peak_map" num-sliders="2"
+                    slider-min="{{default_float_values.peak_map__gte}}"
+                    slider-max="{{default_float_values.peak_map__lte}}"
+                    initial-values="[{{updated_float_values.peak_map__gte}}, {{updated_float_values.peak_map__lte}}]" />
+                </div>
+                {% endif %}
+
+                {% if default_float_values.peak_map_sigma__gte|is_not_nan_or_none and default_float_values.peak_map_sigma__lte|is_not_nan_or_none %}
+                <div class='col d-flex justify-content-center'>
+                  <multi-input-slider label='Peak map sigma' id="peak_map_sigma" num-sliders="2"
+                    slider-min="{{default_float_values.peak_map_sigma__gte}}"
+                    slider-max="{{default_float_values.peak_map_sigma__lte}}"
+                    initial-values="[{{updated_float_values.peak_map_sigma__gte}}, {{updated_float_values.peak_map_sigma__lte}}]" />
+                </div>
+                {% endif %}
+
+                {% if default_float_values.peak_map_log_sigma__gte|is_not_nan_or_none and default_float_values.peak_map_log_sigma__lte|is_not_nan_or_none %}
+                <div class='col d-flex justify-content-center'>
+                  <multi-input-slider label='Peak map log sigma' id="peak_map_log_sigma" num-sliders="2"
+                    slider-min="{{default_float_values.peak_map_log_sigma__gte}}"
+                    slider-max="{{default_float_values.peak_map_log_sigma__lte}}"
+                    initial-values="[{{updated_float_values.peak_map_log_sigma__gte}}, {{updated_float_values.peak_map_log_sigma__lte}}]" />
+                </div>
+                {% endif %}
+              </div>
+
+              <hr />
+
+              <div class='row'>
+                {% if default_float_values.gaussian_map__gte|is_not_nan_or_none and default_float_values.gaussian_map__lte|is_not_nan_or_none %}
+                <div class='col d-flex justify-content-center'>
+                  <multi-input-slider label='Gaussian map' id="gaussian_map" num-sliders="2"
+                    slider-min="{{default_float_values.gaussian_map__gte}}"
+                    slider-max="{{default_float_values.gaussian_map__lte}}"
+                    initial-values="[{{updated_float_values.gaussian_map__gte}}, {{updated_float_values.gaussian_map__lte}}]" />
+                </div>
+                {% endif %}
+
+                {% if default_float_values.gaussian_map_sigma__gte|is_not_nan_or_none and default_float_values.gaussian_map_sigma__lte|is_not_nan_or_none %}
+                <div class='col d-flex justify-content-center'>
+                  <multi-input-slider label='Gaussian map sigma' id="gaussian_map_sigma" num-sliders="2"
+                    slider-min="{{default_float_values.gaussian_map_sigma__gte}}"
+                    slider-max="{{default_float_values.gaussian_map_sigma__lte}}"
+                    initial-values="[{{updated_float_values.gaussian_map_sigma__gte}}, {{updated_float_values.gaussian_map_sigma__lte}}]" />
+                </div>
+                {% endif %}
+
+                {% if default_float_values.std_map__gte|is_not_nan_or_none and default_float_values.std_map__lte|is_not_nan_or_none %}
+                <div class='col d-flex justify-content-center'>
+                  <multi-input-slider label='Std map' id="std_map" num-sliders="2"
+                    slider-min="{{default_float_values.std_map__gte}}"
+                    slider-max="{{default_float_values.std_map__lte}}"
+                    initial-values="[{{updated_float_values.std_map__gte}}, {{updated_float_values.std_map__lte}}]" />
+                </div>
+                {% endif %}
+              </div>
+
+              <hr />
+
+              <div class='row'>
+                {% if default_float_values.beam_sep_deg__gte|is_not_nan_or_none and default_float_values.beam_sep_deg__lte|is_not_nan_or_none %}
+                <div class='col d-flex justify-content-center'>
+                  <multi-input-slider label='Beam sep deg' id="beam_sep_deg" num-sliders="2"
+                    slider-min="{{default_float_values.beam_sep_deg__gte}}"
+                    slider-max="{{default_float_values.beam_sep_deg__lte}}"
+                    initial-values="[{{updated_float_values.beam_sep_deg__gte}}, {{updated_float_values.beam_sep_deg__lte}}]" />
+                </div>
+                {% endif %}
+
+                {% if default_float_values.md_deep__gte|is_not_nan_or_none and default_float_values.md_deep__lte|is_not_nan_or_none %}
+                <div class='col d-flex justify-content-center'>
+                  <multi-input-slider label='MD deep' id="md_deep" num-sliders="2"
+                    slider-min="{{default_float_values.md_deep__gte}}"
+                    slider-max="{{default_float_values.md_deep__lte}}"
+                    initial-values="[{{updated_float_values.md_deep__gte}}, {{updated_float_values.md_deep__lte}}]" />
+                </div>
+                {% endif %}
+
+                {% if default_float_values.deep_sep_arcsec__gte|is_not_nan_or_none and default_float_values.deep_sep_arcsec__lte|is_not_nan_or_none %}
+                <div class='col d-flex justify-content-center'>
+                  <multi-input-slider label='Deep sep arcsec' id="deep_sep_arcsec" num-sliders="2"
+                    slider-min="{{default_float_values.deep_sep_arcsec__gte}}"
+                    slider-max="{{default_float_values.deep_sep_arcsec__lte}}"
+                    initial-values="[{{updated_float_values.deep_sep_arcsec__gte}}, {{updated_float_values.deep_sep_arcsec__lte}}]" />
+                </div>
+                {% endif %}
+
+                {% if default_float_values.deep_peak_flux__gte|is_not_nan_or_none and default_float_values.deep_peak_flux__lte|is_not_nan_or_none %}
+                <div class='col d-flex justify-content-center'>
+                  <multi-input-slider label='Deep peak flux' id="deep_peak_flux" num-sliders="2"
+                    slider-min="{{default_float_values.deep_peak_flux__gte}}"
+                    slider-max="{{default_float_values.deep_peak_flux__lte}}"
+                    initial-values="[{{updated_float_values.deep_peak_flux__gte}}, {{updated_float_values.deep_peak_flux__lte}}]" />
+                </div>
+                {% endif %}
+
+                {% if default_float_values.deep_int_flux__gte|is_not_nan_or_none and default_float_values.deep_int_flux__lte|is_not_nan_or_none %}
+                <div class='col d-flex justify-content-center'>
+                  <multi-input-slider label='Deep int flux' id="deep_int_flux" num-sliders="2"
+                    slider-min="{{default_float_values.deep_int_flux__gte}}"
+                    slider-max="{{default_float_values.deep_int_flux__lte}}"
+                    initial-values="[{{updated_float_values.deep_int_flux__gte}}, {{updated_float_values.deep_int_flux__lte}}]" />
+                </div>
+                {% endif %}
+
+                {% if default_float_values.bright_sep_arcmin__gte|is_not_nan_or_none and default_float_values.bright_sep_arcmin__lte|is_not_nan_or_none %}
+                <div class='col d-flex justify-content-center'>
+                  <multi-input-slider label='Bright sep (arcmin)' id="bright_sep_arcmin" num-sliders="2"
+                    slider-min="{{default_float_values.bright_sep_arcmin__gte}}"
+                    slider-max="{{default_float_values.bright_sep_arcmin__lte}}"
+                    initial-values="[{{updated_float_values.bright_sep_arcmin__gte}}, {{updated_float_values.bright_sep_arcmin__lte}}]" />
+                </div>
+                {% endif %}
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
 
     </div>
 
@@ -412,14 +369,19 @@
 <div style="width:85%; margin-top: 20px; margin: auto;">
   <table class="table table-striped table-bordered table-hover">
     <thead class="table-primary">
-      <th onclick="sortTable('candidate-tbody', 0, 'string')">Name</th>
-      <th onclick="sortTable('candidate-tbody', 1, 'string')">RA (HH:MM:SS.SS)</th>
-      <th onclick="sortTable('candidate-tbody', 2, 'string')">Dec (DD:MM:SS.SS)</th>
-      <th onclick="sortTable('candidate-tbody', 3, 'string')">Project ID</th>
-      <th onclick="sortTable('candidate-tbody', 4, 'string')">Obs ID</th>
+      <th onclick="sortTable('candidate-tbody', 0, 'string')">Name <span class="sort-arrow" id="arrow-0"></th>
+      <th onclick="sortTable('candidate-tbody', 1, 'string')">RA (HH:MM:SS.SS) <span class="sort-arrow" id="arrow-1">
+      </th>
+      <th onclick="sortTable('candidate-tbody', 2, 'string')">Dec (DD:MM:SS.SS) <span class="sort-arrow" id="arrow-2">
+      </th>
+
+      {% if selected_project_id == "All projects" %}
+      <th onclick="sortTable('candidate-tbody', 3, 'string')">Project ID <span class="sort-arrow" id="arrow-3"></th>
+      <th onclick="sortTable('candidate-tbody', 4, 'string')">Obs ID <span class="sort-arrow" id="arrow-4"></th>
+      {% endif %}
 
       {% for filtered in filtered_columns %}
-      <th onclick="sortTable('candidate-tbody', 4, 'string')">{{ filtered }}</th>
+      <th onclick="sortTable('candidate-tbody', 4, 'string')">{{ filtered|get_label_mapping:column_labels }}</th>
       {% endfor %}
 
     </thead>
@@ -432,8 +394,11 @@
 
         <td>{{cand.ra_str}}</td>
         <td>{{cand.dec_str}}</td>
+
+        {% if selected_project_id == "All projects" %}
         <td>{{cand.project.id}}</td>
         <td>{{cand.observation.id}}</td>
+        {% endif %}
 
         {% for filtered in filtered_columns %}
 

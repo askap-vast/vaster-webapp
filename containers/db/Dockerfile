@@ -1,4 +1,4 @@
-FROM postgres:16 as db
+FROM postgres:16 AS db
 
 LABEL description = "PostgreSQL 16 with q3c"
 

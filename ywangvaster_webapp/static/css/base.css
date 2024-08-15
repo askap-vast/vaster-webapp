@@ -144,6 +144,7 @@ div.card {
     position: -webkit-sticky; /* For Safari */
     position: sticky;
     top: 0;
+    max-width: 350px;
     /* margin-top: 1.5%; */
     /* order: -1 !important; */
   }
@@ -167,19 +168,21 @@ div.card {
 /* For table sorting arrows */
 
 .sort-arrow {
-  display: inline-block;
+  display: hidden;
   width: 0;
   height: 0;
-  margin-left: 5px;
+  /* margin-left: 5px; */
   vertical-align: middle;
   border-left: 5px solid transparent;
   border-right: 5px solid transparent;
 }
 .sort-asc {
   border-top: 5px solid black;
+  display: inline-block;
 }
 .sort-desc {
   border-bottom: 5px solid black;
+  display: inline-block;
 }
 
 /* Apply centering to all table elements */
@@ -189,4 +192,32 @@ th {
 }
 tr {
   text-align: center;
+}
+
+.note-table-cell {
+  width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.form-container {
+  width: 85%;
+  margin: 0 auto;
+  padding-bottom: 1px;
+  padding-top: 15px;
+  background-color: #f8f8f8;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+select {
+  width: 180px;
+  overflow: hidden;
+  white-space: pre;
+  text-overflow: ellipsis;
+}
+
+option {
+  white-space: pre-wrap; /* Allow text wrapping inside options */
 }

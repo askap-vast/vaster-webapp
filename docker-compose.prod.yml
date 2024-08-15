@@ -14,12 +14,11 @@ x-environment: &environment
 
   # DJango settings
   DEBUG: False
-  DJANGO_LOG_LEVEL: INFO
-  DJANGO_ALLOWED_HOSTS: localhost 0.0.0.0 # Add your production URL here
+  DJANGO_ALLOWED_HOSTS: localhost 127.0.0.1 0.0.0.0 # Add your production URL here
   DJANGO_SUPERUSER_USERNAME:
   DJANGO_SUPERUSER_PASSWORD:
   DJANGO_SUPERUSER_EMAIL:
-  DJANGO_SECRET_KEY: devkey
+  DJANGO_SECRET_KEY:
   PYTHONDONTWRITEBYTECODE: 1
   PYTHONUNBUFFERED: 1
 
@@ -40,11 +39,9 @@ services:
       context: .
       dockerfile: ./containers/db/Dockerfile
     user: postgres
-    env_file:
-      - ./.env.dev
+    environment: *environment
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
     healthcheck:
       test: ["CMD-SHELL", "pg_isready"]
       interval: 4s
@@ -57,23 +54,42 @@ services:
     build:
       context: .
       dockerfile: ./containers/web/Dockerfile
+    environment: *environment
     volumes:
       - ./ywangvaster_webapp:/ywangvaster_webapp
       - django_media:/ywangvaster_media
       - ./logs:/home/app/logs/
-    ports:
-      - 8000:8000
+    expose:
+      - 80
+    healthcheck:
+      test: "curl --fail --silent --write-out 'HTTP CODE : %{http_code}\n' --output /dev/null http://127.0.0.1:80/"
+      start_period: 60s
+      interval: 60s
+      timeout: 20s
+      retries: 20
     depends_on:
       db:
         condition: service_healthy
 
   nginx:
+    hostname: nginx
+    container_name: nginx
     build:
       context: .
       dockerfile: ./containers/nginx/Dockerfile
     volumes:
-      - static_volume:/home/app/web/staticfiles
+      - ./ywangvaster_webapp:/ywangvaster_webapp
     ports:
-      - 80:8000
+      - 80:80
     depends_on:
-      - web
+      web:
+        condition: service_healthy
+
+  autoheal:
+    image: willfarrell/autoheal
+    container_name: autoheal
+    restart: always
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=all

@@ -16,6 +16,7 @@
         width: 100%;
         border-radius: 15px;
         overflow: hidden;
+        position: relative;
     }
 
     #diskSpaceBar rect {
@@ -31,22 +32,41 @@
     #diskSpaceBar .foreground-bar {
         border-radius: 15px;
         fill: #007bff;
-        border-radius: 15px;
+    }
+
+    #diskSpaceBar .project-bar {
+        position: absolute;
+        height: 50px;
     }
 </style>
 
-
 {% if user.is_staff %}
+
+<title>Site Admin</title>
+<h1>Site Admin</h1>
 
 <div class='vstack gap-2'>
 
     <div class="d-flex justify-content-center align-items-center" style='padding-top: 20px;'>
-        <h4>Total disk space used on host: {{used_disk_space|floatformat:1 }} Gb of {{total_disk_space|floatformat:1 }}
-            Gb
-        </h4>
+        <h4>Total disk space used on host: {{ used_disk_space|floatformat:1 }} Gb of
+            {{ total_disk_space|floatformat:1 }} Gb</h4>
     </div>
 
     <div class="d-flex justify-content-center align-items-center">
+
+        {% comment %} <div class="disk-space-container">
+            <svg id="diskSpaceBar">
+                <!-- Background bar -->
+                <rect class="background-bar" width="100%" height="50" />
+                <!-- Foreground bar (initially hidden) -->
+                <rect id="usedSpaceBar" class="foreground-bar" width="0" height="50" />
+                <!-- Project bars -->
+                {% for item in annotated_projects %}
+                <rect class="project-bar" style="fill: {{ item.project_colour }};" width="0" height="50"
+                    data-width="{{ item.project_used_of_total }}" />
+                {% endfor %}
+            </svg>
+        </div> {% endcomment %}
 
         <div class="disk-space-container">
             <svg id="diskSpaceBar">
@@ -56,26 +76,33 @@
                 <rect id="usedSpaceBar" class="foreground-bar" width="0" height="50" />
             </svg>
         </div>
-
     </div>
 
 </div>
 
 <script>
-    // Get parameters from URL
-    let usedSpace = parseInt('{{ used_disk_space }}') || 0;
-    let totalSpace = parseInt('{{ total_disk_space }}') || 1; // Avoid division by zero
+    document.addEventListener("DOMContentLoaded", function () {
+        // Get parameters from URL
+        let usedSpace = parseFloat('{{ used_disk_space }}') || 0;
+        let totalSpace = parseFloat('{{ total_disk_space }}') || 1; // Avoid division by zero
 
-    // Calculate the width of the used space bar
-    let usedSpaceWidth = (usedSpace / totalSpace) * 100; // Scale to percentage
+        // Calculate the width of the used space bar
+        let usedSpaceWidth = (usedSpace / totalSpace) * 100; // Scale to percentage
 
-    // Set the width of the used space bar
-    document.getElementById('usedSpaceBar').setAttribute('width', usedSpaceWidth + '%');
+        // Set the width of the used space bar
+        document.getElementById('usedSpaceBar').setAttribute('width', usedSpaceWidth + '%');
+
+        // Set the width of each project bar
+        document.querySelectorAll('.project-bar').forEach(function (bar) {
+            let projectWidth = parseFloat(bar.getAttribute('data-width')) || 0;
+            bar.setAttribute('width', projectWidth + '%');
+        });
+    });
 </script>
 
 <hr />
 
-<h3>Projects in local database</h3>
+<h3>Projects</h3>
 
 <div class='container-fluid'>
 
@@ -106,8 +133,8 @@
                             <th>Upload date</th>
                             <th># Beams</th>
                             <th># Candidates</th>
-                            <th># Rated Candidates </th>
-                            <th>Space used (Gb) </th>
+                            <th># Rated Candidates</th>
+                            <th>Space used (Gb)</th>
                             <th># Files</th>
                         </tr>
                     </thead>
@@ -129,11 +156,11 @@
                             <td>{{ obs.beam_obs.all|length }}</td>
                             <td>{{ obs.candidate_count }}</td>
                             <td>{{ obs.rated_candidate_count }}</td>
-                            <td>{{ obs.total_file_size_gb|floatformat:2 }} </td>
-                            <td>{{ obs.total_file_count }} </td>
+                            <td>{{ obs.total_file_size_gb|floatformat:2 }}</td>
+                            <td>{{ obs.total_file_count }}</td>
                         </tr>
+                        {% endfor %}
                     </tbody>
-                    {% endfor %}
                 </table>
 
             </div>
@@ -148,7 +175,7 @@
 {% endif %}
 
 <script>
-    // Function to delete an observation from the DB. 
+    // Function to delete an observation from the DB.
     function deleteRecords(Id, hashId, recordType) {
         let confirmStr =
             `Are you sure you want to delete all records and files under ${recordType} - "${Id}" - "${hashId}" ?`;
@@ -164,9 +191,7 @@
                 },
                 success: function (response) {
                     console.log(response);
-                    alert(
-                        `Successfully deleted ${recordType} from the DB ${response["deleted_hashId"]}`
-                    );
+                    alert(`Successfully deleted ${recordType} from the DB ${response["deleted_hashId"]}`);
                     location.reload()
                 },
                 error: function (error) {

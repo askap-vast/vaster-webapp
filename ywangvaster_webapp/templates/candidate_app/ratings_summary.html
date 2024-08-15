@@ -4,115 +4,135 @@
 
 {% block content %}
 
-{% comment %} {% if user.is_staff %} {% endcomment %}
-
-
-
 <!-- -->
 {{ ratings_per_user|json_script:"ratings_per_user" }}
 
 <!-- -->
 {{ ratings_per_tag|json_script:"ratings_per_tag" }}
 
+<title>Ratings Summary</title>
+<h1>Ratings Summary</h1>
 
-<h1>Ratings Sumamry</h1>
+<div class='container-fluid' style="width:85%;">
+    <div class='row'>
+        <div class='col' id="chart-ratings-by-user" style="min-width: 600px; height: 500px;">
+        </div>
+        <div class='col' id="chart-ratings-by-classification" style="min-width: 600px; height: 500px;">
+        </div>
+    </div>
+</div>
 
-{% comment %} <div id='filter-ratings-form'>
-    <form method="post" action=".">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-primary">Filter</button>
-    </form>
-</div> {% endcomment %}
+<div id='ratings-form' class='container-fluid justify-content-center'
+    style="width:85%; margin: 0 auto; padding-bottom: 1px;  padding-top: 15px; background-color: #D3D3D3; border-radius: 5px; margin-bottom: 20px">
+
+    <div class="d-flex justify-content-center">
+        <h5>{{selected_project_id}}</h5>
+    </div>
+
+    <div class='d-flex justify-content-center'>
+
+        <form id='ratings-filter-form' method="post" action="." style="max-width: 1500px">
+            {% csrf_token %}
+            {{ form.as_p }}
+        </form>
+
+        <form id='clear-ratings-filter-form' method="post" action="{% url 'clear_ratings_filter' %}">
+            {% csrf_token %}
+        </form>
+    </div>
+
+    <div class='hstack gap-5' id='filter-buttons' style=" padding-bottom: 20px; display: flex;
+    justify-content: center;">
+
+        <button class="btn btn-danger" type="submit" form='clear-ratings-filter-form'>Reset filters</button>
+        <button class="btn btn-primary" type="submit" form='ratings-filter-form'>Filter</button>
+        <a href="?download=csv" class="btn btn-success">
+            Filtered Ratings CSV
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                <path
+                    d="M11.292 16.706a1 1 0 0 0 1.416 0l3-3a1 1 0 0 0-1.414-1.414L13 13.586V4a1 1 0 0 0-2 0v9.586l-1.293-1.293a1 1 0 0 0-1.414 1.414zM17 19H7a1 1 0 0 0 0 2h10a1 1 0 0 0 0-2z"
+                    style="fill: #1c1b1e" />
+            </svg>
+        </a>
+    </div>
+
+</div>
+
 
 {% if page_obj %}
 
-<div class='container-fluid' style="padding: 25px">
+<div class='container-fluid' id='ratings-table' style="width: 85%">
+    <table class="table table-striped table-bordered table-hover">
+        <thead class="table-primary">
+            <tr>
+                <th></th>
 
-    <div class='row'>
+                {% if selected_project_id == "All projects"%}
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 0, 'string')">Project<span
+                        class="sort-arrow" id="arrow-0"></th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 1, 'string')">Observation<span
+                        class="sort-arrow" id="arrow-1"></th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 2, 'string')">Candidate<span
+                        class="sort-arrow" id="arrow-2"></th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 3, 'string')">Rating<span
+                        class="sort-arrow" id="arrow-3"></th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 4, 'string')">Tags<span
+                        class="sort-arrow" id="arrow-4"></th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 5, 'string')">User<span
+                        class="sort-arrow" id="arrow-5"></th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 6, 'date')">Date<span class="sort-arrow"
+                        id="arrow-6"></th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 7, 'string')">Notes<span
+                        class="sort-arrow" id="arrow-7"></th>
 
-        <div class='col'>
-            <div id="chart-ratings-by-user" style="min-width: 600px; height: 500px;"></div>
+                {% else %}
 
-        </div>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 0, 'string')">Observation<span
+                        class="sort-arrow" id="arrow-0"></th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 1, 'string')">Candidate<span
+                        class="sort-arrow" id="arrow-1"></th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 2, 'string')">Rating<span
+                        class="sort-arrow" id="arrow-2"></th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 3, 'string')">Tags<span
+                        class="sort-arrow" id="arrow-3"></th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 4, 'string')">User<span
+                        class="sort-arrow" id="arrow-4"></th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 5, 'date')">Date<span class="sort-arrow"
+                        id="arrow-5"></th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 6, 'string')">Notes<span
+                        class="sort-arrow" id="arrow-6"></th>
 
-        <div class='col'>
+                {% endif %}
 
-            <div id="chart-ratings-by-classification" style="min-width: 600px; height: 500px;"></div>
-
-        </div>
-
-        {% comment %} <div class='col'>
-
-            <div id="chart-candidates-rated-vs-unrated-{{ project.id }}" style="width: 600px; height: 400px;"></div>
-
-        </div> {% endcomment %}
-
-    </div>
-
-</div>
-
-<!-- CSV Download Button -->
-{% if user.is_staff %}
-<div id='ratings-download-button'>
-    <a href="?download=csv" class="btn btn-success">
-        RATINGS CSV
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
-            <path
-                d="M11.292 16.706a1 1 0 0 0 1.416 0l3-3a1 1 0 0 0-1.414-1.414L13 13.586V4a1 1 0 0 0-2 0v9.586l-1.293-1.293a1 1 0 0 0-1.414 1.414zM17 19H7a1 1 0 0 0 0 2h10a1 1 0 0 0 0-2z"
-                style="fill: #1c1b1e" />
-        </svg>
-    </a>
-</div>
-{% endif %}
-
-<div id='ratings-table'>
-
-    <div id='ratings-download-button'>
-
-    </div>
-
-    <div class="container-fluid" style="width: 80vw">
-        <table class="table table-striped table-bordered table-hover">
-            <thead class="table-primary">
-                <tr>
-                    <th></th>
-                    <th scope="col" onclick="sortTable('rating-summary-table-body', 0, 'string')">Project</th>
-                    <th scope="col" onclick="sortTable('rating-summary-table-body', 1, 'string')">Hash ID</th>
-                    <th scope="col" onclick="sortTable('rating-summary-table-body', 2, 'string')">Candidate</th>
-                    <th scope="col" onclick="sortTable('rating-summary-table-body', 3, 'string')">Rating</th>
-                    <th scope="col" onclick="sortTable('rating-summary-table-body', 4, 'string')">Tags</th>
-                    <th scope="col" onclick="sortTable('rating-summary-table-body', 5, 'string')">User</th>
-                    <th scope="col" onclick="sortTable('rating-summary-table-body', 6, 'date')">Date</th>
-                    <th scope="col" onclick="sortTable('rating-summary-table-body', 7, 'string')">Notes</th>
-                </tr>
-            </thead>
-            <tbody id='rating-summary-table-body'>
-                {% for rating in ratings %}
-                <tr>
-                    <td>
-
-                        <button class="btn btn-danger btn-sm"
-                            onclick="deleteRating('{{rating.candidate.name}}', '{{rating.tag}}', '{{ rating.hash_id }}')">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
-                                <path
-                                    d="M5.755,20.283,4,8H20L18.245,20.283A2,2,0,0,1,16.265,22H7.735A2,2,0,0,1,5.755,20.283ZM21,4H16V3a1,1,0,0,0-1-1H9A1,1,0,0,0,8,3V4H3A1,1,0,0,0,3,6H21a1,1,0,0,0,0-2Z" />
-                            </svg>
-                        </button>
-                    </td>
-                    <td>{{ rating.candidate.project.id }}</td>
-                    <td>{{ rating.hash_id }}</td>
-                    <td>{{ rating.candidate.name }}</td>
-                    <td>{{ rating.rating|get_label_mapping:CONFIDENCE_MAPPING }}</td>
-                    <td>{{ rating.tag }}</td>
-                    <td>{{ rating.user }}</td>
-                    <td>{{ rating.date|isoformat }}</td>
-                    <td></text style="max-width: 300px;">{{ rating.notes }}</text></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+            </tr>
+        </thead>
+        <tbody id='rating-summary-table-body'>
+            {% for rating in ratings %}
+            <tr>
+                <td>
+                    <button class="btn btn-danger btn-sm"
+                        onclick="deleteRating('{{rating.candidate.name}}', '{{rating.tag}}', '{{ rating.hash_id }}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                            <path
+                                d="M5.755,20.283,4,8H20L18.245,20.283A2,2,0,0,1,16.265,22H7.735A2,2,0,0,1,5.755,20.283ZM21,4H16V3a1,1,0,0,0-1-1H9A1,1,0,0,0,8,3V4H3A1,1,0,0,0,3,6H21a1,1,0,0,0,0-2Z" />
+                        </svg>
+                    </button>
+                </td>
+                {% if selected_project_id == "All projects"%}
+                <td>{{ rating.candidate.project.id }}</td>
+                {% endif %}
+                <td>{{ rating.candidate.observation.id }}</td>
+                <td><a href={% url 'candidate_rating' rating.candidate.hash_id %}
+                        style="text-decoration:None">{{ rating.candidate.name }}</a></td>
+                <td>{{ rating.rating|get_label_mapping:CONFIDENCE_MAPPING }}</td>
+                <td>{{ rating.tag }}</td>
+                <td>{{ rating.user }}</td>
+                <td>{{ rating.date|isoformat }}</td>
+                <td style="max-width: 150px">{{ rating.notes }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
 {% include "candidate_app/pagination.html" %}
@@ -135,6 +155,10 @@ Start rating some candidates!
     let userNames = ratingsByUsers.map(item => item.user__username);
     let userCounts = ratingsByUsers.map(item => item.count);
 
+    // Define colors for each user
+    let userColors = ['#5470C6', '#91CC75', '#FAC858', '#EE6666', '#73C0DE', '#3BA272', '#FC8452', '#9A60B4',
+        '#FF6E40'
+    ];
     let optionRatingsByUser = {
         animation: false,
         title: {
@@ -150,7 +174,10 @@ Start rating some candidates!
         },
         series: [{
             type: 'bar',
-            data: userCounts
+            data: userCounts,
+            itemStyle: {
+                color: (params) => userColors[params.dataIndex % userColors.length]
+            }
         }]
     };
     chartRatingsByUser.setOption(optionRatingsByUser);
@@ -165,6 +192,10 @@ Start rating some candidates!
     let classificationNames = ratingsByTags.map(item => item.tag__name);
     let classificationCounts = ratingsByTags.map(item => item.count);
 
+    // Define colors for each classification
+    let classificationColors = ['#5470C6', '#91CC75', '#FAC858', '#EE6666', '#73C0DE', '#3BA272', '#FC8452', '#9A60B4',
+        '#FF6E40'
+    ];
     let optionRatingsByClassification = {
         animation: false,
         title: {
@@ -180,7 +211,10 @@ Start rating some candidates!
         },
         series: [{
             type: 'bar',
-            data: classificationCounts
+            data: classificationCounts,
+            itemStyle: {
+                color: (params) => classificationColors[params.dataIndex % classificationColors.length]
+            }
         }]
     };
     chartRatingsByClassification.setOption(optionRatingsByClassification);

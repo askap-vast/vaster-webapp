@@ -41,7 +41,6 @@ class CandidateFilterForm(forms.Form):
         if observation:
             self.cleaned_data["observation"] = str(observation.hash_id)
 
-    # TODO: Change this to be rated or unrated or both with a choice select.
     rated = forms.BooleanField(required=False)
 
     ratings_count = forms.IntegerField(required=False)
@@ -129,23 +128,22 @@ class CandidateFilterForm(forms.Form):
         return cleaned_data
 
 
-confidence_choices = (
-    ("T", "True"),
-    ("F", "False"),
-    ("U", "Unsure"),
-)
-
-
 class RateCandidateForm(forms.Form):
     """To create a rating record for a candidate."""
 
-    confidence = forms.ChoiceField(choices=confidence_choices, label="Confidence")
+    confidence = forms.ChoiceField(
+        choices=confidence_choices,
+        label="Confidence",
+    )
     classification = forms.ModelChoiceField(
         queryset=models.Classification.objects.all(),
         to_field_name="name",
         label="Tag",
     )
-    notes = forms.CharField(required=False, label="Notes")
+    notes = forms.CharField(
+        required=False,
+        label="Notes",
+    )
 
 
 class ClassificationForm(forms.ModelForm):
@@ -182,10 +180,28 @@ class RatingFilterForm(forms.Form):
         else:
             self.fields["observation"].queryset = models.Observation.objects.all()
 
+    def _post_clean(self):
+        """Additional cleaning step after the form's clean method.
+
+        Used to get the hash_id's out of the model choice fields for serialisation in later steps of the candidate_table page.
+        """
+        super()._post_clean()
+
+        tag = self.cleaned_data.get("tag")
+        if tag:
+            self.cleaned_data["tag"] = str(tag.hash_id)
+
+        observation = self.cleaned_data.get("observation")
+        if observation:
+            self.cleaned_data["observation"] = str(observation.hash_id)
+
+        user = self.cleaned_data.get("user")
+        if user:
+            self.cleaned_data["user"] = str(user)
+
     observation = forms.ModelChoiceField(
         models.Observation.objects.none(),
         empty_label="All observations",
-        label="Observations",
         required=False,
         widget=forms.Select(attrs={"class": "form-control"}),
     )
@@ -201,6 +217,7 @@ class RatingFilterForm(forms.Form):
         label="Confidence",
         widget=forms.Select(attrs={"class": "form-control"}),
     )
+
     user = forms.ModelChoiceField(
         queryset=DjangoUserModel.objects.all(),
         required=False,
