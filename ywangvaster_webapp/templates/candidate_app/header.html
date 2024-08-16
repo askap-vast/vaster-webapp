@@ -69,9 +69,13 @@
         {% endif %}
         {% endif %}
       </ul>
+
+      {% if user.is_authenticated %}
       <div class="navbar-text mx-auto">
         <a class="nav-link active">Viewing: {{ selected_project_id }}</a>
       </div>
+      {% endif %}
+
       <div class="d-flex">
         {% if user.is_authenticated %}
         <div class="d-flex align-items-center gap-3">
