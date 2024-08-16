@@ -119,9 +119,15 @@
                 </div>
 
                 {% if prev_rating %}
+
                 <button class='btn btn-primary' id='submit-rating' type='submit'>
-                  Update rating!
+                  Update rating
                 </button>
+
+                <a class='btn btn-success' id='next-unrated-candidate' href="{% url 'candidate_random' %}">
+                  Next unrated random candidate &rsaquo;
+                </a>
+
                 {% else %}
                 <button class='btn btn-primary' id='submit-rating' type='submit'>
                   Rate

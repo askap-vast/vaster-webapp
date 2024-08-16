@@ -209,6 +209,36 @@ def create_tag(request: HttpRequest):
 
 
 @login_required(login_url="/")
+def candidate_random(request):
+    """Redirect the user to an unrated candidate in the project."""
+
+    selected_project_hash_id = request.session.get("selected_project_hash_id")
+
+    if selected_project_hash_id:
+
+        print(f"Filtering for candidates with project hash_id: {selected_project_hash_id}")
+        candidates = models.Candidate.objects.all()
+        candidates = candidates.filter(project=selected_project_hash_id)
+
+    else:
+        candidates = models.Candidate.objects.all()
+
+    # Find candidates that are unrated in project
+    candidates = candidates.annotate(rating_count=Count("rating")).filter(rating_count=0)
+
+    # Pick a random candidate
+    random_candidate = candidates.order_by("?").first()
+
+    if random_candidate:
+        # Redirect to the candidate's detail page or any other appropriate URL
+        return redirect(f"/candidate_rating/{str(random_candidate.hash_id)}")
+    else:
+        # Handle the case where there are no unrated candidates
+        messages.error(request, "No unrated candidates found.")
+        return redirect("/")
+
+
+@login_required(login_url="/")
 def candidate_rating(request, cand_hash_id, arcmin=2):
     candidate = get_object_or_404(models.Candidate, hash_id=cand_hash_id)
 
@@ -671,7 +701,7 @@ def candidate_table(request: HttpRequest):
             "dec",
             candidate_table_session_data["cand_arcmin_search_radius"],
         )
-        filtered_columns.add("candidate_cone_radius")
+        # filtered_columns.add("candidate_cone_radius")
 
     # Filter beam by beam position
     if (
@@ -687,7 +717,7 @@ def candidate_table(request: HttpRequest):
             "beam_dec",
             candidate_table_session_data["beam_arcmin_search_radius"],
         )
-        filtered_columns.add("beam_cone_radius")
+        # filtered_columns.add("beam_cone_radius")
 
     # Filter candidate by deep position
     if (
@@ -703,7 +733,7 @@ def candidate_table(request: HttpRequest):
             "deep_dec_deg",
             candidate_table_session_data["deep_arcmin_search_radius"],
         )
-        filtered_columns.add("deep_cone_radius")
+        # filtered_columns.add("deep_cone_radius")
 
     # Paginate
     paginator = Paginator(candidates, 25)
@@ -742,7 +772,15 @@ def download_rating_csv(request, queryset, table, candidate_fields=None):
     # Write data rows
     for rating in queryset:
         candidate = rating.candidate
-        row = [getattr(rating, field) for field in rating_field_names]
+        row = []
+        for field in rating_field_names:
+            if field == "tag":
+                row.append(rating.tag.name)  # Access tag name
+            elif field == "date":
+                row.append(rating.date)
+            else:
+                row.append(getattr(rating, field))
+
         if candidate:
             row += [getattr(candidate, field) for field in candidate_fields]
         else:

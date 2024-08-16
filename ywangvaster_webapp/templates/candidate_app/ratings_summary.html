@@ -13,6 +13,8 @@
 <title>Ratings Summary</title>
 <h1>Ratings Summary</h1>
 
+{% if page_obj %}
+
 <div class='container-fluid' style="width:85%;">
     <div class='row'>
         <div class='col' id="chart-ratings-by-user" style="min-width: 600px; height: 500px;">
@@ -21,6 +23,8 @@
         </div>
     </div>
 </div>
+
+{% endif %}
 
 <div id='ratings-form' class='container-fluid justify-content-center'
     style="width:85%; margin: 0 auto; padding-bottom: 1px;  padding-top: 15px; background-color: #D3D3D3; border-radius: 5px; margin-bottom: 20px">
@@ -125,7 +129,7 @@
                 <td><a href={% url 'candidate_rating' rating.candidate.hash_id %}
                         style="text-decoration:None">{{ rating.candidate.name }}</a></td>
                 <td>{{ rating.rating|get_label_mapping:CONFIDENCE_MAPPING }}</td>
-                <td>{{ rating.tag }}</td>
+                <td>{{ rating.tag.name }}</td>
                 <td>{{ rating.user }}</td>
                 <td>{{ rating.date|isoformat }}</td>
                 <td style="max-width: 150px">{{ rating.notes }}</td>
@@ -140,8 +144,6 @@
 {% else %}
 
 <h2>No ratings found!</h2>
-
-Start rating some candidates!
 
 {% endif %}
 

@@ -1,12 +1,10 @@
-import sys
 import uuid
-from datetime import datetime, timezone
 from rest_framework import serializers
-from . import models
 
 from django.utils import timezone
-
 from django.core.files.uploadedfile import InMemoryUploadedFile
+
+from . import models
 
 
 def remove_leading_zero(coord_str: str):
@@ -105,7 +103,7 @@ class BeamSerializer(serializers.ModelSerializer):
         # Create the Upload metadata
         upload = models.Upload.objects.create(
             user=self.context["user"],
-            date=datetime.now(timezone.utc),
+            date=timezone.now(),
         )
 
         return models.Beam.objects.create(observation=observation, project=proj, upload=upload, **validated_data)
@@ -167,7 +165,7 @@ class CandidateSerializer(serializers.ModelSerializer):
         # Create the Upload metadata
         upload = models.Upload.objects.create(
             user=self.context["user"],
-            date=datetime.now(timezone.utc),
+            date=timezone.now(),
         )
 
         return models.Candidate.objects.create(

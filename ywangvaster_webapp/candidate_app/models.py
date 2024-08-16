@@ -1,6 +1,6 @@
 import os
 import uuid
-from datetime import datetime
+from django.utils import timezone
 
 from django.db import models
 from django.conf import settings
@@ -36,7 +36,7 @@ class Upload(models.Model):
         related_name="upload",
         default=None,
     )
-    date = models.DateTimeField(default=datetime.now, blank=True)
+    date = models.DateTimeField(default=timezone.now, blank=True)
 
 
 class Project(models.Model):
@@ -300,7 +300,7 @@ class Candidate(models.Model):
         super(Candidate, self).delete(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.proj_id}_{self.obs_id}_beam{self.beam_index}_{self.name}"
+        return f"{self.name}"
 
 
 class Classification(models.Model):
@@ -329,7 +329,7 @@ class Rating(models.Model):
     )
     rating = models.CharField(max_length=1, choices=POSSIBLE_RATINGS, default=None)
     tag = models.ForeignKey(Classification, on_delete=models.DO_NOTHING, related_name="rating", default=None)
-    date = models.DateTimeField(default=datetime.now, blank=True)
+    date = models.DateTimeField(default=timezone.now, blank=True)
     notes = models.CharField(max_length=1024)
 
     # TO-DO

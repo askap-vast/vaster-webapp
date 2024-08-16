@@ -29,14 +29,15 @@ urlpatterns = [
     path("login/", views.LoginView.as_view(), name="login"),
     path("logout/", views.LogoutView.as_view(), name="logout"),
     path("change_password/", views.AppChangePassword.as_view(), name="change_password"),
+    # Candidate pages
     path("ratings_summary/", views.ratings_summary, name="ratings_summary"),
     path("candidates/", views.candidate_table, name="candidates"),
+    path("candidate_random/", views.candidate_random, name="candidate_random"),
     path("clear_candidates_filter/", views.clear_candidates_filter, name="clear_candidates_filter"),
     path("clear_ratings_filter/", views.clear_ratings_filter, name="clear_ratings_filter"),
     path("candidate_rating/<str:cand_hash_id>/", views.candidate_rating, name="candidate_rating"),
     path("create_tag/", views.create_tag, name="create_tag"),
     path("download_lightcurve/<str:cand_hash_id>", views.download_lightcurve_csv, name="download_lightcurve_csv"),
-    # Download_ratings
     path("project_select/", views.project_select, name="project_select"),
     # Get nearby objects (all databases in one)
     path("get_nearby_objects/", views.nearby_objects_table, name="get_nearby_objects"),
