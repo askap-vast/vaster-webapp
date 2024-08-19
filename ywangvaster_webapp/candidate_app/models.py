@@ -303,11 +303,11 @@ class Candidate(models.Model):
         return f"{self.name}"
 
 
-class Classification(models.Model):
+class Tag(models.Model):
 
     hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    name = models.CharField(verbose_name="Classification", max_length=256, blank=True, null=True, unique=True)
+    name = models.CharField(verbose_name="Classification tag", max_length=256, blank=True, null=True, unique=True)
     description = models.CharField(verbose_name="Description", max_length=1024, blank=True, null=True)
 
     # Attach classifcations to a project or just them global?
@@ -328,7 +328,7 @@ class Rating(models.Model):
         default=None,
     )
     rating = models.CharField(max_length=1, choices=POSSIBLE_RATINGS, default=None)
-    tag = models.ForeignKey(Classification, on_delete=models.DO_NOTHING, related_name="rating", default=None)
+    tag = models.ForeignKey(Tag, on_delete=models.DO_NOTHING, related_name="rating", default=None)
     date = models.DateTimeField(default=timezone.now, blank=True)
     notes = models.CharField(max_length=1024)
 

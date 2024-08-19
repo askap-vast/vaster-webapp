@@ -46,7 +46,7 @@ class CandidateFilterForm(forms.Form):
     ratings_count = forms.IntegerField(required=False)
 
     tag = forms.ModelChoiceField(
-        models.Classification.objects.all(),
+        models.Tag.objects.all(),
         empty_label="All classification tags",
         required=False,
     )
@@ -135,8 +135,8 @@ class RateCandidateForm(forms.Form):
         choices=confidence_choices,
         label="Confidence",
     )
-    classification = forms.ModelChoiceField(
-        queryset=models.Classification.objects.all(),
+    tag = forms.ModelChoiceField(
+        queryset=models.Tag.objects.all(),
         to_field_name="name",
         label="Tag",
     )
@@ -146,13 +146,13 @@ class RateCandidateForm(forms.Form):
     )
 
 
-class ClassificationForm(forms.ModelForm):
-    """Form to add a new classification to the DB.
+class CreateTagForm(forms.ModelForm):
+    """Form to add a new classification tag to the DB.
 
     This can be done on the rate candidate page or in the Django admin page."""
 
     class Meta:
-        model = models.Classification
+        model = models.Tag
         fields = "__all__"
 
 
@@ -206,7 +206,7 @@ class RatingFilterForm(forms.Form):
         widget=forms.Select(attrs={"class": "form-control"}),
     )
     tag = forms.ModelChoiceField(
-        queryset=models.Classification.objects.all(),
+        queryset=models.Tag.objects.all(),
         required=False,
         label="Tag",
         widget=forms.Select(attrs={"class": "form-control"}),

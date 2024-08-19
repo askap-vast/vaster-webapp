@@ -1,8 +1,8 @@
 import csv
 import json
 import logging
-from typing import List, Optional
 from uuid import uuid4
+from typing import List, Optional
 from urllib.parse import urlencode
 
 from astropy import units
@@ -56,7 +56,7 @@ def about(request):
 
 
 def nearby_objects_table(request: HttpRequest):
-    """Render a table of nearby objects from the local DB, (filtered by project), Simbad and ATNF pulsars."""
+    """Render a table of nearby objects from the local DB (filtered by project), Simbad and ATNF pulsars."""
 
     dist_arcmin = 2
     selected_project_hash_id = request.session.get("selected_project_hash_id")
@@ -195,7 +195,7 @@ def create_tag(request: HttpRequest):
 
     if request.method == "POST":
 
-        new_tag = forms.ClassificationForm(request.POST)
+        new_tag = forms.CreateTagForm(request.POST)
 
         print(f"Attempting to create new tag with request.POST: {request.POST}")
 
@@ -252,7 +252,7 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
         prev_rating = None
 
     rate_form = forms.RateCandidateForm()
-    new_tag_form = forms.ClassificationForm()
+    new_tag_form = forms.CreateTagForm()
 
     if request.method == "POST":
 
@@ -260,8 +260,8 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
 
         if rate_form.is_valid():
             # Add tags to the rating (later there could be multiple tags per rating)
-            tag_id = request.POST.get("classification")
-            classification = models.Classification.objects.get(name=tag_id)
+            tag_id = request.POST.get("tag")
+            tag = models.Tag.objects.get(name=tag_id)
 
             # Delete the old rating if it exists
             if prev_rating:
@@ -274,7 +274,7 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
                 user=request.user,
                 rating=request.POST["confidence"],
                 notes=request.POST["notes"],
-                tag=classification,
+                tag=tag,
                 date=timezone.now(),
             )
 
@@ -287,7 +287,7 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
     converted_lc = []
     if candidate.lightcurve_data is not None:
         converted_lc = []
-        for row in candidate.lightcurve_data:
+        for row in candidate.lightcurve_data[1:]:
             try:
                 val = float(row[1]) * 1000.0
                 err = float(row[2]) * 1000.0
@@ -305,7 +305,7 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
         "new_tag_form": new_tag_form,
         "lightcurve_data": converted_lc,
         "arcmin_search": arcmin,
-        "cand_type_choices": tuple((c.name, c.name) for c in models.Classification.objects.all()),
+        "cand_type_choices": tuple((c.name, c.name) for c in models.Tag.objects.all()),
     }
     return render(request, "candidate_app/candidate_rating.html", context)
 
@@ -612,7 +612,7 @@ def candidate_table(request: HttpRequest):
             # Make the query string
             query_string = urlencode(url_dictionary)
 
-            print(f"======================================= {query_string}")
+            print(f"Query url string: {query_string}")
 
             return redirect(f"{request.path}?{query_string}")
     else:
@@ -636,6 +636,10 @@ def candidate_table(request: HttpRequest):
     else:
         candidates = models.Candidate.objects.all()
 
+    print("++++++++++++++++++++++++++++++++++++++")
+    print(candidates)
+    print(floats_to_filter)
+
     ### Float Filtering ###
 
     # These are the sliders that are used for filtering the candidates.
@@ -654,7 +658,7 @@ def candidate_table(request: HttpRequest):
         filtered_columns.add("rating.confidence")
         confidence_filter = inputs_to_filter["confidence"]
 
-    # Tag / Classification filter
+    # Classification tag filter
     tag_filter_name = None
     if "tag" in inputs_to_filter:
 
@@ -665,7 +669,7 @@ def candidate_table(request: HttpRequest):
         candidates = models.Candidate.objects.filter(hash_id__in=candidate_hash_ids)
 
         filtered_columns.add("rating.tag.name")
-        tag_filter_name = models.Classification.objects.get(hash_id=inputs_to_filter["tag"]).name
+        tag_filter_name = models.Tag.objects.get(hash_id=inputs_to_filter["tag"]).name
 
     # Ratings filter
     if "rated" in inputs_to_filter:
@@ -798,6 +802,7 @@ DEFAULT_RATINGS_INPUT = {
 }
 
 
+@login_required(login_url="/")
 def ratings_summary(request: HttpRequest):
     """Render the rating summary template."""
 
@@ -846,7 +851,7 @@ def ratings_summary(request: HttpRequest):
             # Make the query string
             query_string = urlencode(url_dictionary)
 
-            print(f"======================================= {query_string}")
+            print(f"Query url string: {query_string}")
 
             return redirect(f"{request.path}?{query_string}")
 
@@ -878,7 +883,7 @@ def ratings_summary(request: HttpRequest):
 
     ### Echarts bar plots ###
 
-    # For echarts bar plots of the tags and ratings per user and tag/classification.
+    # For echarts bar plots of ratings per user and ratings per tag.
     # Convert QuerySet to list of dictionaries for ratings per user
     ratings_per_user = list(ratings.values("user__username").annotate(count=Count("hash_id")))
 
@@ -898,8 +903,6 @@ def ratings_summary(request: HttpRequest):
         "ratings_per_user": ratings_per_user,
         "ratings_per_tag": ratings_per_tag,
     }
-
-    print(f"context for the ratings page: {context}")
 
     return render(request, "candidate_app/ratings_summary.html", context)
 

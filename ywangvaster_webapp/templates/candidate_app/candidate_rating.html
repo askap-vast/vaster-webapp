@@ -69,7 +69,7 @@
                 </div>
 
                 <div class='hstack gap-2 d-flex'>
-                  <label class='fw-bold'>Classification: </label>
+                  <label class='fw-bold'>Tag: </label>
                   <text> {{ prev_rating.tag }} </text>
                 </div>
 
@@ -107,8 +107,8 @@
 
                 <div class='fieldWrapper htstack gap-2 justify-content-center align-items-center'
                   style='max-width: 80x;'>
-                  <label for="confidence">Confidence:</label>
-                  {{ rate_form.classification }}
+                  <label for="confidence">Tag:</label>
+                  {{ rate_form.tag }}
                   <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal"
                     data-bs-target="#createNewTagModal">+</button>
                 </div>
@@ -731,7 +731,7 @@
   });
 </script>
 
-<!-- Scripts for finding objects relative to candidates -->
+<!-- Script for finding objects relative to the candidate -->
 <script>
   function handleFormSubmit(event) {
     event.preventDefault();
@@ -880,7 +880,7 @@
         showCooGridControl: true,
         showSimbadPointerControl: true,
         showCooGrid: false,
-        survey: "P/DSS2/color",
+        // survey: "P/DSS2/color",
         fov: 2 / 60, // 1, // degress of field of view
         target: "{{candidate.name}}",
       });

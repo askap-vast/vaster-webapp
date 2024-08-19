@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Project, Observation, Candidate, Rating, Classification
+from .models import Project, Observation, Candidate, Rating, Tag
 
 
 class CandidateAdmin(admin.ModelAdmin):
@@ -13,4 +13,4 @@ admin.site.register(Observation)
 admin.site.register(Candidate, CandidateAdmin)
 admin.site.register(Rating)
 admin.site.register(Project)
-admin.site.register(Classification)
+admin.site.register(Tag)

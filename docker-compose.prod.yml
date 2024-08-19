@@ -13,7 +13,7 @@ x-environment: &environment
   POSTGRES_PASSWORD: password
 
   # DJango settings
-  DEBUG: False
+  DEBUG: True # Needs to be set to True to allow the /admin page for django to display properly.
   DJANGO_ALLOWED_HOSTS: localhost 127.0.0.1 0.0.0.0 # Add your production URL here
   DJANGO_SUPERUSER_USERNAME: admin
   DJANGO_SUPERUSER_PASSWORD: test

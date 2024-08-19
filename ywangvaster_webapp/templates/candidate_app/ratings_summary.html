@@ -19,7 +19,7 @@
     <div class='row'>
         <div class='col' id="chart-ratings-by-user" style="min-width: 600px; height: 500px;">
         </div>
-        <div class='col' id="chart-ratings-by-classification" style="min-width: 600px; height: 500px;">
+        <div class='col' id="chart-ratings-by-tag" style="min-width: 600px; height: 500px;">
         </div>
     </div>
 </div>
@@ -189,41 +189,41 @@
         chartRatingsByUser.resize();
     });
 
-    // Initialize chart for ratings by classification
-    let chartRatingsByClassification = echarts.init(document.getElementById('chart-ratings-by-classification'));
-    let classificationNames = ratingsByTags.map(item => item.tag__name);
-    let classificationCounts = ratingsByTags.map(item => item.count);
+    // Initialize chart for ratings by tag
+    let chartRatingsByTag = echarts.init(document.getElementById('chart-ratings-by-tag'));
+    let tagNames = ratingsByTags.map(item => item.tag__name);
+    let tagCounts = ratingsByTags.map(item => item.count);
 
-    // Define colors for each classification
-    let classificationColors = ['#5470C6', '#91CC75', '#FAC858', '#EE6666', '#73C0DE', '#3BA272', '#FC8452', '#9A60B4',
+    // Define colors for eachtag (standard echarts colours)
+    let tagColors = ['#5470C6', '#91CC75', '#FAC858', '#EE6666', '#73C0DE', '#3BA272', '#FC8452', '#9A60B4',
         '#FF6E40'
     ];
-    let optionRatingsByClassification = {
+    let optionRatingsByTag = {
         animation: false,
         title: {
-            text: 'Ratings per Classification'
+            text: 'Ratings per Classification Tag'
         },
         tooltip: {},
         xAxis: {
             type: 'category',
-            data: classificationNames
+            data: tagNames
         },
         yAxis: {
             type: 'value'
         },
         series: [{
             type: 'bar',
-            data: classificationCounts,
+            data: tagCounts,
             itemStyle: {
-                color: (params) => classificationColors[params.dataIndex % classificationColors.length]
+                color: (params) => tagColors[params.dataIndex % tagColors.length]
             }
         }]
     };
-    chartRatingsByClassification.setOption(optionRatingsByClassification);
+    chartRatingsByTag.setOption(optionRatingsByTag);
 
     // Add event listener for window resize
     window.addEventListener("resize", () => {
-        chartRatingsByClassification.resize();
+        chartRatingsByTag.resize();
     });
 </script>
 

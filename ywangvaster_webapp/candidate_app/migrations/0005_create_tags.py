@@ -1,12 +1,12 @@
 import uuid
 from django.db import migrations
 
-"""Populate the Classification table with a few entries on first start of the webapp."""
+"""Populate the DB with a few common tags on first start up."""
 
 
-def create_classification_entries(apps, schema_editor):
+def create_tag_entries(apps, schema_editor):
 
-    Classification = apps.get_model("candidate_app", "Classification")
+    Tag = apps.get_model("candidate_app", "Tag")
 
     initial = [
         {
@@ -67,7 +67,7 @@ def create_classification_entries(apps, schema_editor):
     ]
 
     for data in initial:
-        Classification.objects.create(**data)
+        Tag.objects.create(**data)
 
 
 class Migration(migrations.Migration):
@@ -75,5 +75,5 @@ class Migration(migrations.Migration):
     dependencies = [("candidate_app", "0004_candidate_material_views")]
 
     operations = [
-        migrations.RunPython(create_classification_entries),
+        migrations.RunPython(create_tag_entries),
     ]
