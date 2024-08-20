@@ -23,6 +23,7 @@ TIME_ZONE = "Australia/Melbourne"
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+SETTINGS_PATH = os.path.dirname(os.path.dirname(__file__))
 
 
 # Quick-start development settings - unsuitable for production
@@ -124,11 +125,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 MEDIA_ROOT = "/ywangvaster_media"
 MEDIA_URL = "/media/"
 
-STATIC_URL = "/static/"
-STATICFILES_DIRS = (os.path.join(BASE_DIR, "static/"),)
-STATIC_ROOT = os.path.join(BASE_DIR, "static_host/")
-
-SETTINGS_PATH = os.path.dirname(os.path.dirname(__file__))
+STATIC_URL = "static/"
+STATIC_ROOT = "/ywangvaster_staticfiles/"
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
+]
 
 FORM_RENDERER = "django.forms.renderers.TemplatesSetting"
 
@@ -140,13 +141,12 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
-                # "ywangvaster_webapp.candidate_app.context_processors.get_projects",
                 "django.template.context_processors.media",
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "candidate_app.context_processors.project_form",
+                "candidate_app.context_processors.header_forms",
             ],
         },
     },

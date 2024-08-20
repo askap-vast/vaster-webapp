@@ -4,8 +4,8 @@
 
 {% block content %}
 
-<title>Filter Candidates</title>
-<h1>Filter Candidates</h1>
+<title>Candidates</title>
+<h1>Candidates</h1>
 
 <div class='container-fluid'
   style="width:85%; margin: 0 auto; padding-bottom: 1px;  padding-top: 15px; background-color: #D3D3D3; border-radius: 5px; margin-bottom: 20px">
@@ -73,18 +73,18 @@
 
                   <div class='vstack gap-2' style="padding-bottom: 10px">
                     <div class="fieldWrapper">
-                      <label for="{{ form.rated.id_for_label }}">Rated:</label>
+                      <label for="{{ form.rated.id_for_label }}">Rated: </label>
                       {{ form.rated }}
                     </div>
 
                     <div class="fieldWrapper">
-                      <label for="{{ form.confidence.id_for_label }}">Confidence:</label>
+                      <label for="{{ form.confidence.id_for_label }}">Confidence: </label>
                       {{ form.confidence }}
                     </div>
 
                     <div class="fieldWrapper">
                       {{ form.tag.errors }}
-                      <label for="{{ form.tag.id_for_label }}">Tag</label>
+                      <label for="{{ form.tag.id_for_label }}">Tag: </label>
                       {{ form.tag }}
                     </div>
                   </div>

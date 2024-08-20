@@ -102,12 +102,12 @@
 
               <div class='vstack gap-3'>
                 <div class='fieldWrapper'>
-                  {{ rate_form.confidence.label }} {{ rate_form.confidence }}
+                  <label for="confidence">Confidence:</label> {{ rate_form.confidence }}
                 </div>
 
                 <div class='fieldWrapper htstack gap-2 justify-content-center align-items-center'
                   style='max-width: 80x;'>
-                  <label for="confidence">Tag:</label>
+                  <label for="tag">Tag:</label>
                   {{ rate_form.tag }}
                   <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal"
                     data-bs-target="#createNewTagModal">+</button>

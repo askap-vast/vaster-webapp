@@ -25,7 +25,37 @@ else
     # Since it is a fresh DB, load up the ANTF pulsar table
     python3 manage.py refresh_pulsar_table
 
+    if [[ $PROD ]]; then 
+
+        echo "--- Running as PROD version - $PROD ---"
+
+        echo "Copying across the static files."
+
+        python manage.py collectstatic --noinput
+
+    else
+
+        echo "Not copying across the static files."
+
+    fi
+
 fi 
 
-# This runs the web app locally through Django - this will change to nginx later
-python3 manage.py runserver 0.0.0.0:80
+
+# Dev or Production versions.
+if [[ "$PROD" == "true" ]]; then 
+
+    echo "--- Running as PROD version - $PROD ---"
+
+    echo "Starting production web server using gunicorn."
+
+    gunicorn ywangvaster_webapp.wsgi:application --bind 0.0.0.0:80 --error-logfile /home/app/gunicorn_error.log --access-logfile /home/app/logs/gunicorn_access.log
+
+else
+
+    echo "--- Running as DEV version ---"
+
+    # This runs the web app locally through Django
+    python3 manage.py runserver 0.0.0.0:80
+
+fi

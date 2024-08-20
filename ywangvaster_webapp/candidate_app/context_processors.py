@@ -2,13 +2,10 @@
 
 from . import models, forms
 
-from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.forms import PasswordChangeForm
-from django.shortcuts import render, redirect
+from django.contrib.auth.forms import PasswordChangeForm as DjangoPasswordChangeForm
 
 
-def project_form(request):
+def header_forms(request):
 
     project_form = forms.ProjectSelectForm()
 
@@ -23,7 +20,7 @@ def project_form(request):
         selected_project_id = selected_projects[0].id
 
     # Empty pw reset form for header
-    pw_reset_form = PasswordChangeForm(request.user)
+    pw_reset_form = DjangoPasswordChangeForm(request.user)
 
     return {
         "project_form": project_form,

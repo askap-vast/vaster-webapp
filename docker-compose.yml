@@ -1,4 +1,6 @@
 x-environment: &environment
+  PROD: False
+
   # Postgres DB for Django UI
 
   # PostgreSQL settings
@@ -13,10 +15,10 @@ x-environment: &environment
   POSTGRES_PASSWORD: password
 
   # DJango settings
-  DEBUG: True
+  DEBUG: 1
   SECRET_KEY: foo
   DJANGO_LOG_LEVEL: INFO
-  DJANGO_ALLOWED_HOSTS: localhost 0.0.0.0 [::1]
+  DJANGO_ALLOWED_HOSTS: localhost 0.0.0.0 [::1] *
   DJANGO_SUPERUSER_USERNAME: admin
   DJANGO_SUPERUSER_PASSWORD: test
   DJANGO_SUPERUSER_EMAIL: none@nothing.com
@@ -62,7 +64,7 @@ services:
       - django_media:/ywangvaster_media
       - ./logs:/home/app/logs/
     ports:
-      - 80:8000
+      - 80:80
     depends_on:
       db:
         condition: service_healthy

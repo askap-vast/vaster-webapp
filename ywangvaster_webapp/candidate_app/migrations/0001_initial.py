@@ -201,13 +201,6 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name="xml_ivorns",
-            fields=[
-                ("id", models.AutoField(primary_key=True, serialize=False)),
-                ("ivorn", models.CharField(max_length=128, unique=True)),
-            ],
-        ),
-        migrations.CreateModel(
             name="Upload",
             fields=[
                 ("hash_id", models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
@@ -216,7 +209,7 @@ class Migration(migrations.Migration):
                     "user",
                     models.ForeignKey(
                         default=None,
-                        on_delete=django.db.models.deletion.CASCADE,
+                        on_delete=django.db.models.deletion.DO_NOTHING,
                         related_name="upload",
                         to=settings.AUTH_USER_MODEL,
                     ),

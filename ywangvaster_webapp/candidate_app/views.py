@@ -1,7 +1,9 @@
 import csv
 import json
 import logging
+import zipfile
 from uuid import uuid4
+from io import StringIO, BytesIO
 from typing import List, Optional
 from urllib.parse import urlencode
 
@@ -13,25 +15,27 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
-from django.core.exceptions import PermissionDenied
-from django.core.paginator import Paginator
+
+from django.utils import timezone
 from django.db import transaction
-from django.db.models import Count, F, Q, Value
+from django.core.paginator import Paginator
+from django.views.generic import TemplateView, View
+from django.db.models import Count, F, Q, Value, QuerySet
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
-from django.views.generic import TemplateView, View
 
 from django_q3c.expressions import Q3CDist, Q3CRadialQuery
+
 from rest_framework import status
-from rest_framework.authtoken.models import Token
-from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from rest_framework.authtoken.models import Token
 
 from ywangvaster_webapp.settings import MEDIA_ROOT
 
-from . import forms, models, serializers
 from .utils import get_disk_space
+from . import forms, models, serializers
+
 
 logger = logging.getLogger(__name__)
 
@@ -43,16 +47,10 @@ CONFIDENCE_MAPPING = {
 }
 
 
-def home_page(request):
+def home(request):
     """Render the home page html."""
 
-    return render(request, "candidate_app/home_page.html")
-
-
-def about(request):
-    """Render the about html."""
-
-    return render(request, "candidate_app/about.html")
+    return render(request, "candidate_app/home.html")
 
 
 def nearby_objects_table(request: HttpRequest):
@@ -178,16 +176,6 @@ def get_simbad(ra_str: str, dec_str: str, dist_arcmin: float = 1.0) -> List[dict
             )
 
     return simbad_result_table
-
-
-def about(request: HttpRequest):
-    """The about page for the user to upload files."""
-
-    # If loggin in, get the users token for them and make it available, if not, dont give out the token.
-
-    context = {}
-
-    return render(request, "candidate_app/about.html", context)
 
 
 @login_required(login_url="/")
@@ -758,38 +746,73 @@ def candidate_table(request: HttpRequest):
     return render(request, "candidate_app/candidate_table.html", content)
 
 
-def download_rating_csv(request, queryset, table, candidate_fields=None):
-    if not request.user.is_staff:
-        raise PermissionDenied
-    response = HttpResponse(content_type="text/csv")
-    response["Content-Disposition"] = f'attachment; filename="{table}.csv"'
-    writer = csv.writer(response)
+def download_rating_csv_zip(
+    request,
+    queryset: QuerySet,
+    table: str,
+    candidate_fields: List[str] = None,
+) -> HttpResponse:
+    """Write the ratingd queryset all tags into zip file to be downloaded by the user."""
 
-    # Define headers, including candidate information
-    rating_field_names = [field.name for field in queryset.model._meta.fields]
-    candidate_fields = candidate_fields or [
-        field.name for field in models.Candidate._meta.fields
-    ]  # Default to all candidate fields
-    headers = rating_field_names + candidate_fields
-    writer.writerow(headers)
+    # Create an in-memory output file for the zip file
+    zip_buffer = BytesIO()
 
-    # Write data rows
-    for rating in queryset:
-        candidate = rating.candidate
-        row = []
-        for field in rating_field_names:
-            if field == "tag":
-                row.append(rating.tag.name)  # Access tag name
-            elif field == "date":
-                row.append(rating.date)
+    with zipfile.ZipFile(zip_buffer, "w") as zip_file:
+        # Create CSV for ratings
+        ratings_csv_buffer = StringIO()
+        ratings_writer = csv.writer(ratings_csv_buffer)
+
+        # Define headers, including candidate information
+        rating_field_names = [field.name for field in queryset.model._meta.fields]
+        if candidate_fields is None:
+            candidate_fields = [
+                field.name for field in models.Candidate._meta.fields
+            ]  # Default to all candidate fields
+        ratings_headers = rating_field_names + candidate_fields
+        ratings_writer.writerow(ratings_headers)
+
+        # Write data rows for ratings
+        for rating in queryset:
+            candidate = rating.candidate
+            row = []
+            for field in rating_field_names:
+                if field == "tag":
+                    row.append(rating.tag.name)  # Access tag name
+                elif field == "date":
+                    row.append(rating.date)
+                else:
+                    row.append(getattr(rating, field))
+
+            if candidate:
+                row += [getattr(candidate, field) for field in candidate_fields]
             else:
-                row.append(getattr(rating, field))
+                row += ["N/A"] * len(candidate_fields)  # If no candidate, fill with N/A
+            ratings_writer.writerow(row)
 
-        if candidate:
-            row += [getattr(candidate, field) for field in candidate_fields]
-        else:
-            row += ["N/A"] * len(candidate_fields)  # If no candidate, fill with N/A
-        writer.writerow(row)
+        # Write ratings CSV to the zip file
+        zip_file.writestr(f"{table}_ratings.csv", ratings_csv_buffer.getvalue())
+
+        # Create CSV for tags
+        tags_csv_buffer = StringIO()
+        tags_writer = csv.writer(tags_csv_buffer)
+
+        # Define headers for tags
+        tag_field_names = [field.name for field in models.Tag._meta.fields]
+        tags_writer.writerow(tag_field_names)
+
+        # Write data rows for tags
+        tags = models.Tag.objects.all()
+        for tag in tags:
+            row = [getattr(tag, field) for field in tag_field_names]
+            tags_writer.writerow(row)
+
+        # Write tags CSV to the zip file
+        zip_file.writestr("all_tags.csv", tags_csv_buffer.getvalue())
+
+    # Create a response with the zip file
+    zip_buffer.seek(0)
+    response = HttpResponse(zip_buffer, content_type="application/zip")
+    response["Content-Disposition"] = f'attachment; filename="{table}_data.zip"'
 
     return response
 
@@ -816,13 +839,6 @@ def ratings_summary(request: HttpRequest):
     else:
         ratings = models.Rating.objects.all()
 
-    default_rating_inputs = {
-        "tag": None,
-        "confidence": "",
-        "observation": None,
-        "user": None,
-    }
-
     ### Ratings table ###
 
     # From the URL for the filter
@@ -846,7 +862,7 @@ def ratings_summary(request: HttpRequest):
             current_ratings_fitler = cleaned_data
 
             # Filter the  inputs, see if they are different from the default values.
-            url_dictionary = get_new_values_diff(default_rating_inputs, cleaned_data)
+            url_dictionary = get_new_values_diff(DEFAULT_RATINGS_INPUT, cleaned_data)
 
             # Make the query string
             query_string = urlencode(url_dictionary)
@@ -861,7 +877,7 @@ def ratings_summary(request: HttpRequest):
             initial=current_ratings_fitler,
         )
 
-    inputs_to_filter = get_new_values_diff(default_rating_inputs, current_ratings_fitler)
+    inputs_to_filter = get_new_values_diff(DEFAULT_RATINGS_INPUT, current_ratings_fitler)
 
     # Filter the ratings
     if "observation" in inputs_to_filter:
@@ -879,7 +895,7 @@ def ratings_summary(request: HttpRequest):
     # Handle CSV download
     if request.method == "GET":
         if request.GET.get("download") == "csv":
-            return download_rating_csv(request, ratings, "ratings_summary")
+            return download_rating_csv_zip(request, ratings, "ratings_summary")
 
     ### Echarts bar plots ###
 
@@ -1140,7 +1156,7 @@ PROJECT_COLOURS = [
 
 @login_required(login_url="/")
 def site_admin(request):
-    """Display a summary details about each project, observation, and the space used internal to the webapp."""
+    """Display details of each project, observation, and the space used internally to the webapp."""
 
     selected_project_hash_id = request.session.get("selected_project_hash_id")
 
@@ -1320,7 +1336,7 @@ class LoginView(TemplateView, View):
         else:
             messages.warning(request, "The username or password were incorrect.")
 
-        return redirect(request.POST.get("next", "/"))
+        return redirect(request.POST.get("next", "/candidates/"))
 
 
 class LogoutView(View):

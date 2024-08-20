@@ -10,8 +10,8 @@
 <!-- -->
 {{ ratings_per_tag|json_script:"ratings_per_tag" }}
 
-<title>Ratings Summary</title>
-<h1>Ratings Summary</h1>
+<title>Ratings</title>
+<h1>Ratings</h1>
 
 {% if page_obj %}
 
@@ -50,6 +50,8 @@
 
         <button class="btn btn-danger" type="submit" form='clear-ratings-filter-form'>Reset filters</button>
         <button class="btn btn-primary" type="submit" form='ratings-filter-form'>Filter</button>
+
+        {% if page_obj %}
         <a href="?download=csv" class="btn btn-success">
             Filtered Ratings CSV
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
@@ -58,6 +60,7 @@
                     style="fill: #1c1b1e" />
             </svg>
         </a>
+        {% endif %}
     </div>
 
 </div>
@@ -69,7 +72,10 @@
     <table class="table table-striped table-bordered table-hover">
         <thead class="table-primary">
             <tr>
+
+                {% if user.is_staff %}
                 <th></th>
+                {% endif %}
 
                 {% if selected_project_id == "All projects"%}
                 <th scope="col" onclick="sortTable('rating-summary-table-body', 0, 'string')">Project<span
@@ -113,6 +119,7 @@
         <tbody id='rating-summary-table-body'>
             {% for rating in ratings %}
             <tr>
+                {% if user.is_staff %}
                 <td>
                     <button class="btn btn-danger btn-sm"
                         onclick="deleteRating('{{rating.candidate.name}}', '{{rating.tag}}', '{{ rating.hash_id }}')">
@@ -122,6 +129,8 @@
                         </svg>
                     </button>
                 </td>
+                {% endif %}
+
                 {% if selected_project_id == "All projects"%}
                 <td>{{ rating.candidate.project.id }}</td>
                 {% endif %}

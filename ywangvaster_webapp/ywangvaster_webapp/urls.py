@@ -23,8 +23,7 @@ from candidate_app import views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", views.home_page, name="home_page"),
-    path("about/", views.about, name="about"),
+    path("", views.home, name="home"),
     path("site_admin/", views.site_admin, name="site_admin"),
     path("login/", views.LoginView.as_view(), name="login"),
     path("logout/", views.LogoutView.as_view(), name="logout"),
@@ -51,5 +50,6 @@ urlpatterns = [
     path("delete/", views.delete, name="delete"),
 ]
 
-# This allows media files to be linked and viewed directly
+# This allows media and css files to be linked and viewed directly
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

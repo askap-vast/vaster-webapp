@@ -1,4 +1,6 @@
 x-environment: &environment
+  PROD: True
+
   # Postgres DB for Django UI
 
   # PostgreSQL settings
@@ -13,7 +15,6 @@ x-environment: &environment
   POSTGRES_PASSWORD: password
 
   # DJango settings
-  DEBUG: True # Needs to be set to True to allow the /admin page for django to display properly.
   DJANGO_ALLOWED_HOSTS: localhost 127.0.0.1 0.0.0.0 # Add your production URL here
   DJANGO_SUPERUSER_USERNAME: admin
   DJANGO_SUPERUSER_PASSWORD: test
@@ -29,6 +30,7 @@ networks:
 
 volumes:
   django_media:
+  django_static:
   postgres_data:
 
 services:
@@ -58,6 +60,7 @@ services:
     volumes:
       - ./ywangvaster_webapp:/ywangvaster_webapp
       - django_media:/ywangvaster_media
+      - django_static:/ywangvaster_staticfiles
       - ./logs:/home/app/logs/
     expose:
       - 80
@@ -78,7 +81,8 @@ services:
       context: .
       dockerfile: ./containers/nginx/Dockerfile
     volumes:
-      - ./ywangvaster_webapp:/ywangvaster_webapp
+      - django_static:/ywangvaster_staticfiles
+      - django_media:/ywangvaster_media
     ports:
       - 80:80
     depends_on:

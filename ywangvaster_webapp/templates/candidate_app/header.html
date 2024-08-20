@@ -56,23 +56,20 @@
         <li class="nav-item">
           <a class="nav-link active" aria-current="page" href="{% url 'candidates' %}">Candidates</a>
         </li>
-        {% if user.is_staff %}
         <li class="nav-item">
           <a class="nav-link active" aria-current="page" href="{% url 'ratings_summary' %}">Ratings</a>
         </li>
+        {% if user.is_staff %}
         <li class="nav-item">
           <a class="nav-link active" aria-current="page" href="{% url 'site_admin' %}">Site Admin</a>
         </li>
-        {% comment %} <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="{% url 'about' %}">About</a>
-        </li> {% endcomment %}
         {% endif %}
         {% endif %}
       </ul>
 
       {% if user.is_authenticated %}
       <div class="navbar-text mx-auto">
-        <a class="nav-link active">Viewing: {{ selected_project_id }}</a>
+        <a class="nav-link active"> <strong> Viewing: {{ selected_project_id }} </strong></a>
       </div>
       {% endif %}
 
@@ -155,8 +152,10 @@
         <div class="vstack gap-3 align-items-center justify-content-center">
           <text>Select a a project from the following list</text>
 
-          <form method="post" action="{% url 'project_select' %}">
+          <form class='d-flex gap-2 justify-content-center align-items-center' method="post"
+            action="{% url 'project_select' %}">
             {% csrf_token %}
+
             {{ project_form }}
             <button class="btn btn-primary" type="submit">Select</button>
           </form>
@@ -214,7 +213,9 @@
       },
       success: function (response) {
         divToUpdate = document.getElementById('tokenToUpdate');
-        divToUpdate.innerText = response.token;
+        if (divToUpdate) {
+          divToUpdate.innerText = response.token;
+        }
       },
       error: function (error) {
         // Handle error response
@@ -229,15 +230,20 @@
   async function copyUserToken() {
 
     let tokenDiv = document.getElementById('tokenToUpdate');
-    navigator.clipboard.writeText(tokenDiv.innerText);
+    if (tokenDiv) {
+      navigator.clipboard.writeText(tokenDiv.innerText);
+    }
 
     let button = document.getElementById('copyTokenButton')
-    let originalText = button.innerText;
-    button.innerText = "Copied!"
+    if (button) {
+      let originalText = button.innerText;
+      button.innerText = "Copied!"
 
-    setTimeout(function () {
-      button.innerText = originalText;
-    }, 5000);
+      setTimeout(function () {
+        button.innerText = originalText;
+      }, 5000);
+    }
+
 
   }
 </script>

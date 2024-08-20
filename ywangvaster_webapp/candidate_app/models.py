@@ -32,7 +32,7 @@ class Upload(models.Model):
     hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=models.DO_NOTHING,
         related_name="upload",
         default=None,
     )
@@ -337,11 +337,6 @@ class Rating(models.Model):
 
     def __str__(self):
         return f"{self.rating}"
-
-
-class xml_ivorns(models.Model):
-    id = models.AutoField(primary_key=True)
-    ivorn = models.CharField(max_length=128, unique=True)
 
 
 class ATNFPulsar(models.Model):
