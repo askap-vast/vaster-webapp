@@ -142,6 +142,7 @@
                             <th># Beams</th>
                             <th># Candidates</th>
                             <th># Rated Candidates</th>
+                            <th># Ratings</th>
                             <th>Space used (Gb)</th>
                             <th># Files</th>
                         </tr>
@@ -164,6 +165,7 @@
                             <td>{{ obs.beam_obs.all|length }}</td>
                             <td>{{ obs.candidate_count }}</td>
                             <td>{{ obs.rated_candidate_count }}</td>
+                            <td>{{ obs.ratings_count }}</td>
                             <td>{{ obs.total_file_size_gb|floatformat:2 }}</td>
                             <td>{{ obs.total_file_count }}</td>
                         </tr>

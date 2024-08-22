@@ -64,7 +64,6 @@ class Migration(migrations.Migration):
                 ("obs_id", models.CharField()),
                 ("proj_id", models.CharField(max_length=64)),
                 ("index", models.IntegerField()),
-                ("beam_obj_id", models.CharField(editable=False)),
                 ("description", models.CharField(blank=True, max_length=1024, null=True, verbose_name="Description")),
                 ("total_file_count", models.IntegerField(blank=True, null=True)),
                 ("total_file_size_bytes", models.BigIntegerField(blank=True, null=True)),
@@ -125,7 +124,6 @@ class Migration(migrations.Migration):
                 ("proj_id", models.CharField(max_length=64)),
                 ("obs_id", models.CharField()),
                 ("beam_index", models.IntegerField()),
-                ("cand_obj_id", models.CharField()),
                 ("total_file_count", models.IntegerField(blank=True, null=True)),
                 ("total_file_size_bytes", models.BigIntegerField(blank=True, null=True)),
                 ("lightcurve_data", models.JSONField(blank=True, null=True)),
@@ -149,7 +147,6 @@ class Migration(migrations.Migration):
                     "deepcutout_fits",
                     models.FileField(blank=True, null=True, upload_to=candidate_app.models.cand_upload_path),
                 ),
-                ("notes", models.CharField(blank=True, max_length=1024, null=True, verbose_name="Notes")),
                 ("name", models.CharField(max_length=100)),
                 ("ra_str", models.CharField(max_length=100)),
                 ("dec_str", models.CharField(max_length=100)),
@@ -282,12 +279,6 @@ class Migration(migrations.Migration):
                 ("proj_id", models.CharField(max_length=64)),
                 ("id", models.CharField()),
                 ("obs_start", models.DateTimeField(blank=True, null=True)),
-                ("obs_obj_id", models.CharField()),
-                ("obs_name", models.CharField(blank=True, max_length=128, null=True, verbose_name="Observation name")),
-                (
-                    "obs_description",
-                    models.CharField(blank=True, max_length=1024, null=True, verbose_name="Observation description"),
-                ),
                 (
                     "project",
                     models.ForeignKey(

@@ -6,7 +6,7 @@ from . import models
 class CandidateAdmin(admin.ModelAdmin):
     search_help_text = "Filter by observation ID"
     search_fields = ["obs_id__observation_id"]
-    list_display = ("name", "beam", "notes")
+    list_display = ("name", "beam")
     model = models.Candidate
 
 

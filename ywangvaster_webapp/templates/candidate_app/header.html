@@ -48,7 +48,7 @@
     <a class="navbar-brand" href="/">YWang VASTER</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
       aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
+      <span class="navbar-toggler-icon" />
     </button>
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
@@ -156,7 +156,10 @@
             action="{% url 'project_select' %}">
             {% csrf_token %}
 
-            {{ project_form }}
+            <div class="d-flex align-items-center gap-2">
+              {{project_form.selected_project_hash_id}}
+            </div>
+
             <button class="btn btn-primary" type="submit">Select</button>
           </form>
 
@@ -168,8 +171,10 @@
 
         <div class="vstack gap-3 align-items-center justify-content-center">
           <div class='align-items-center justify-content-center'>
-            <p>Your token to use when uploading candidates to this webapp.</p>
-            <p style="color: red">If the token is refreshed, any old token is invalid.</p>
+            <p class='align-items-center justify-content-center'>Your token to use when uploading candidates to this
+              webapp.</p>
+            <p class='align-items-center justify-content-center' style="color: red">If the token is refreshed, the
+              previous token will be invalid.</p>
           </div>
           <div class="hstack gap-2 justify-content-center align-items-center">
             <code id='tokenToUpdate' style="color: grey"> </code>

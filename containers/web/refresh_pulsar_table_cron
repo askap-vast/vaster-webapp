@@ -1,0 +1,1 @@
+0 0 * * 0 . /etc/environment && python3 /ywangvaster_webapp/manage.py refresh_pulsar_table > /proc/1/fd/1 2>/proc/1/fd/2

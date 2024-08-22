@@ -16,10 +16,10 @@ x-environment: &environment
 
   # DJango settings
   DJANGO_ALLOWED_HOSTS: localhost 127.0.0.1 0.0.0.0 # Add your production URL here
-  DJANGO_SUPERUSER_USERNAME: admin
-  DJANGO_SUPERUSER_PASSWORD: test
-  DJANGO_SUPERUSER_EMAIL: admin@admin.com
-  DJANGO_SECRET_KEY: devkey
+  DJANGO_SUPERUSER_USERNAME: # Admin username
+  DJANGO_SUPERUSER_PASSWORD: # Use a strong password
+  DJANGO_SUPERUSER_EMAIL: # Your admin email that users can contact in case there are errors with the web app.
+  DJANGO_SECRET_KEY: # Please use your own secret key
   PYTHONDONTWRITEBYTECODE: 1
   PYTHONUNBUFFERED: 1
 
@@ -36,7 +36,7 @@ volumes:
 services:
   db:
     hostname: db
-    container_name: db
+    container_name: ywangvaster-db
     build:
       context: .
       dockerfile: ./containers/db/Dockerfile
@@ -52,7 +52,7 @@ services:
 
   web:
     hostname: web
-    container_name: web
+    container_name: ywangvaster-web
     build:
       context: .
       dockerfile: ./containers/web/Dockerfile
@@ -76,7 +76,7 @@ services:
 
   nginx:
     hostname: nginx
-    container_name: nginx
+    container_name: ywangvaster-nginx
     build:
       context: .
       dockerfile: ./containers/nginx/Dockerfile
@@ -91,7 +91,7 @@ services:
 
   autoheal:
     image: willfarrell/autoheal
-    container_name: autoheal
+    container_name: ywangvaster-autoheal
     restart: always
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"

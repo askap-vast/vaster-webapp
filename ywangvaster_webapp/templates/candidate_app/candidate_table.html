@@ -369,19 +369,47 @@
 <div style="width:85%; margin-top: 20px; margin: auto;">
   <table class="table table-striped table-bordered table-hover">
     <thead class="table-primary">
-      <th onclick="sortTable('candidate-tbody', 0, 'string')">Name <span class="sort-arrow" id="arrow-0"></th>
-      <th onclick="sortTable('candidate-tbody', 1, 'string')">RA (HH:MM:SS.SS) <span class="sort-arrow" id="arrow-1">
+      <th onclick="sortTable('candidate-tbody', 0)">Name
+        <span class="sort-arrow" id="arrow-0">
+
       </th>
-      <th onclick="sortTable('candidate-tbody', 2, 'string')">Dec (DD:MM:SS.SS) <span class="sort-arrow" id="arrow-2">
+      <th onclick="sortTable('candidate-tbody', 1, 'string')">
+        RA (HH:MM:SS.SS)
+        <span class="sort-arrow" id="arrow-1" />
+      </th>
+      <th onclick="sortTable('candidate-tbody', 2, 'string')">
+        Dec (DD:MM:SS.SS)
+        <span class="sort-arrow" id="arrow-2" />
       </th>
 
       {% if selected_project_id == "All projects" %}
-      <th onclick="sortTable('candidate-tbody', 3, 'string')">Project ID <span class="sort-arrow" id="arrow-3"></th>
-      <th onclick="sortTable('candidate-tbody', 4, 'string')">Obs ID <span class="sort-arrow" id="arrow-4"></th>
+      <th onclick="sortTable('candidate-tbody', 3)">
+        Project ID
+        <span class="sort-arrow" id="arrow-3" />
+      </th>
+      <th onclick="sortTable('candidate-tbody', 4)">
+        Obs ID
+        <span class="sort-arrow" id="arrow-4" />
+      </th>
       {% endif %}
 
       {% for filtered in filtered_columns %}
-      <th onclick="sortTable('candidate-tbody', 4, 'string')">{{ filtered|get_label_mapping:column_labels }}</th>
+
+      {% if selected_project_id == "All projects" %}
+      <th onclick="sortTable('candidate-tbody', {{ forloop.counter|add:4 }})">
+        {{ filtered|get_label_mapping:column_labels }}
+        <span class="sort-arrow" id="arrow-{{ forloop.counter|add:4 }}" />
+      </th>
+
+      {% else %}
+
+      <th onclick="sortTable('candidate-tbody', {{ forloop.counter|add:2 }})">
+        {{ filtered|get_label_mapping:column_labels }}
+        <span class="sort-arrow" id="arrow-{{ forloop.counter|add:2 }}" />
+      </th>
+      {% endif %}
+
+
       {% endfor %}
 
     </thead>

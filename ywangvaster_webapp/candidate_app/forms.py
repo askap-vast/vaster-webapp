@@ -134,11 +134,13 @@ class RateCandidateForm(forms.Form):
     confidence = forms.ChoiceField(
         choices=confidence_choices,
         label="Confidence",
+        widget=forms.Select(attrs={"class": "form-select"}),
     )
     tag = forms.ModelChoiceField(
         queryset=models.Tag.objects.all(),
         to_field_name="name",
         label="Tag",
+        widget=forms.Select(attrs={"class": "form-select"}),
     )
     notes = forms.CharField(
         required=False,
@@ -164,6 +166,7 @@ class ProjectSelectForm(forms.Form):
         empty_label="All projects",
         label="Project",
         required=False,
+        widget=forms.Select(attrs={"class": "form-control"}),
     )
 
 
@@ -197,7 +200,7 @@ class RatingFilterForm(forms.Form):
 
         user = self.cleaned_data.get("user")
         if user:
-            self.cleaned_data["user"] = str(user)
+            self.cleaned_data["user"] = str(user.id)
 
     observation = forms.ModelChoiceField(
         models.Observation.objects.none(),

@@ -95,15 +95,8 @@ class Observation(models.Model):
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="obs_proj", default=None)
 
-    # Used a human unique identifier - <project_id>_<obs_id>
-    obs_obj_id = models.CharField()
-
     # Meta data for when the object was uploaded
     upload = models.ForeignKey(Upload, on_delete=models.CASCADE, related_name="obs_upload", default=None)
-
-    # User modified - if required
-    obs_name = models.CharField(max_length=128, blank=True, null=True, verbose_name="Observation name")
-    obs_description = models.CharField(max_length=1024, blank=True, null=True, verbose_name="Observation description")
 
     @cached_property
     def total_file_size_gb(self):
@@ -147,9 +140,6 @@ class Beam(models.Model):
     obs_id = models.CharField()
     proj_id = models.CharField(max_length=64)
     index = models.IntegerField()  # This is for 00, 01, 02, 03 - for an observation or survey
-
-    # Used a human unique identifier - <project_id>_<obs_id>_beam<beam_index>
-    beam_obj_id = models.CharField(editable=False)
 
     # Meta data for when the object was uploaded
     upload = models.ForeignKey(Upload, on_delete=models.CASCADE, related_name="beam_upload", default=None)
@@ -213,7 +203,7 @@ class Candidate(models.Model):
     beam_index = models.IntegerField()
 
     # Used a human unique identifier -  <project_id>_<obs_id>_beam<beam_index>_<cand_id>
-    cand_obj_id = models.CharField()
+    # cand_obj_id = models.CharField(null=True, blank=True)
 
     # Meta data for when the object was uploaded
     upload = models.ForeignKey(Upload, on_delete=models.CASCADE, related_name="cand_upload", default=None)
@@ -238,8 +228,6 @@ class Candidate(models.Model):
     # Deepcutout files
     deepcutout_png = models.FileField(upload_to=cand_upload_path, null=True, blank=True)
     deepcutout_fits = models.FileField(upload_to=cand_upload_path, null=True, blank=True)
-
-    notes = models.CharField(verbose_name="Notes", max_length=1024, blank=True, null=True)
 
     # Comes from the candidadate file data uploaded
     # source_id = models.IntegerField() # not needed in this web app.

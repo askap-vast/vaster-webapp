@@ -78,39 +78,69 @@
                 {% endif %}
 
                 {% if selected_project_id == "All projects"%}
-                <th scope="col" onclick="sortTable('rating-summary-table-body', 0, 'string')">Project<span
-                        class="sort-arrow" id="arrow-0"></th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', 1, 'string')">Observation<span
-                        class="sort-arrow" id="arrow-1"></th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', 2, 'string')">Candidate<span
-                        class="sort-arrow" id="arrow-2"></th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', 3, 'string')">Rating<span
-                        class="sort-arrow" id="arrow-3"></th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', 4, 'string')">Tags<span
-                        class="sort-arrow" id="arrow-4"></th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', 5, 'string')">User<span
-                        class="sort-arrow" id="arrow-5"></th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', 6, 'date')">Date<span class="sort-arrow"
-                        id="arrow-6"></th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', 7, 'string')">Notes<span
-                        class="sort-arrow" id="arrow-7"></th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 1)">
+                    Project
+                    <span class="sort-arrow" id="arrow-1" />
+                </th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 2)">
+                    Observation
+                    <span class="sort-arrow" id="arrow-2" />
+                </th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 3)">
+                    Candidate
+                    <span class="sort-arrow" id="arrow-3" />
+                </th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 4)">
+                    Rating
+                    <span class="sort-arrow" id="arrow-4" />
+                </th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 5)">
+                    Tags
+                    <span class="sort-arrow" id="arrow-5" />
+                </th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 6)">
+                    User
+                    <span class="sort-arrow" id="arrow-6" />
+                </th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 7, 'date')">
+                    Date
+                    <span class="sort-arrow" id="arrow-7" />
+                </th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 8)">
+                    Notes
+                    <span class="sort-arrow" id="arrow-8" />
+                </th>
 
                 {% else %}
 
-                <th scope="col" onclick="sortTable('rating-summary-table-body', 0, 'string')">Observation<span
-                        class="sort-arrow" id="arrow-0"></th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', 1, 'string')">Candidate<span
-                        class="sort-arrow" id="arrow-1"></th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', 2, 'string')">Rating<span
-                        class="sort-arrow" id="arrow-2"></th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', 3, 'string')">Tags<span
-                        class="sort-arrow" id="arrow-3"></th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', 4, 'string')">User<span
-                        class="sort-arrow" id="arrow-4"></th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', 5, 'date')">Date<span class="sort-arrow"
-                        id="arrow-5"></th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', 6, 'string')">Notes<span
-                        class="sort-arrow" id="arrow-6"></th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 0)">
+                    Observation
+                    <span class="sort-arrow" id="arrow-0" />
+                </th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 1)">
+                    Candidate
+                    <span class="sort-arrow" id="arrow-1" />
+                </th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 2)">
+                    Rating
+                    <span class="sort-arrow" id="arrow-2" />
+                </th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 3)">
+                    Tags
+                    <span class="sort-arrow" id="arrow-3" />
+                </th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 4)">
+                    User
+                    <span class="sort-arrow" id="arrow-4" />
+                </th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 5, 'date')">
+                    Date
+                    <span class="sort-arrow" id="arrow-5" />
+                </th>
+                <th scope="col" onclick="sortTable('rating-summary-table-body', 6)">
+                    Notes
+                    <span class="sort-arrow" id="arrow-6" />
+                </th>
 
                 {% endif %}
 

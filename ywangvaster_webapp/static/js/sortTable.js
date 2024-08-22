@@ -1,68 +1,4 @@
-// function sortTable(tableBodyId, columnN, compareType) {
-//   const tableBody = document.getElementById(tableBodyId);
-//   const rows = Array.from(tableBody.rows); // Exclude the header row
-
-//   const direction = tableBody.getAttribute("data-sort-direction") === "asc" ? 1 : -1;
-
-//   rows.sort((a, b) => {
-//     const aValue = a.getElementsByTagName("td")[columnN].textContent.trim();
-//     const bValue = b.getElementsByTagName("td")[columnN].textContent.trim();
-
-//     let result = compareOnColumnType(compareType, aValue, bValue);
-
-//     // If the values are equal, compare additional columns for stability
-//     if (result === 0) {
-//       for (let i = 0; i < a.cells.length; i++) {
-//         if (i !== columnN) {
-//           const aAdditional = a.getElementsByTagName("td")[i].textContent.trim();
-//           const bAdditional = b.getElementsByTagName("td")[i].textContent.trim();
-//           result = compareOnColumnType(i, aAdditional, bAdditional);
-//           console.log("Compare result:", result);
-//           if (result !== 0) {
-//             break;
-//           }
-//         }
-//       }
-//     }
-
-//     return direction * result;
-//   });
-
-//   // Update the sort direction
-//   tableBody.setAttribute("data-sort-direction", direction === 1 ? "desc" : "asc");
-
-//   // Re-append sorted rows to the table
-//   rows.forEach((row) => tableBody.appendChild(row));
-// }
-
-// function compareOnColumnType(compareType, value1, value2) {
-//   // Return the difference between two values in the table for sorting
-
-//   if (value1 === value2) {
-//     // Do nothing as they are the same value
-//     return 0;
-//   }
-
-//   if (compareType === "number") {
-//     // Parse the column as a number (integer or float)
-//     return parseFloat(value1) - parseFloat(value2);
-//   } else if (compareType === "date") {
-//     // Parse as dates (ISO datetime format)
-//     const date1 = new Date(value1);
-//     const date2 = new Date(value2);
-//     return date1 - date2;
-//   } else if (compareType === "string") {
-//     // Parse the cells as strings
-//     return value1.toLowerCase().localeCompare(value2.toLowerCase());
-//   } else {
-//     // Default method
-//     return value1.toLowerCase().localeCompare(value2.toLowerCase());
-//   }
-// }
-
-// With table sorting added
-
-function sortTable(tableBodyId, columnN, compareType) {
+function sortTable(tableBodyId, columnN, compareType = "") {
   const tableBody = document.getElementById(tableBodyId);
   const rows = Array.from(tableBody.rows); // Exclude the header row
   const currentDirection = tableBody.getAttribute("data-sort-direction") || "asc";
@@ -72,20 +8,7 @@ function sortTable(tableBodyId, columnN, compareType) {
     const aValue = a.getElementsByTagName("td")[columnN].textContent.trim();
     const bValue = b.getElementsByTagName("td")[columnN].textContent.trim();
 
-    let result = compareOnColumnType(compareType, aValue, bValue);
-
-    if (result === 0) {
-      for (let i = 0; i < a.cells.length; i++) {
-        if (i !== columnN) {
-          const aAdditional = a.getElementsByTagName("td")[i].textContent.trim();
-          const bAdditional = b.getElementsByTagName("td")[i].textContent.trim();
-          result = compareOnColumnType(i, aAdditional, bAdditional);
-          if (result !== 0) {
-            break;
-          }
-        }
-      }
-    }
+    let result = compareOnColumnType(aValue, bValue, compareType);
 
     return newDirection === "asc" ? result : -result;
   });
@@ -104,18 +27,52 @@ function sortTable(tableBodyId, columnN, compareType) {
   rows.forEach((row) => tableBody.appendChild(row));
 }
 
-function compareOnColumnType(compareType, value1, value2) {
+function compareOnColumnType(value1, value2, compareType = "") {
   if (value1 === value2) return 0;
 
-  if (compareType === "number") {
-    return parseFloat(value1) - parseFloat(value2);
+  // Convert to lower case strings for easier comparison
+  const val1Lower = value1.toString().toLowerCase();
+  const val2Lower = value2.toString().toLowerCase();
+
+  // Force different comparison types if given.
+  if (compareType === "string") {
+    return val1Lower.localeCompare(val2Lower);
   } else if (compareType === "date") {
+    // Parse as dates (ISO datetime format)
     const date1 = new Date(value1);
     const date2 = new Date(value2);
     return date1 - date2;
-  } else if (compareType === "string") {
-    return value1.toLowerCase().localeCompare(value2.toLowerCase());
-  } else {
-    return value1.toLowerCase().localeCompare(value2.toLowerCase());
   }
+
+  // Check if values can be parsed as booleans
+  const boolValues = { true: true, false: false };
+  const isBool1 = val1Lower in boolValues;
+  const isBool2 = val2Lower in boolValues;
+
+  if (isBool1 && isBool2) {
+    return boolValues[val1Lower] - boolValues[val2Lower];
+  }
+
+  // Check if values can be parsed as numbers
+  const num1 = parseFloat(value1);
+  const num2 = parseFloat(value2);
+  const isNum1 = typeof num1 === "number" && !isNaN(num1);
+  const isNum2 = typeof num2 === "number" && !isNaN(num2);
+
+  if (isNum1 && isNum2) {
+    return num1 - num2;
+  }
+
+  // Convert to dates
+  const date1 = new Date(val1Lower);
+  const date2 = new Date(val2Lower);
+  const isValidDate1 = !isNaN(date1.getDate());
+  const isValidDate2 = !isNaN(date2.getDate());
+
+  if (isValidDate1 && isValidDate2) {
+    return date1 - date2;
+  }
+
+  // Default to string comparison
+  return val1Lower.localeCompare(val2Lower);
 }

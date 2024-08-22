@@ -8,13 +8,13 @@ from typing import List, Optional
 from urllib.parse import urlencode
 
 from astropy import units
-from astropy.coordinates import Angle, SkyCoord
 from astroquery.simbad import Simbad
+from astropy.coordinates import Angle, SkyCoord
 
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 
 from django.utils import timezone
 from django.db import transaction
@@ -44,6 +44,92 @@ CONFIDENCE_MAPPING = {
     "T": "True",
     "F": "False",
     "U": "Unsure",
+}
+
+DEFAULT_RATINGS_INPUT = {
+    "tag": None,
+    "confidence": "",
+    "observation": None,
+    "user": None,
+}
+
+DOWNLOAD_CANDIDATE_FIELDS = [
+    "proj_id",
+    "obs_id",
+    "beam_index",
+    "name",
+    "ra_str",
+    "dec_str",
+    "ra",
+    "dec",
+    "chi_square",
+    "chi_square_log_sigma",
+    "chi_square_sigma",
+    "peak_map",
+    "peak_map_log_sigma",
+    "peak_map_sigma",
+    "gaussian_map",
+    "gaussian_map_sigma",
+    "std_map",
+    "bright_sep_arcmin",
+    "beam_ra",
+    "beam_dec",
+    "beam_sep_deg",
+    "deep_ra_deg",
+    "deep_dec_deg",
+    "deep_sep_arcsec",
+    "deep_name",
+    "deep_num",
+    "deep_peak_flux",
+    "deep_int_flux",
+    "md_deep",
+    "lightcurve_data",
+]
+
+FILTER_FORM_FLOAT_VARAIBLES = [
+    "chi_square",
+    "chi_square_log_sigma",
+    "chi_square_sigma",
+    "peak_map",
+    "peak_map_log_sigma",
+    "peak_map_sigma",
+    "gaussian_map",
+    "gaussian_map_sigma",
+    "std_map",
+    "md_deep",
+    "deep_sep_arcsec",
+    "bright_sep_arcmin",
+    "beam_sep_deg",
+    "deep_peak_flux",
+    "deep_int_flux",
+]
+
+FILTER_CAND_VAR_MAPPING = {
+    "chi_square": "Chi Square",
+    "chi_square_sigma": "Chi Square Sigma",
+    "chi_square_log_sigma": "Chi Square Log Sigma",
+    "peak_map": "Peak Map",
+    "peak_map_sigma": "Peak Map Sigma",
+    "peak_map_log_sigma": "Peak Map Log Sigma",
+    "gaussian_map": "Gaussian Map",
+    "gaussian_map_sigma": "Gaussian Map Sigma",
+    "std_map": "Std Map",
+    "bright_sep_arcmin": "Bright Sep (arcmin)",
+    "beam_sep_deg": "Beam Sep (deg)",
+    "deep_int_flux": "Deep Int Flux",
+    "deep_peak_flux": "Deep Peak Flux",
+    "deep_sep_arcsec": "Deep Sep (arcsec)",
+    "md_deep": "Md Deep",
+    "rated": "Rating Count",
+    "observation.id": "Observation",
+    "beam.index": "Beam Index",
+    "deep_num": "Deep Num",
+    "rating_count": "Rating Count",
+    "rating.confidence": "Rating Confidence",
+    "rating.tag.name": "Rating Tag",
+    "cand_sep": "Candidate Position Sep (arcmin)",
+    "beam_sep": "Beam Position Sep (arcmin)",
+    "deep_sep": "Deep Position Sep (arcmin)",
 }
 
 
@@ -97,6 +183,7 @@ def nearby_objects_table(request: HttpRequest):
 
     result.extend(local_db_results)
 
+    # Sort results by separation
     sorted_results = sorted(result, key=lambda x: x["sep"], reverse=False)
 
     return render(
@@ -330,6 +417,7 @@ def filter_candidates_by_coords(
     dec_col: str,
     arcmin_search_radius: float,
     annotate: Optional[bool] = False,
+    sep_name: Optional[str] = None,
     for_rating_table: Optional[bool] = False,
 ):
     """Convert from str ra_hms and dec_dms to degrees and filter candidates that are within the arcmin_search_radius."""
@@ -343,29 +431,59 @@ def filter_candidates_by_coords(
 
         if annotate:
 
-            filtered = (
-                incoming.filter(
-                    Q(
-                        Q3CRadialQuery(
-                            center_ra=ra_deg,
-                            center_dec=dec_deg,
-                            ra_col=ra_col,
-                            dec_col=dec_col,
-                            radius=arcmin_search_radius / 60.0,
+            if sep_name:
+
+                filtered = (
+                    incoming.filter(
+                        Q(
+                            Q3CRadialQuery(
+                                center_ra=ra_deg,
+                                center_dec=dec_deg,
+                                ra_col=ra_col,
+                                dec_col=dec_col,
+                                radius=arcmin_search_radius / 60.0,
+                            )
                         )
                     )
-                )
-                .annotate(  # do the distance calcs in the db
-                    sep=Q3CDist(
-                        ra1=F(ra_col),
-                        dec1=F(dec_col),
-                        ra2=ra_deg,
-                        dec2=dec_deg,
+                    .annotate(
+                        **{
+                            sep_name: Q3CDist(
+                                ra1=F(ra_col),
+                                dec1=F(dec_col),
+                                ra2=ra_deg,
+                                dec2=dec_deg,
+                            )
+                            * 60
+                        }
                     )
-                    * 60  # arcsec -> degrees # ???? How doe that turn into degrees???
+                    .order_by(sep_name)
                 )
-                .order_by("sep")
-            )
+
+            else:
+
+                filtered = (
+                    incoming.filter(
+                        Q(
+                            Q3CRadialQuery(
+                                center_ra=ra_deg,
+                                center_dec=dec_deg,
+                                ra_col=ra_col,
+                                dec_col=dec_col,
+                                radius=arcmin_search_radius / 60.0,
+                            )
+                        )
+                    )
+                    .annotate(  # do the distance calcs in the db
+                        sep=Q3CDist(
+                            ra1=F(ra_col),
+                            dec1=F(dec_col),
+                            ra2=ra_deg,
+                            dec2=dec_deg,
+                        )
+                        * 60  # arcsec -> degrees # ???? How doe that turn into degrees???
+                    )
+                    .order_by("sep")
+                )
 
             print(f"filtered candidates: {filtered}")
 
@@ -461,50 +579,6 @@ def change_password(request):
             messages.error(request, "Please correct the error below.")
 
 
-FILTER_FORM_FLOAT_VARAIBLES = [
-    "chi_square",
-    "chi_square_log_sigma",
-    "chi_square_sigma",
-    "peak_map",
-    "peak_map_log_sigma",
-    "peak_map_sigma",
-    "gaussian_map",
-    "gaussian_map_sigma",
-    "std_map",
-    "md_deep",
-    "deep_sep_arcsec",
-    "bright_sep_arcmin",
-    "beam_sep_deg",
-    "deep_peak_flux",
-    "deep_int_flux",
-]
-
-FILTER_CAND_VAR_MAPPING = {
-    "chi_square": "Chi Square",
-    "chi_square_sigma": "Chi Square Sigma",
-    "chi_square_log_sigma": "Chi Square Log Sigma",
-    "peak_map": "Peak Map",
-    "peak_map_sigma": "Peak Map Sigma",
-    "peak_map_log_sigma": "Peak Map Log Sigma",
-    "gaussian_map": "Gaussian Map",
-    "gaussian_map_sigma": "Gaussian Map Sigma",
-    "std_map": "Std Map",
-    "bright_sep_arcmin": "Bright Sep Arcmin",
-    "beam_sep_deg": "Beam Sep Deg",
-    "deep_int_flux": "Deep Int Flux",
-    "deep_peak_flux": "Deep Peak Flux",
-    "deep_sep_arcsec": "Deep Sep Arcsec",
-    "md_deep": "Md Deep",
-    "rated": "Rating Count",
-    "observation.id": "Observation",
-    "beam.index": "Beam Index",
-    "deep_num": "Deep Num",
-    "rating_count": "Rating Count",
-    "rating.confidence": "Rating Confidence",
-    "rating.tag.name": "Rating Tag",
-}
-
-
 def get_candidate_form_defaults():
     """Make a dictionary of default values for the filter form.
 
@@ -547,11 +621,14 @@ def get_candidate_form_defaults():
 
 
 def get_new_values_diff(original: dict, new: dict):
+    """Get the difference between two dictionaries and return the new values."""
 
     new_values = {}
     for key, original_value in original.items():
-        if original_value != new[key]:
+        if original_value != new[key] and new[key] is not None:
             new_values[key] = new[key]
+
+    print(f"New values from get_new_diff_values: {new_values}")
 
     return new_values
 
@@ -573,18 +650,32 @@ def candidate_table(request: HttpRequest):
         candidate_table_session_data.update(request.GET.dict())
 
         # Update the form values with the variables from url decode.
-        form = forms.CandidateFilterForm(
-            selected_project_hash_id=selected_project_hash_id,
-            initial=candidate_table_session_data,
-        )
+        if get_new_values_diff(default_all_values, candidate_table_session_data):
+            form = forms.CandidateFilterForm(
+                selected_project_hash_id=selected_project_hash_id,
+                initial=candidate_table_session_data,
+            )
+        else:
+            form = forms.CandidateFilterForm(
+                selected_project_hash_id=selected_project_hash_id,
+                initial=default_all_values,
+            )
 
     # This is a filter request.
     if request.method == "POST":
 
-        form = forms.CandidateFilterForm(
-            request.POST,
-            selected_project_hash_id=selected_project_hash_id,
-        )
+        if get_new_values_diff(default_all_values, candidate_table_session_data):
+            form = forms.CandidateFilterForm(
+                request.POST,
+                selected_project_hash_id=selected_project_hash_id,
+                initial=candidate_table_session_data,
+            )
+        else:
+            form = forms.CandidateFilterForm(
+                request.POST,
+                selected_project_hash_id=selected_project_hash_id,
+                initial=default_all_values,
+            )
 
         if form.is_valid():
 
@@ -605,10 +696,16 @@ def candidate_table(request: HttpRequest):
             return redirect(f"{request.path}?{query_string}")
     else:
 
-        form = forms.CandidateFilterForm(
-            selected_project_hash_id=selected_project_hash_id,
-            initial=candidate_table_session_data,
-        )
+        if get_new_values_diff(default_all_values, candidate_table_session_data):
+            form = forms.CandidateFilterForm(
+                selected_project_hash_id=selected_project_hash_id,
+                initial=candidate_table_session_data,
+            )
+        else:
+            form = forms.CandidateFilterForm(
+                selected_project_hash_id=selected_project_hash_id,
+                initial=default_all_values,
+            )
 
     filtered_columns = set()
 
@@ -650,7 +747,7 @@ def candidate_table(request: HttpRequest):
     tag_filter_name = None
     if "tag" in inputs_to_filter:
 
-        # Bit of messing around here because can be multiple raitings for each candidate
+        # Bit of messing around here because a candidate can have multiple ratings
         candidates_unset = candidates.filter(rating__tag=inputs_to_filter["tag"])
         candidates_list = list(set(list(candidates_unset)))
         candidate_hash_ids = [candidate.hash_id for candidate in candidates_list]
@@ -692,8 +789,11 @@ def candidate_table(request: HttpRequest):
             "ra",
             "dec",
             candidate_table_session_data["cand_arcmin_search_radius"],
+            annotate=True,
+            sep_name="cand_sep",
         )
-        # filtered_columns.add("candidate_cone_radius")
+
+        filtered_columns.add("cand_sep")
 
     # Filter beam by beam position
     if (
@@ -708,8 +808,10 @@ def candidate_table(request: HttpRequest):
             "beam_ra",
             "beam_dec",
             candidate_table_session_data["beam_arcmin_search_radius"],
+            annotate=True,
+            sep_name="beam_sep",
         )
-        # filtered_columns.add("beam_cone_radius")
+        filtered_columns.add("beam_sep")
 
     # Filter candidate by deep position
     if (
@@ -724,8 +826,10 @@ def candidate_table(request: HttpRequest):
             "deep_ra_deg",
             "deep_dec_deg",
             candidate_table_session_data["deep_arcmin_search_radius"],
+            annotate=True,
+            sep_name="deep_sep",
         )
-        # filtered_columns.add("deep_cone_radius")
+        filtered_columns.add("deep_sep")
 
     # Paginate
     paginator = Paginator(candidates, 25)
@@ -817,14 +921,6 @@ def download_rating_csv_zip(
     return response
 
 
-DEFAULT_RATINGS_INPUT = {
-    "tag": None,
-    "confidence": "",
-    "observation": None,
-    "user": None,
-}
-
-
 @login_required(login_url="/")
 def ratings_summary(request: HttpRequest):
     """Render the rating summary template."""
@@ -832,7 +928,7 @@ def ratings_summary(request: HttpRequest):
     selected_project_hash_id = request.session.get("selected_project_hash_id")
     print(f"selected_project_hash_id - {selected_project_hash_id}")
 
-    current_ratings_fitler = request.session.get("current_ratings_fitler", DEFAULT_RATINGS_INPUT)
+    current_ratings_filter = request.session.get("current_ratings_filter", DEFAULT_RATINGS_INPUT)
 
     if selected_project_hash_id:
         ratings = models.Rating.objects.filter(candidate__project=selected_project_hash_id)
@@ -843,12 +939,12 @@ def ratings_summary(request: HttpRequest):
 
     # From the URL for the filter
     if request.method == "GET" and request.GET:
-        current_ratings_fitler.update(request.GET.dict())
+        current_ratings_filter.update(request.GET.dict())
 
         # Update the form values with the variables from url decode.
         form = forms.RatingFilterForm(
             selected_project_hash_id=selected_project_hash_id,
-            initial=current_ratings_fitler,
+            initial=current_ratings_filter,
         )
 
     # Handle the filter form
@@ -858,8 +954,8 @@ def ratings_summary(request: HttpRequest):
         if form.is_valid():
 
             cleaned_data = {**form.cleaned_data}
-            request.session["current_ratings_fitler"] = cleaned_data
-            current_ratings_fitler = cleaned_data
+            request.session["current_ratings_filter"] = cleaned_data
+            current_ratings_filter = cleaned_data
 
             # Filter the  inputs, see if they are different from the default values.
             url_dictionary = get_new_values_diff(DEFAULT_RATINGS_INPUT, cleaned_data)
@@ -874,10 +970,10 @@ def ratings_summary(request: HttpRequest):
     else:
         form = forms.RatingFilterForm(
             selected_project_hash_id=selected_project_hash_id,
-            initial=current_ratings_fitler,
+            initial=current_ratings_filter,
         )
 
-    inputs_to_filter = get_new_values_diff(DEFAULT_RATINGS_INPUT, current_ratings_fitler)
+    inputs_to_filter = get_new_values_diff(DEFAULT_RATINGS_INPUT, current_ratings_filter)
 
     # Filter the ratings
     if "observation" in inputs_to_filter:
@@ -890,12 +986,12 @@ def ratings_summary(request: HttpRequest):
         ratings = ratings.filter(rating=inputs_to_filter["confidence"])
 
     if "user" in inputs_to_filter:
-        ratings = ratings.filter(user__username=inputs_to_filter["user"])
+        ratings = ratings.filter(user__id=inputs_to_filter["user"])
 
     # Handle CSV download
     if request.method == "GET":
         if request.GET.get("download") == "csv":
-            return download_rating_csv_zip(request, ratings, "ratings_summary")
+            return download_rating_csv_zip(request, ratings, "ratings_summary", DOWNLOAD_CANDIDATE_FIELDS)
 
     ### Echarts bar plots ###
 
@@ -926,8 +1022,8 @@ def ratings_summary(request: HttpRequest):
 @login_required(login_url="/")
 def clear_ratings_filter(request: HttpRequest):
 
-    if "current_ratings_fitler" in request.session or "clear_filter_data" in request.POST:
-        del request.session["current_ratings_fitler"]
+    if "current_ratings_filter" in request.session or "clear_filter_data" in request.POST:
+        del request.session["current_ratings_filter"]
 
     return redirect("/ratings_summary/")
 
@@ -1099,18 +1195,18 @@ def upload_candidate(request):
 
                 print(f" --------------- Candidate uploaded by user: {token.user} --------------- ")
 
-                cand_obj_id = request.data["cand_obj_id"]
                 proj = models.Project.objects.get(id=request.data["proj_id"])
                 obs = models.Observation.objects.get(project=proj, id=request.data["obs_id"])
                 beam = models.Beam.objects.get(project=proj, observation=obs, index=request.data["beam_index"])
+                # cand_obj_id = f"{proj.id}_{obs.id}_{beam.index}_{request.data['name']}"
                 if models.Candidate.objects.filter(
                     project=proj,
                     observation=obs,
                     beam=beam,
-                    cand_obj_id=cand_obj_id,
+                    name=request.data["name"],
                 ).exists():
                     return Response(
-                        f"Candidate '{cand_obj_id}' has already been uploaded/created so skipping",
+                        f"Candidate {proj.id}_{obs.id}_{beam.index}_{request.data['name']} as already been uploaded/created so skipping",
                         status=status.HTTP_200_OK,
                     )
 
@@ -1176,7 +1272,8 @@ def site_admin(request):
 
         observations = project.obs_proj.annotate(
             candidate_count=Count("cand_obs"),
-            rated_candidate_count=Count("cand_obs__rating"),
+            rated_candidate_count=Count("cand_obs__rating__candidate", distinct=True),
+            ratings_count=Count("cand_obs__rating"),
         )
 
         annotated_projects.append(

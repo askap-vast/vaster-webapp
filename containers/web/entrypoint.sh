@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Make migrations (incase of changes) and apply 
+### Make migrations (incase of changes) and apply 
 python3 manage.py makemigrations --noinput
 python3 manage.py makemigrations candidate_app --noinput
 python3 manage.py migrate 
@@ -25,7 +25,7 @@ else
     # Since it is a fresh DB, load up the ANTF pulsar table
     python3 manage.py refresh_pulsar_table
 
-    if [[ $PROD ]]; then 
+    if [[ $PROD == "true" ]]; then 
 
         echo "--- Running as PROD version - $PROD ---"
 
@@ -41,6 +41,15 @@ else
 
 fi 
 
+### Do the setup for the cron job for the refresh_pulsar_table
+
+# Export all environment variables to a file - used by cron job
+printenv | grep -v "no_proxy" > /etc/environment
+
+# Start cron in the background
+cron &
+
+### Start the web server
 
 # Dev or Production versions.
 if [[ "$PROD" == "true" ]]; then 

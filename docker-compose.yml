@@ -38,7 +38,7 @@ volumes:
 services:
   db:
     hostname: db
-    container_name: db
+    container_name: ywangvaster-db
     build:
       context: .
       dockerfile: ./containers/db/Dockerfile
@@ -54,7 +54,7 @@ services:
 
   web:
     hostname: web
-    container_name: web
+    container_name: ywangvaster-web
     build:
       context: .
       dockerfile: ./containers/web/Dockerfile

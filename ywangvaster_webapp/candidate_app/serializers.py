@@ -150,6 +150,7 @@ class CandidateSerializer(serializers.ModelSerializer):
         beam = models.Beam.objects.get(index=beam_index, observation=obs, project=proj)
         print(f"+++++++++++++++ candidate serializer: BEAM INDEX {beam_index} +++++++++++++++")
         assert beam is not None, f"Failed to find beam {beam_index} for {obs_id} in DB."
+        # validated_data["cand_obj_id"] = f"{proj.id}_{obs.id}_{beam.index}_{validated_data['name']}"
 
         # Make counts for uploaded files and file sizes.
         total_file_count = 0

@@ -150,7 +150,7 @@ div.card {
   }
 }
 
-@media (max-width: 1058.99px) {
+@media (max-width: 1058.98px) {
   #rating-side-card {
     width: 100%;
   }
@@ -185,7 +185,7 @@ div.card {
   display: inline-block;
 }
 
-/* Apply centering to all table elements */
+/* Apply centreing to all table elements */
 td,
 th {
   text-align: center;
