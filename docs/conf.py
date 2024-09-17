@@ -33,6 +33,7 @@ release = "1"
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
+        "myst_parser",
     "sphinx.ext.doctest",
     "sphinx.ext.mathjax",
     "sphinx.ext.ifconfig",
@@ -40,6 +41,9 @@ extensions = [
     "sphinx.ext.githubpages",
     "sphinx_automodapi.automodapi",
 ]
+
+source_suffix = ['.rst', '.md']
+
 numpydoc_show_class_members = False
 
 # Add any paths that contain templates here, relative to this directory.

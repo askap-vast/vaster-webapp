@@ -627,9 +627,6 @@ def get_new_values_diff(original: dict, new: dict):
     for key, original_value in original.items():
         if original_value != new[key] and new[key] is not None:
             new_values[key] = new[key]
-
-    print(f"New values from get_new_diff_values: {new_values}")
-
     return new_values
 
 
@@ -707,7 +704,7 @@ def candidate_table(request: HttpRequest):
                 initial=default_all_values,
             )
 
-    filtered_columns = set()
+    
 
     inputs_to_filter = get_new_values_diff(default_inputs, candidate_table_session_data)
     floats_to_filter = get_new_values_diff(default_float_values, candidate_table_session_data)
@@ -727,9 +724,12 @@ def candidate_table(request: HttpRequest):
 
     ### Float Filtering ###
 
-    # These are the sliders that are used for filtering the candidates.
-    filtered_columns = {key.split("__")[0] for key in floats_to_filter.keys()}
-    candidates = candidates.filter(**{key: value for key, value in floats_to_filter.items()})
+    filtered_columns = set()
+    if floats_to_filter:
+
+        # These are the sliders that are used for filtering the candidates.
+        filtered_columns = {key.split("__")[0] for key in floats_to_filter.keys()}
+        candidates = candidates.filter(**{key: value for key, value in floats_to_filter.items()})
 
     ### Individual input filtering ###
 

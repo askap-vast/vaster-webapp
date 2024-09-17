@@ -207,11 +207,7 @@
                         <div class='container'>
                           <h3 style="padding-bottom: 20px;">Summary</h3>
                           <div class='hstack gap-2'>
-                            <div class='vstack gap-2'>
-                              <h5>Coordinates</h5>
-                              <text>RA {{candidate.ra_str}}</text>
-                              <text>Dec {{ candidate.dec_str }}</text>
-                            </div>
+
 
                             <div class='vstack gap-2 justify-content-center align-items-center'>
                               <h5>Project</h5>
@@ -228,6 +224,21 @@
                               <text>{{candidate.beam.index}}</text>
                             </div>
                           </div>
+
+                          <br />
+
+                          <div class='hstack gap-2'>
+                            <div class='vstack gap-2 justify-content-center align-items-center'>
+                              <h5>Coordinates</h5>
+                              <text>RA {{candidate.ra_str}}</text>
+                              <text>Dec {{ candidate.dec_str }}</text>
+                            </div>
+                            <div class='vstack gap-2 justify-content-center align-items-center'>
+                              <h5>Observation Time</h5>
+                              <text>{{candidate.observation.obs_start}}</text>
+                            </div>
+                          </div>
+
                         </div>
 
                         <table class='table table-striped table-bordered table-hover caption-top'>
@@ -772,7 +783,6 @@
         })
       });
       const data = await response.text();
-      // console.log(data);
       locatorDiv.innerHTML = data;
     } catch (error) {
       console.log(error);
@@ -786,6 +796,9 @@
 <script type="module">
 
   // TODO: Make this a proper html component and import 
+
+  // This gif script is quite hastily put together and needs to be cleaned up.
+
   import GIF from 'https://cdn.jsdelivr.net/npm/@fand/gifuct-js@1.0.0/+esm';
 
   let frames = [];
