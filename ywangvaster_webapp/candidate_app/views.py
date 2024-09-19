@@ -54,6 +54,7 @@ DEFAULT_RATINGS_INPUT = {
 }
 
 DOWNLOAD_CANDIDATE_FIELDS = [
+    "hash_id",
     "proj_id",
     "obs_id",
     "beam_index",
@@ -851,7 +852,6 @@ def candidate_table(request: HttpRequest):
 
 
 def download_rating_csv_zip(
-    request,
     queryset: QuerySet,
     table: str,
     candidate_fields: List[str] = None,
@@ -868,6 +868,11 @@ def download_rating_csv_zip(
 
         # Define headers, including candidate information
         rating_field_names = [field.name for field in queryset.model._meta.fields]
+        # Rename some column names
+        if "hash_id" in rating_field_names:
+            index = rating_field_names.index("hash_id")
+            rating_field_names[index] = "rating_hash_id"
+
         if candidate_fields is None:
             candidate_fields = [
                 field.name for field in models.Candidate._meta.fields
@@ -884,6 +889,8 @@ def download_rating_csv_zip(
                     row.append(rating.tag.name)  # Access tag name
                 elif field == "date":
                     row.append(rating.date)
+                elif field == 'rating_hash_id':
+                    row.append(rating.hash_id) 
                 else:
                     row.append(getattr(rating, field))
 
@@ -991,7 +998,7 @@ def ratings_summary(request: HttpRequest):
     # Handle CSV download
     if request.method == "GET":
         if request.GET.get("download") == "csv":
-            return download_rating_csv_zip(request, ratings, "ratings_summary", DOWNLOAD_CANDIDATE_FIELDS)
+            return download_rating_csv_zip(ratings, "ratings_summary", DOWNLOAD_CANDIDATE_FIELDS)
 
     ### Echarts bar plots ###
 
@@ -1363,7 +1370,7 @@ def delete(request: HttpRequest):
 
             try:
                 # Delete beam record and cascading records beams > cands
-                beam = models.Rating.objects.get(hash_id=to_delete)
+                beam = models.objects.get(hash_id=to_delete)
                 beam.delete()
 
                 return JsonResponse({"deleted_recordType": record_type, "deleted_hashId": to_delete}, status=201)
@@ -1372,7 +1379,7 @@ def delete(request: HttpRequest):
 
     else:
 
-        return JsonResponse({"message": f"User {request.user} is not authorised to delete records."}, status=500)
+        return JsonResponse({"message": f"User {request.user} is not authorised to delete records."}, status=401)
 
 
 @login_required(login_url="/")
