@@ -1,6 +1,6 @@
 # Django Admin Page
 
-The Django administration page for the web app can be accessed by going to `http://<webapp_url>/admin`. Only users with "staff" level access are able to log into it.
+The Django administration page can be accessed by going to `http://<webapp_url>/admin`. Only users with "staff" level access are able to log into it.
 
 ## Adding or Deleting Users
 
@@ -12,8 +12,8 @@ Click on "Add user" to create the a new user account, input the username and pas
 
 This user list page also allows you click into each user and delete the account if required.
 
-## Adding and deleting records
+## Adding or Deleting Records
 
-This page allows staff users to add, delete, or modify existing records, either Tags, Candidates, Beams, Observations, Projects and Ratings.
+This page allows staff users to add, delete, or modify existing records, either Tags, Candidates, Beams, Observations, Projects and Ratings. Please be aware that the only way to remove or modify a "Tag" record is in this admin interface.
 
-Please be aware that the only way to remove or modify a "Tag" record is in this admin interface.
+Please see the below image of the Django admin page for the Tag records. You can click into them and delete them individually, or select multiple at once and do a batch delete if required.

@@ -43,13 +43,4 @@ and to turn shutdown all of the containers and the docker network:
 docker compose -f docker-compose.prod.yml down
 ```
 
-The production mode containers are:
-
-- Postgres: Database to hold all of the candidate data and webapp data.
-- Django web: Web server start by Gunicorn.
-- Nginx: A reverse proxy to assist with handling a number of web requests.
-- Autoheal: Container to watch and restart any of the other containers if there are issues.
-
-You will need to make sure that port 80 on the host machine is forwarded correctly for internet traffic to be passed to the docker network.
-
-Please see this [guide](https://linuxconfig.org/how-to-open-allow-incoming-firewall-port-on-ubuntu-22-04-jammy-jellyfish) on how to open ports on Ubuntu 22.04.
+Please note that you will need to make sure that port 80 on the host machine is forwarded correctly for internet traffic to be passed to the docker network. Refer to this [guide](https://linuxconfig.org/how-to-open-allow-incoming-firewall-port-on-ubuntu-22-04-jammy-jellyfish) on how to open ports on Ubuntu 22.04.

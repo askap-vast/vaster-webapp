@@ -52,7 +52,7 @@ On the right side of the candidate rating page, there is the sticky ratings moda
 
 ![Rate Candidate - Modal](images/usage/rate_candidate/modal.png "Rate Candidate Modal")
 
-Users can only rate a candidate once but also have the choice of updating their rating. Once rated, users will be able to see their previous rating of the candidate, and click on the the "Next unrated random candidate" which will redirect the user to a random candidate within the same selected project or all projects.
+Once rated, users will be able to see their previous rating of the candidate, and click on the the "Next unrated random candidate" which will redirect the user to a random candidate within the same selected project or all projects. Users can only create one rating per candidate but have the option of updating their previous rating if required.
 
 ![Rate Candidate Already Rated](images/usage/rate_candidate/already_rated.png "Rate Candidate Already Rated")
 
@@ -62,7 +62,8 @@ If a suitable classification tag is not present for a particular candidate, user
 
 ![Rate Candidate - Create Tag](images/usage/rate_candidate/create_tag.png "Rate Candidate Create Tag")
 
-Please note that the web application has a number of Tags loaded by default on initial startup. This list can be found in the Django database migration file:
+Please note that the web application has a number of tags loaded by default on initial startup. This list can be found in the Django database migration file:
+
 `ywangvaster_webapp/candidate_app/migrations/0005_create_tags.py`
 
 Classification tags are global and can be accessed for all projects and users. At the moment, tags can only be deleted from the Django admin page.
@@ -83,10 +84,10 @@ Users that have staff privileges will be able to delete individual rating record
 
 ## Site Admin
 
-Only users that have staff privileges will be able to see this page. They will be presented with a list of projects and a observations that were uploaded for each project. The table details the space used on the host machine of the total in Gigabytes.
+Only users that have staff privileges will be able to see this page. They will be presented with a list of projects and a observations that were uploaded for each project. The table details the space used on the host machine of the total in gigabytes.
 
-Each table for the project shows the observation ID (SBID), the user that uploaded the it, the upload date, the number of beams in the observation, the total number of candidates in the observation, the number of candidates that have been rated, the total number of ratings (from all users), the space used by the files of the observation.
+Each table is for each project that's been created and the observations under each project is listed. Users will be able to see the observation ID (SBID), the user that uploaded the data, the upload date, the number of beams in the observation, the total number of candidates in the observation, the number of candidates that have been rated, the total number of ratings (from all users), the space used and the number files of the observation.
 
-Deleting individual observations can be done by clicking on the rubbish bin icon on the left most column. Similarly for the project and all of the observations in the project. Please note that this will delete all relevant data to the project and the deletion is permanent.
+Deleting individual observations can be done by clicking on the rubbish bin icon on the left most column. Similarly, users can delete for the project and all of the observations in the project. Please note that this will delete all relevant data to the project, including ratings. The deletion is permanent and accidentally deleted data cannot be recovered.
 
 ![Site Admin](images/usage/site_admin/site_admin.png)

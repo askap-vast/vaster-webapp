@@ -8,7 +8,11 @@ Checking the logs can be done by looking each of the docker container logs.
    docker logs <container-name> logs
 ```
 
-You can also include the "--follow" if you want to stream the current logs from the container.
+You can also include the `--follow` if you want to stream the current logs from the container.
+
+```bash
+   docker logs <container-name> logs --follow
+```
 
 ## Gunicorn
 
