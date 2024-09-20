@@ -171,7 +171,9 @@
                 <td>{{ rating.tag.name }}</td>
                 <td>{{ rating.user }}</td>
                 <td>{{ rating.date|isoformat }}</td>
-                <td style="max-width: 150px">{{ rating.notes }}</td>
+                <td style='max-width: 200px; max-height:200px; overflow-y: auto; word-wrap: break-word'>
+                    {{ rating.notes }}
+                </td>
             </tr>
             {% endfor %}
         </tbody>

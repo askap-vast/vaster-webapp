@@ -1,4 +1,4 @@
-Welcome to the Transient Candidate Classification app for the ASKAP VASTER pipeline!
+Welcome to the YWang Transient Classification Tool for the ASKAP VASTER pipeline!
 ====================================================================================
 
 Please read the following on how to install and maintain this web application. It has only been tested on Ubuntu 22.04 and thus the instructions will only be for unix/linux based systems. 

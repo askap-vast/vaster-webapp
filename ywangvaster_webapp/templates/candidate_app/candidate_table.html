@@ -299,7 +299,7 @@
 
                 {% if default_float_values.md_deep__gte|is_not_nan_or_none and default_float_values.md_deep__lte|is_not_nan_or_none %}
                 <div class='col d-flex justify-content-center'>
-                  <multi-input-slider label='MD deep' id="md_deep" num-sliders="2"
+                  <multi-input-slider label='Modulation index' id="md_deep" num-sliders="2"
                     slider-min="{{default_float_values.md_deep__gte}}"
                     slider-max="{{default_float_values.md_deep__lte}}"
                     initial-values="[{{updated_float_values.md_deep__gte}}, {{updated_float_values.md_deep__lte}}]" />

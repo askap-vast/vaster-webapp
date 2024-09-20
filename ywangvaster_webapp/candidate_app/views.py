@@ -120,7 +120,7 @@ FILTER_CAND_VAR_MAPPING = {
     "deep_int_flux": "Deep Int Flux",
     "deep_peak_flux": "Deep Peak Flux",
     "deep_sep_arcsec": "Deep Sep (arcsec)",
-    "md_deep": "Md Deep",
+    "md_deep": "Modulation Index",
     "rated": "Rating Count",
     "observation.id": "Observation",
     "beam.index": "Beam Index",
