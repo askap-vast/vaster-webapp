@@ -1,18 +1,24 @@
-Welcome to the Transient Candidate Classification app for the ASKAP VASTER pipeline
-===================================================================================
 
-The following is a sections describe how to use, install and maintain the web application.
+Welcome to the YWang Transient Classification Tool for the ASKAP VASTER pipeline!
+=================================================================================
+
+
+Please read the following on how to install and maintain this web application. It has only been tested on Ubuntu 22.04 and thus the instructions will only be for unix/linux based systems. 
+The source code for this project can be found on the ADACS `Github <https://github.com/ADACS-Australia/YWang.VASTER>`_.
 
 .. toctree::
    :maxdepth: 4
-   :caption: Web Uses:
+   :caption: Usage:
 
-   data_download
+   usage
+   uploading_candidates
+   admin
 
 .. toctree::
    :maxdepth: 4
    :caption: Web Application:
 
-   database_installation
-   webapp_installation
-   running_server
+   installation
+   architecture 
+   database
+   logging

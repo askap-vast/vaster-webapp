@@ -1,3 +1,4 @@
 numpydoc
+myst-parser
 sphinx-rtd-theme
 sphinx_automodapi

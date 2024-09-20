@@ -1,68 +1,99 @@
-version: "3.8"
+x-environment: &environment
+  PROD: True
+
+  # Postgres DB for Django UI
+
+  # PostgreSQL settings
+  DB_NAME: ywangvaster
+  DB_USERNAME: ywangvaster
+  DB_PASSWORD: vast1234star
+  DB_HOST: db
+  DB_PORT: 5432
+
+  # Do not remove, otherwise postgres container won't initialise properly
+  # Just has to be something that's non-zero
+  POSTGRES_PASSWORD: password
+
+  # DJango settings
+  DJANGO_ALLOWED_HOSTS: localhost 127.0.0.1 0.0.0.0 # Add your production URL here
+  DJANGO_SUPERUSER_USERNAME: # Admin username
+  DJANGO_SUPERUSER_PASSWORD: # Use a strong password
+  DJANGO_SUPERUSER_EMAIL: # Your admin email that users can contact in case there are errors with the web app.
+  DJANGO_SECRET_KEY: # Please use your own secret key
+  PYTHONDONTWRITEBYTECODE: 1
+  PYTHONUNBUFFERED: 1
+
+networks:
+  ywang_vaster-network:
+    name: ywang_vaster-network
+    driver: bridge
+
+volumes:
+  django_media:
+  django_static:
+  postgres_data:
 
 services:
-  web:
+  db:
+    hostname: db
+    container_name: ywangvaster-db
     build:
       context: .
-      dockerfile: ./containers/Dockerfile
-      target: gleamxprod
-    command: >
-      gunicorn gleam_webapp.wsgi:application 
-        --bind 0.0.0.0:8000 
-        --error-logfile /home/app/logs/gunicorn_error.log 
-        --access-logfile /home/app/logs/gunicorn_access.log
-
+      dockerfile: ./containers/db/Dockerfile
+    user: postgres
+    environment: *environment
     volumes:
-      - static_volume:/home/app/web/staticfiles
-      - ./logs:/home/app/logs
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 4s
+      timeout: 5s
+      retries: 3
+
+  web:
+    hostname: web
+    container_name: ywangvaster-web
+    build:
+      context: .
+      dockerfile: ./containers/web/Dockerfile
+    environment: *environment
+    volumes:
+      - ./ywangvaster_webapp:/ywangvaster_webapp
+      - django_media:/ywangvaster_media
+      - django_static:/ywangvaster_staticfiles
+      - ./logs:/home/app/logs/
     expose:
-      - 8000
-    env_file:
-      - ./.env.prod
+      - 80
+    healthcheck:
+      test: "curl --fail --silent --write-out 'HTTP CODE : %{http_code}\n' --output /dev/null http://127.0.0.1:80/"
+      start_period: 60s
+      interval: 60s
+      timeout: 20s
+      retries: 20
     depends_on:
       db:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "localhost:8000", "--silent"]
-      interval: 30s
-      timeout: 30s
-      retries: 3
-      start_period: 30s
-
-  db:
-    build:
-      context: ./containers/
-      dockerfile: db.Dockerfile
-      target: postgres-q3c
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
-    env_file:
-      - ./.env.dev.db
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 5s
 
   nginx:
-    build: ./containers/nginx
+    hostname: nginx
+    container_name: ywangvaster-nginx
+    build:
+      context: .
+      dockerfile: ./containers/nginx/Dockerfile
     volumes:
-      - static_volume:/home/app/web/staticfiles
+      - django_static:/ywangvaster_staticfiles
+      - django_media:/ywangvaster_media
     ports:
       - 80:80
     depends_on:
-      - web
+      web:
+        condition: service_healthy
 
   autoheal:
     image: willfarrell/autoheal
-    container_name: autoheal
+    container_name: ywangvaster-autoheal
     restart: always
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     environment:
       - AUTOHEAL_CONTAINER_LABEL=all
-
-volumes:
-  postgres_data:
-  static_volume:

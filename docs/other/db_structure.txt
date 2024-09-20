@@ -1,0 +1,191 @@
+Table "auth_user" {
+  "id" integer [pk, not null]
+  "password" "character varying(128)" [not null]
+  "last_login" timestamp
+  "is_superuser" boolean [not null]
+  "username" "character varying(150)" [unique, not null]
+  "first_name" "character varying(150)" [not null]
+  "last_name" "character varying(150)" [not null]
+  "email" "character varying(254)" [not null]
+  "is_staff" boolean [not null]
+  "is_active" boolean [not null]
+  "date_joined" timestamp [not null]
+
+  Indexes {
+    username [type: btree, name: "auth_user_username_6821ab7c_like"]
+  }
+}
+
+
+Table "candidate_app_beam" {
+  "hash_id" uuid [pk, not null]
+  "obs_id" "character varying" [not null]
+  "proj_id" "character varying(64)" [not null]
+  "index" integer [not null]
+  "description" "character varying(1024)"
+  "total_file_count" integer
+  "total_file_size_bytes" bigint
+  "final_cand_csv" "character varying(1024)"
+  "std_fits" "character varying(1024)"
+  "chisquare_map1_png" "character varying(1024)"
+  "chisquare_map2_png" "character varying(1024)"
+  "chisquare_fits" "character varying(1024)"
+  "peak_map1_png" "character varying(1024)"
+  "peak_map2_png" "character varying(1024)"
+  "peak_fits" "character varying(1024)"
+  "observation_id" uuid [not null]
+  "project_id" uuid [not null]
+  "upload_id" uuid [not null]
+
+  Indexes {
+    observation_id [type: btree, name: "candidate_app_beam_observation_id_3a178cb2"]
+    project_id [type: btree, name: "candidate_app_beam_project_id_4c231303"]
+    upload_id [type: btree, name: "candidate_app_beam_upload_id_9e822594"]
+  }
+}
+
+Table "candidate_app_candidate" {
+  "hash_id" uuid [pk, not null]
+  "proj_id" "character varying(64)" [not null]
+  "obs_id" "character varying" [not null]
+  "beam_index" integer [not null]
+  "total_file_count" integer
+  "total_file_size_bytes" bigint
+  "lightcurve_data" jsonb
+  "lightcurve_png" "character varying(100)"
+  "slices_gif" "character varying(100)"
+  "slices_fits" "character varying(100)"
+  "deepcutout_png" "character varying(100)"
+  "deepcutout_fits" "character varying(100)"
+  "name" "character varying(100)" [not null]
+  "ra_str" "character varying(100)" [not null]
+  "dec_str" "character varying(100)" [not null]
+  "ra" doubleprecision [not null]
+  "dec" doubleprecision [not null]
+  "chi_square" doubleprecision [not null]
+  "chi_square_log_sigma" doubleprecision [not null]
+  "chi_square_sigma" doubleprecision [not null]
+  "peak_map" doubleprecision [not null]
+  "peak_map_log_sigma" doubleprecision [not null]
+  "peak_map_sigma" doubleprecision [not null]
+  "gaussian_map" doubleprecision
+  "gaussian_map_sigma" doubleprecision
+  "std_map" doubleprecision [not null]
+  "bright_sep_arcmin" doubleprecision [not null]
+  "beam_ra" doubleprecision [not null]
+  "beam_dec" doubleprecision [not null]
+  "beam_sep_deg" doubleprecision [not null]
+  "deep_ra_deg" doubleprecision [not null]
+  "deep_dec_deg" doubleprecision [not null]
+  "deep_sep_arcsec" doubleprecision [not null]
+  "deep_name" "character varying(100)" [not null]
+  "deep_num" integer [not null]
+  "deep_peak_flux" doubleprecision [not null]
+  "deep_int_flux" doubleprecision [not null]
+  "md_deep" doubleprecision [not null]
+  "beam_id" uuid [not null]
+  "observation_id" uuid [not null]
+  "project_id" uuid [not null]
+  "upload_id" uuid [not null]
+
+  Indexes {
+    beam_id [type: btree, name: "candidate_app_candidate_beam_id_aea49298"]
+    observation_id [type: btree, name: "candidate_app_candidate_observation_id_59abf6ea"]
+    project_id [type: btree, name: "candidate_app_candidate_project_id_19e8ea07"]
+    `public.q3c_ang2ipix(ra,"dec")` [type: btree, name: "candidate_app_candidate_q3c_ang2ipix_idx"]
+    `public.q3c_ang2ipix(beam_ra,beam_dec)` [type: btree, name: "candidate_app_candidate_q3c_ang2ipix_idx1"]
+    `public.q3c_ang2ipix(deep_ra_deg,deep_dec_deg)` [type: btree, name: "candidate_app_candidate_q3c_ang2ipix_idx2"]
+    upload_id [type: btree, name: "candidate_app_candidate_upload_id_7123b0f5"]
+  }
+}
+
+Table "candidate_app_observation" {
+  "hash_id" uuid [pk, not null]
+  "proj_id" "character varying(64)" [not null]
+  "id" "character varying" [not null]
+  "obs_start" timestamp
+  "project_id" uuid [not null]
+  "upload_id" uuid [not null]
+
+  Indexes {
+    project_id [type: btree, name: "candidate_app_observation_project_id_630e023e"]
+    upload_id [type: btree, name: "candidate_app_observation_upload_id_b8163106"]
+  }
+}
+
+Table "candidate_app_project" {
+  "hash_id" uuid [pk, not null]
+  "id" "character varying(64)" [unique]
+  "name" "character varying(64)"
+  "description" "character varying(256)"
+  "upload_id" uuid [not null]
+
+  Indexes {
+    id [type: btree, name: "candidate_app_project_id_eade770f_like"]
+    upload_id [type: btree, name: "candidate_app_project_upload_id_4ce86176"]
+  }
+}
+
+Table "candidate_app_rating" {
+  "hash_id" uuid [pk, not null]
+  "rating" "character varying(1)" [not null]
+  "date" timestamp [not null]
+  "notes" "character varying(1024)" [not null]
+  "candidate_id" uuid [not null]
+  "tag_id" uuid [not null]
+  "user_id" integer [not null]
+
+  Indexes {
+    candidate_id [type: btree, name: "candidate_app_rating_candidate_id_50a223a4"]
+    tag_id [type: btree, name: "candidate_app_rating_tag_id_862767e4"]
+    user_id [type: btree, name: "candidate_app_rating_user_id_fbab223a"]
+  }
+}
+
+Table "candidate_app_tag" {
+  "hash_id" uuid [pk, not null]
+  "name" "character varying(256)" [unique]
+  "description" "character varying(1024)"
+
+  Indexes {
+    name [type: btree, name: "candidate_app_tag_name_5ac34b7e_like"]
+  }
+}
+
+Table "candidate_app_upload" {
+  "hash_id" uuid [pk, not null]
+  "date" timestamp [not null]
+  "user_id" integer [not null]
+
+  Indexes {
+    user_id [type: btree, name: "candidate_app_upload_user_id_e1deb1cf"]
+  }
+}
+
+Ref "candidate_app_beam_observation_id_3a178cb2_fk_candidate":"candidate_app_observation"."hash_id" < "candidate_app_beam"."observation_id"
+
+Ref "candidate_app_beam_project_id_4c231303_fk_candidate":"candidate_app_project"."hash_id" < "candidate_app_beam"."project_id"
+
+Ref "candidate_app_beam_upload_id_9e822594_fk_candidate":"candidate_app_upload"."hash_id" < "candidate_app_beam"."upload_id"
+
+Ref "candidate_app_candid_beam_id_aea49298_fk_candidate":"candidate_app_beam"."hash_id" < "candidate_app_candidate"."beam_id"
+
+Ref "candidate_app_candid_observation_id_59abf6ea_fk_candidate":"candidate_app_observation"."hash_id" < "candidate_app_candidate"."observation_id"
+
+Ref "candidate_app_candid_project_id_19e8ea07_fk_candidate":"candidate_app_project"."hash_id" < "candidate_app_candidate"."project_id"
+
+Ref "candidate_app_candid_upload_id_7123b0f5_fk_candidate":"candidate_app_upload"."hash_id" < "candidate_app_candidate"."upload_id"
+
+Ref "candidate_app_observ_project_id_630e023e_fk_candidate":"candidate_app_project"."hash_id" < "candidate_app_observation"."project_id"
+
+Ref "candidate_app_observ_upload_id_b8163106_fk_candidate":"candidate_app_upload"."hash_id" < "candidate_app_observation"."upload_id"
+
+Ref "candidate_app_projec_upload_id_4ce86176_fk_candidate":"candidate_app_upload"."hash_id" < "candidate_app_project"."upload_id"
+
+Ref "candidate_app_rating_candidate_id_50a223a4_fk_candidate":"candidate_app_candidate"."hash_id" < "candidate_app_rating"."candidate_id"
+
+Ref "candidate_app_rating_tag_id_862767e4_fk_candidate":"candidate_app_tag"."hash_id" < "candidate_app_rating"."tag_id"
+
+Ref "candidate_app_rating_user_id_fbab223a_fk_auth_user_id":"auth_user"."id" < "candidate_app_rating"."user_id"
+
+Ref "candidate_app_upload_user_id_e1deb1cf_fk_auth_user_id":"auth_user"."id" < "candidate_app_upload"."user_id"

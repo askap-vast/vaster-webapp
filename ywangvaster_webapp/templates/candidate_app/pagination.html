@@ -1,0 +1,57 @@
+<div class="pagination d-flex justify-content-center align-items-center">
+    <nav aria-label="Page navigation">
+        <div class='vstack gap-1'>
+            <ul class="pagination justify-content-center">
+
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link"
+                        href="?{% for key, value in request.GET.items %}{{ key }}={{ value }}&{% endfor %}page={{ page_obj.first }}"
+                        tabindex="-1">&laquo; First</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link"
+                        href="?{% for key, value in request.GET.items %}{{ key }}={{ value }}&{% endfor %}page={{ page_obj.previous_page_number }}"
+                        tabindex="-1">
+                        &lsaquo; Previous
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <a class="page-link">&laquo; First</a>
+                </li>
+                <li class="page-item disabled">
+                    <a class="page-link" tabindex="-1">&lsaquo; Previous</a>
+                </li>
+                {% endif %}
+
+                <li class='page-item'>
+                    <a class='page-link'>
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </a>
+                </li>
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link"
+                        href="?{% for key, value in request.GET.items %}{{ key }}={{ value }}&{% endfor %}page={{ page_obj.next_page_number }}">Next
+                        &rsaquo;</a>
+                </li>
+                <li>
+                    <a class="page-link"
+                        href="?{% for key, value in request.GET.items %}{{ key }}={{ value }}&{% endfor %}page={{ page_obj.paginator.num_pages }}">Last
+                        &raquo;</a>
+                </li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link disabled">Next &rsaquo;</a>
+                </li>
+                <li>
+                    <a class="page-link disabled">Last &raquo;</a>
+                </li>
+                {% endif %}
+
+            </ul>
+        </div>
+    </nav>
+</div>
