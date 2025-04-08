@@ -508,7 +508,7 @@
                     </a>
                   </div>
                   {% endif %}
-                  {% if candidate.beam.peak_fits.url %}
+                  {% if candidate.beam.peak_fits %}
                   <div>
                     <a href="{{ candidate.beam.peak_fits.url }}"><button class='btn btn-primary'>PEAK
                         FITS
@@ -521,7 +521,7 @@
                     </a>
                   </div>
                   {% endif %}
-                  {% if candidate.beam.chisquare_fits.url %}
+                  {% if candidate.beam.chisquare_fits %}
                   <div>
                     <a href="{{ candidate.beam.chisquare_fits.url }}"><button class='btn btn-primary'>CHISQUARE
                         FITS
