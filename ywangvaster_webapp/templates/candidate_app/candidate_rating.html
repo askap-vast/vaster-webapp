@@ -167,6 +167,14 @@
                             style="fill: #1c1b1e" />
                         </svg></button></a>
                   </div>
+                  {% else %}
+                  <div><button type="button" class='btn btn-secondary' data-toggle="tooltip" data-placement="left" title="File unavailable">SLICES FITS
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                      <path
+                        d="M11.292 16.706a1 1 0 0 0 1.416 0l3-3a1 1 0 0 0-1.414-1.414L13 13.586V4a1 1 0 0 0-2 0v9.586l-1.293-1.293a1 1 0 0 0-1.414 1.414zM17 19H7a1 1 0 0 0 0 2h10a1 1 0 0 0 0-2z"
+                        style="fill: #1c1b1e" />
+                    </svg></button>
+                  </div>
                   {% endif %}
 
                   {% if candidate.deepcutout_fits %}
@@ -177,6 +185,14 @@
                             d="M11.292 16.706a1 1 0 0 0 1.416 0l3-3a1 1 0 0 0-1.414-1.414L13 13.586V4a1 1 0 0 0-2 0v9.586l-1.293-1.293a1 1 0 0 0-1.414 1.414zM17 19H7a1 1 0 0 0 0 2h10a1 1 0 0 0 0-2z"
                             style="fill: #1c1b1e" />
                         </svg></button></a>
+                  </div>
+                  {% else %}
+                  <div><button type="button" class='btn btn-secondary' data-toggle="tooltip" data-placement="left" title="File unavailable">DEEPCUT FITS
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                      <path
+                        d="M11.292 16.706a1 1 0 0 0 1.416 0l3-3a1 1 0 0 0-1.414-1.414L13 13.586V4a1 1 0 0 0-2 0v9.586l-1.293-1.293a1 1 0 0 0-1.414 1.414zM17 19H7a1 1 0 0 0 0 2h10a1 1 0 0 0 0-2z"
+                        style="fill: #1c1b1e" />
+                    </svg></button>
                   </div>
                   {% endif %}
                   {% if candidate.lightcurve_data %}
@@ -190,6 +206,16 @@
                         </svg>
                       </button>
                     </a>
+                  </div>
+                  {% else %}
+                  <div>
+                    <button type="button" class="btn btn-secondary" data-toggle="tooltip" data-placement="left" title="File unavailable">LIGHTCURVE CSV
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                          <path
+                            d="M11.292 16.706a1 1 0 0 0 1.416 0l3-3a1 1 0 0 0-1.414-1.414L13 13.586V4a1 1 0 0 0-2 0v9.586l-1.293-1.293a1 1 0 0 0-1.414 1.414zM17 19H7a1 1 0 0 0 0 2h10a1 1 0 0 0 0-2z"
+                            style="fill: #1c1b1e" />
+                        </svg>
+                    </button>
                   </div>
                   {% endif %}
                 </div>
@@ -507,8 +533,19 @@
                       </button>
                     </a>
                   </div>
+                  {% else %}
+                  <div>
+                    <button type="button" class="btn btn-secondary" data-toggle="tooltip" data-placement="left" title="File unavailable">STD
+                        FITS
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                          <path
+                            d="M11.292 16.706a1 1 0 0 0 1.416 0l3-3a1 1 0 0 0-1.414-1.414L13 13.586V4a1 1 0 0 0-2 0v9.586l-1.293-1.293a1 1 0 0 0-1.414 1.414zM17 19H7a1 1 0 0 0 0 2h10a1 1 0 0 0 0-2z"
+                            style="fill: #1c1b1e" />
+                        </svg>
+                      </button>
+                  </div>
                   {% endif %}
-                  {% if candidate.beam.peak_fits.url %}
+                  {% if candidate.beam.peak_fits %}
                   <div>
                     <a href="{{ candidate.beam.peak_fits.url }}"><button class='btn btn-primary'>PEAK
                         FITS
@@ -520,8 +557,19 @@
                       </button>
                     </a>
                   </div>
+                  {% else %}
+                  <div>
+                    <button type="button" class="btn btn-secondary" data-toggle="tooltip" data-placement="left" title="File unavailable">PEAK
+                        FITS
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                          <path
+                            d="M11.292 16.706a1 1 0 0 0 1.416 0l3-3a1 1 0 0 0-1.414-1.414L13 13.586V4a1 1 0 0 0-2 0v9.586l-1.293-1.293a1 1 0 0 0-1.414 1.414zM17 19H7a1 1 0 0 0 0 2h10a1 1 0 0 0 0-2z"
+                            style="fill: #1c1b1e" />
+                        </svg>
+                      </button>
+                  </div>
                   {% endif %}
-                  {% if candidate.beam.chisquare_fits.url %}
+                  {% if candidate.beam.chisquare_fits %}
                   <div>
                     <a href="{{ candidate.beam.chisquare_fits.url }}"><button class='btn btn-primary'>CHISQUARE
                         FITS
@@ -532,6 +580,17 @@
                         </svg>
                       </button>
                     </a>
+                  </div>
+                  {% else %}
+                  <div>
+                    <button type="button" class="btn btn-secondary" data-toggle="tooltip" data-placement="left" title="File unavailable">CHISQUARE
+                        FITS
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                          <path
+                            d="M11.292 16.706a1 1 0 0 0 1.416 0l3-3a1 1 0 0 0-1.414-1.414L13 13.586V4a1 1 0 0 0-2 0v9.586l-1.293-1.293a1 1 0 0 0-1.414 1.414zM17 19H7a1 1 0 0 0 0 2h10a1 1 0 0 0 0-2z"
+                            style="fill: #1c1b1e" />
+                        </svg>
+                      </button>
                   </div>
                   {% endif %}
                 </div>

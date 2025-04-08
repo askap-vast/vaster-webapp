@@ -30,8 +30,23 @@ networks:
 
 volumes:
   django_media:
-  django_static:
+    # driver: local
+    # driver_opts:
+    #   type: "none"
+    #   o: "bind"
+    #   device: "<path-to-volume>/django_media"
   postgres_data:
+    # driver: local
+    # driver_opts:
+    #   type: "none"
+    #   o: "bind"
+    #   device: "<path-to-volume>/postgres_data"
+  django_static:
+    # driver: local
+    # driver_opts:
+    #   type: "none"
+    #   o: "bind"
+    #   device: "<path-to-volume>/postgres_data"
 
 services:
   db:
