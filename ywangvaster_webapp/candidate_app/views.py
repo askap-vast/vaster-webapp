@@ -51,6 +51,7 @@ DEFAULT_RATINGS_INPUT = {
     "confidence": "",
     "observation": None,
     "user": None,
+    "page": 1,
 }
 
 DOWNLOAD_CANDIDATE_FIELDS = [
@@ -626,8 +627,13 @@ def get_new_values_diff(original: dict, new: dict):
 
     new_values = {}
     for key, original_value in original.items():
-        if original_value != new[key] and new[key] is not None:
-            new_values[key] = new[key]
+
+        if key in new:
+            if original_value != new[key] and new[key] is not None:
+                new_values[key] = new[key]
+        else:
+            new_values[key] = original_value
+
     return new_values
 
 
@@ -704,8 +710,6 @@ def candidate_table(request: HttpRequest):
                 selected_project_hash_id=selected_project_hash_id,
                 initial=default_all_values,
             )
-
-    
 
     inputs_to_filter = get_new_values_diff(default_inputs, candidate_table_session_data)
     floats_to_filter = get_new_values_diff(default_float_values, candidate_table_session_data)
@@ -889,8 +893,8 @@ def download_rating_csv_zip(
                     row.append(rating.tag.name)  # Access tag name
                 elif field == "date":
                     row.append(rating.date)
-                elif field == 'rating_hash_id':
-                    row.append(rating.hash_id) 
+                elif field == "rating_hash_id":
+                    row.append(rating.hash_id)
                 else:
                     row.append(getattr(rating, field))
 
