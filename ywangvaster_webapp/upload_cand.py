@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 from astropy.io import fits
+from astropy.time import Time
 
 import logging
 
@@ -147,13 +148,15 @@ def send_observation_request(
 
         # Retrieve the value of the 'DATE-OBS' keyword
         _date_obs = header.get("DATE-OBS")
-        _time_sys = header.get("TIMESYS")
+#        _time_sys = header.get("TIMESYS")
 
         # Turn datetime into a proper datetime object for
-        timesys = _time_sys.strip()
-        datetime_object = datetime.fromisoformat(_date_obs)
-        if timesys.upper() == "UTC":
-            datetime_object = datetime_object.replace(tzinfo=timezone.utc)
+#        timesys = _time_sys.strip()
+#        datetime_object = datetime.fromisoformat(_date_obs)
+#        if timesys.upper() == "UTC":
+#            datetime_object = datetime_object.replace(tzinfo=timezone.utc)
+
+        datetime_object = Time(_date_obs).to_value('isot')
 
     ### Send a request to create an observation record in the DB ###
     r = session.post(
@@ -161,7 +164,8 @@ def send_observation_request(
         data={
             "id": obs_id,
             "proj_id": project_id,
-            "obs_start": datetime_object.isoformat(),
+#            "obs_start": datetime_object.isoformat(),
+            "obs_start": datetime_object, 
         },
     )
     print(r.text)
@@ -181,15 +185,15 @@ def send_beam_request(
     beam_upload_files = {}
     for series_name, fmt_list in [
         ("final", ["csv"]),
-        ("std", ["fits"]),
-        # ("chisquare_cand", ["csv"]),
+        # ("std", ["fits"]),
+       # ("chisquare_cand", ["csv"]),
         ("chisquare_map1", ["png"]),
         ("chisquare_map2", ["png"]),
-        ("chisquare", ["fits"]),
-        # ("peak_cand", ["csv"]),
+        # ("chisquare", ["fits"]),
+       #  ("peak_cand", ["csv"]),
         ("peak_map1", ["png"]),
         ("peak_map2", ["png"]),
-        ("peak", ["fits"]),
+        # ("peak", ["fits"]),
     ]:
 
         for fmt in fmt_list:
