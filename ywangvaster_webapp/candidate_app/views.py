@@ -324,11 +324,11 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
 
     # Grab the previous rating for this candidate and user
     try:
-        prev_rating = models.Rating.objects.get(candidate=candidate, user=request.user)
+        prev_rating = models.Rating.objects.get(candidate=candidate)
     except:
         prev_rating = None
 
-    rate_form = forms.RateCandidateForm()
+    rate_form = forms.RateCandidateForm(initial={"confidence": "F", "tag": "Urgent"})
     new_tag_form = forms.CreateTagForm()
 
     if request.method == "POST":
@@ -837,7 +837,7 @@ def candidate_table(request: HttpRequest):
         filtered_columns.add("deep_sep")
 
     # Paginate
-    paginator = Paginator(candidates, 25)
+    paginator = Paginator(candidates, 50)
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
 

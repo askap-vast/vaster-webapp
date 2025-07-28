@@ -78,7 +78,7 @@
                     </div>
 
                     <div class="fieldWrapper">
-                      <label for="{{ form.confidence.id_for_label }}">Confidence: </label>
+                      <label for="{{ form.confidence.id_for_label }}">Real variable? </label>
                       {{ form.confidence }}
                     </div>
 
@@ -381,15 +381,19 @@
         Dec (DD:MM:SS.SS)
         <span class="sort-arrow" id="arrow-2" />
       </th>
-
-      {% if selected_project_id == "All projects" %}
       <th onclick="sortTable('candidate-tbody', 3)">
-        Project ID
+        SBID
         <span class="sort-arrow" id="arrow-3" />
       </th>
       <th onclick="sortTable('candidate-tbody', 4)">
-        Obs ID
+        Beam
         <span class="sort-arrow" id="arrow-4" />
+      </th>
+
+      {% if selected_project_id == "All projects" %}
+      <th onclick="sortTable('candidate-tbody', 5)">
+        Project ID
+        <span class="sort-arrow" id="arrow-5" />
       </th>
       {% endif %}
 
@@ -422,10 +426,11 @@
 
         <td>{{cand.ra_str}}</td>
         <td>{{cand.dec_str}}</td>
+        <td>{{cand.observation.id}}</td>
+        <td>{{cand.beam.index}}</td>
 
         {% if selected_project_id == "All projects" %}
         <td>{{cand.project.id}}</td>
-        <td>{{cand.observation.id}}</td>
         {% endif %}
 
         {% for filtered in filtered_columns %}
