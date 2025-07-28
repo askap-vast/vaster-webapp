@@ -328,7 +328,7 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
     except:
         prev_rating = None
 
-    rate_form = forms.RateCandidateForm(initial={"confidence": "F", "tag": "Urgent"})
+    rate_form = forms.RateCandidateForm(initial={"confidence": "F", "tag": ""})
     new_tag_form = forms.CreateTagForm()
 
     if request.method == "POST":

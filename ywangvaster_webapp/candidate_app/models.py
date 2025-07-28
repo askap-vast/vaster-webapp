@@ -316,7 +316,8 @@ class Rating(models.Model):
         default=None,
     )
     rating = models.CharField(max_length=1, choices=POSSIBLE_RATINGS, default=None)
-    tag = models.ForeignKey(Tag, on_delete=models.DO_NOTHING, related_name="rating", default=None)
+    # tag = models.ForeignKey(Tag, on_delete=models.DO_NOTHING, related_name="rating", default=None)
+    tag = models.ForeignKey(Tag, on_delete=models.SET_NULL, null=True, blank=True, related_name="rating", default=None)
     date = models.DateTimeField(default=timezone.now, blank=True)
     notes = models.CharField(max_length=1024)
 
