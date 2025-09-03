@@ -252,7 +252,7 @@ def get_simbad(ra_str: str, dec_str: str, dist_arcmin: float = 1.0) -> List[dict
             simbad_coord = SkyCoord(result["RA"], result["DEC"], unit=(units.hour, units.deg), frame="icrs")
             ra = simbad_coord.ra.to_string(unit=units.hour, sep=":", pad=True)[:11]
             dec = simbad_coord.dec.to_string(unit=units.deg, sep=":", pad=True)[:11]
-            sep = coord.separation(simbad_coord).arcminute
+            sep = coord.separation(simbad_coord).arcsec
             simbad_result_table.append(
                 {
                     "name": result["MAIN_ID"],
