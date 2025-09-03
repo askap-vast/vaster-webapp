@@ -256,8 +256,11 @@
                           <div class='hstack gap-2'>
                             <div class='vstack gap-2 justify-content-center align-items-center'>
                               <h5>Coordinates</h5>
-                              <text>RA {{candidate.ra_str}}</text>
-                              <text>Dec {{ candidate.dec_str }}</text>
+                              <p>
+                                <strong>Position (Sexagesimal): </strong><span>{{ candidate.ra_hms }} {{ candidate.dec_dms }}</span><br>
+                                <strong>Position (Decimal): </strong><span>{{ candidate.ra_deg|floatformat:6 }} {{ candidate.dec_deg|floatformat:6 }}</span><br>
+                                <strong>Position (Galactic): </strong><span>{{ candidate.l_deg|floatformat:6 }} {{ source.b_deg|floatformat:6 }}</span>
+                              </p>
                             </div>
                             <div class='vstack gap-2 justify-content-center align-items-center'>
                               <h5>Observation Time</h5>
