@@ -696,7 +696,7 @@
   // Remove title, make chart min/max from error values
   values.shift();
   errValues.shift();
-  let minValue = 0.99 * (Math.min(...values) - Math.max(...errValues));
+  let minValue = 0.0;
   let maxValue = 1.01 * (Math.max(...values) + Math.max(...errValues));
 
   // Function to render the error bars
