@@ -248,14 +248,14 @@ def get_simbad(ra_str: str, dec_str: str, dist_arcmin: float = 1.0) -> List[dict
     # Reformat the result into the format we want
     if raw_result_table:
         for result in raw_result_table:
-            search_term = result["MAIN_ID"].replace("+", "%2B").replace(" ", "+")
-            simbad_coord = SkyCoord(result["RA"], result["DEC"], unit=(units.hour, units.deg), frame="icrs")
+            search_term = result["main_id"].replace("+", "%2B").replace(" ", "+")
+            simbad_coord = SkyCoord(result["ra"], result["dec"], unit=(units.hour, units.deg), frame="icrs")
             ra = simbad_coord.ra.to_string(unit=units.hour, sep=":", pad=True)[:11]
             dec = simbad_coord.dec.to_string(unit=units.deg, sep=":", pad=True)[:11]
             sep = coord.separation(simbad_coord).arcsec
             simbad_result_table.append(
                 {
-                    "name": result["MAIN_ID"],
+                    "name": result["main_id"],
                     "search_term": search_term,
                     "ra_str": ra,
                     "dec_str": dec,
@@ -1360,9 +1360,9 @@ def delete(request: HttpRequest):
             print(f"Attempting to delete candidate: {to_delete}")
 
             try:
-                # Delete beam record and cascading records beams > cands
-                beam = models.Candidate.objects.get(hash_id=to_delete)
-                beam.delete()
+                # Delete candidate record and cascading records cands > ratings
+                candidate = models.Candidate.objects.get(hash_id=to_delete)
+                candidate.delete()
 
                 return JsonResponse({"deleted_recordType": record_type, "deleted_hashId": to_delete}, status=201)
             except:
@@ -1373,9 +1373,9 @@ def delete(request: HttpRequest):
             print(f"Attempting to delete rating: {to_delete}")
 
             try:
-                # Delete beam record and cascading records beams > cands
-                beam = models.objects.get(hash_id=to_delete)
-                beam.delete()
+                # Delete rating record
+                rating = models.Rating.objects.get(hash_id=to_delete)
+                rating.delete()
 
                 return JsonResponse({"deleted_recordType": record_type, "deleted_hashId": to_delete}, status=201)
             except:
