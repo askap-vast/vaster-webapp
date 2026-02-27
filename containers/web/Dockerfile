@@ -1,5 +1,5 @@
 # Use the miniconda container
-FROM python:3.10
+FROM python:3.14
 
 LABEL description = "Development web container for YWANG-VASTER Classification Tool"
 
@@ -25,9 +25,11 @@ RUN crontab /etc/cron.d/refresh_pulsar_table_cron
 # Copy requirements over
 COPY ./requirements.txt /.
 COPY ./containers/web/entrypoint.sh /.
+COPY ./vendor/django-q3c /vendor/django-q3c
 
 # Install requirements for the web app
-RUN pip3 install -r /requirements.txt
+RUN pip3 install -r /requirements.txt && \
+    pip3 install /vendor/django-q3c
 WORKDIR /ywangvaster_webapp
 
 # Start the webapp 
