@@ -134,7 +134,7 @@ class RateCandidateForm(forms.Form):
     confidence = forms.ChoiceField(
         choices=confidence_choices,
         label="Confidence",
-        widget=forms.Select(attrs={"class": "form-select"}),
+        widget=forms.Select(attrs={"class": "form-select", "autofocus": True}),
     )
     tag = forms.ModelChoiceField(
         queryset=models.Tag.objects.all(),
