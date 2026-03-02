@@ -598,7 +598,7 @@ def get_candidate_form_defaults():
             )
 
     default_inputs = {
-        "rated": False,
+        "rated": "",
         "ratings_count": None,
         "tag": None,
         "confidence": "",
@@ -763,8 +763,13 @@ def candidate_table(request: HttpRequest):
 
     # Ratings filter
     if "rated" in inputs_to_filter:
-        candidates = candidates.annotate(rating_count=Count("rating")).filter(rating_count__gt=0)
-        filtered_columns.add("rating_count")
+        rated_value = inputs_to_filter["rated"]
+        if rated_value == "true":
+            candidates = candidates.annotate(rating_count=Count("rating")).filter(rating_count__gt=0)
+            filtered_columns.add("rating_count")
+        elif rated_value == "false":
+            candidates = candidates.annotate(rating_count=Count("rating")).filter(rating_count=0)
+            filtered_columns.add("rating_count")
 
     # Obsid filter
     if "observation" in inputs_to_filter:
