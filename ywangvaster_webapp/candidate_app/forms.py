@@ -41,7 +41,12 @@ class CandidateFilterForm(forms.Form):
         if observation:
             self.cleaned_data["observation"] = str(observation.hash_id)
 
-    rated = forms.BooleanField(required=False)
+    rated_choices = (
+        ("", "---"),
+        ("true", "Rated"),
+        ("false", "Unrated"),
+    )
+    rated = forms.ChoiceField(choices=rated_choices, required=False)
 
     ratings_count = forms.IntegerField(required=False)
 
