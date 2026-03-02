@@ -1,5 +1,5 @@
 # Use the miniconda container
-FROM python:3.10
+FROM python:3.14
 
 LABEL description = "Development web container for YWANG-VASTER Classification Tool"
 
@@ -8,8 +8,8 @@ LABEL description = "Development web container for YWANG-VASTER Classification T
 # Add PostgreSQL Apt repository
 RUN apt-get update && \
     apt-get install -y wget gnupg2 lsb-release && \
-    echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
-    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
+    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
     apt-get update
 
 # Install PostgreSQL Client 16
@@ -25,9 +25,11 @@ RUN crontab /etc/cron.d/refresh_pulsar_table_cron
 # Copy requirements over
 COPY ./requirements.txt /.
 COPY ./containers/web/entrypoint.sh /.
+COPY ./vendor/django-q3c /vendor/django-q3c
 
 # Install requirements for the web app
-RUN pip3 install -r /requirements.txt
+RUN pip3 install -r /requirements.txt && \
+    pip3 install /vendor/django-q3c
 WORKDIR /ywangvaster_webapp
 
 # Start the webapp 

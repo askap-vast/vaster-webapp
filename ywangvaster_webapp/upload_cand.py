@@ -347,35 +347,42 @@ def upload_data(base_url, token, project_id, obs_id, data_directory):
 
 if __name__ == "__main__":
     loglevels = dict(DEBUG=logging.DEBUG, INFO=logging.INFO, WARNING=logging.WARNING)
-    parser = argparse.ArgumentParser(description="Upload a transient candidate to the database.")
+    parser = argparse.ArgumentParser(
+        description="Upload a transient candidate to the database."
+    )
 
     parser.add_argument(
         "--base_url",
         type=str,
-        help="URL fo the webapp to upload to.",
+        required=True,
+        help="URL of the webapp to upload to.",
     )
 
     parser.add_argument(
         "--token",
         type=str,
-        help="Uplaod token for the webapp.",
+        required=True,
+        help="Upload token for the webapp.",
     )
 
     parser.add_argument(
         "--project_id",
         type=str,
-        help="ID of the propject to upload to.",
+        required=True,
+        help="ID of the project to upload to.",
     )
 
     parser.add_argument(
         "--observation_id",
         type=str,
+        required=True,
         help="Observation ID - eg, SB50230",
     )
 
     parser.add_argument(
         "--data_directory",
         type=str,
+        required=True,
         help="Path to directory containing all of candidate data.",
     )
 
@@ -399,10 +406,38 @@ if __name__ == "__main__":
     logger.addHandler(ch)
     logger.propagate = False
 
+    # Validate arguments before doing anything
+    errors = []
+
+    if not args.base_url.startswith(("http://", "https://")):
+        errors.append(f"--base_url does not look like a valid URL: '{args.base_url}'")
+
+    if not re.fullmatch(r"[0-9a-fA-F]{40}", args.token):
+        errors.append("--token must be a 40-character hexadecimal string.")
+
+    if not args.project_id.strip():
+        errors.append("--project_id must not be empty.")
+
+    if not args.observation_id.strip():
+        errors.append("--observation_id must not be empty.")
+
     # To handle relative or absolute paths
     if not os.path.isabs(args.data_directory):
         data_path = os.path.abspath(args.data_directory)
     else:
         data_path = args.data_directory
 
-    upload_data(args.base_url, args.token, args.project_id, args.observation_id, data_path)
+    if not os.path.exists(data_path):
+        errors.append(f"--data_directory does not exist: '{data_path}'")
+    elif not os.path.isdir(data_path):
+        errors.append(f"--data_directory is not a directory: '{data_path}'")
+
+    if errors:
+        parser.error(
+            "The following required arguments are invalid:\n  "
+            + "\n  ".join(errors)
+        )
+
+    upload_data(
+        args.base_url, args.token, args.project_id, args.observation_id, data_path
+    )
