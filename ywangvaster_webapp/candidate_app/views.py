@@ -286,7 +286,7 @@ def create_tag(request: HttpRequest):
 
 
 @login_required(login_url="/")
-def candidate_random(request):
+def next_candidate(request):
     """Redirect the user to an unrated candidate, respecting session filters."""
 
     selected_project_hash_id = request.session.get("selected_project_hash_id")
@@ -349,8 +349,7 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
                 date=timezone.now(),
             )
 
-            # TODO - change this to go to a random page for a candidate that's not been rated yet in same set of candidates
-            # This is done with the NEXT button??
+            # TODO - after adding a tag, consider redirecting to next_candidate instead of back to the current page
 
             return redirect(request.META["HTTP_REFERER"])
 
@@ -370,21 +369,21 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
     default_inputs, default_float_values = get_candidate_form_defaults()
     default_all_values = {**default_inputs, **default_float_values}
 
-    random_session_data = request.session.get("current_filter_data", default_all_values)
-    # Exclude 'rated' — candidate_random always overrides it to "false"
+    session_data = request.session.get("current_filter_data", default_all_values)
+    # Exclude 'rated' — next_candidate always overrides it to "false"
     filters_without_rated = {
-        k: v for k, v in random_session_data.items() if k != "rated"
+        k: v for k, v in session_data.items() if k != "rated"
     }
     defaults_without_rated = {
         k: v for k, v in default_all_values.items() if k != "rated"
     }
-    random_candidate_is_filtered = bool(
+    next_candidate_is_filtered = bool(
         get_new_values_diff(defaults_without_rated, filters_without_rated)
     )
 
     selected_project_hash_id = request.session.get("selected_project_hash_id")
-    random_candidate_available = build_candidate_queryset(
-        random_session_data, selected_project_hash_id, unrated_only=True
+    next_candidate_available = build_candidate_queryset(
+        session_data, selected_project_hash_id, unrated_only=True
     ).exists()
 
     context = {
@@ -397,8 +396,8 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
         "lightcurve_data": converted_lc,
         "arcmin_search": arcmin,
         "cand_type_choices": tuple((c.name, c.name) for c in models.Tag.objects.all()),
-        "random_candidate_is_filtered": random_candidate_is_filtered,
-        "random_candidate_available": random_candidate_available,
+        "next_candidate_is_filtered": next_candidate_is_filtered,
+        "next_candidate_available": next_candidate_available,
     }
     return render(request, "candidate_app/candidate_rating.html", context)
 
