@@ -31,7 +31,7 @@ urlpatterns = [
     # Candidate pages
     path("ratings_summary/", views.ratings_summary, name="ratings_summary"),
     path("candidates/", views.candidate_table, name="candidates"),
-    path("candidate_random/", views.candidate_random, name="candidate_random"),
+    path("next_candidate/", views.next_candidate, name="next_candidate"),
     path("clear_candidates_filter/", views.clear_candidates_filter, name="clear_candidates_filter"),
     path("clear_ratings_filter/", views.clear_ratings_filter, name="clear_ratings_filter"),
     path("candidate_rating/<str:cand_hash_id>/", views.candidate_rating, name="candidate_rating"),

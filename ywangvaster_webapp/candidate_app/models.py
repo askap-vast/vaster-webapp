@@ -325,7 +325,7 @@ class Rating(models.Model):
     # Link to other resource?
 
     def __str__(self):
-        return f"{self.rating}"
+        return f"{self.candidate.name} - {self.user.username} - {self.rating}"
 
 
 class ATNFPulsar(models.Model):

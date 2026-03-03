@@ -127,13 +127,13 @@
                   Update rating
                 </button>
 
-                {% if random_candidate_available %}
-                <a class='btn btn-success' id='next-unrated-candidate' href="{% url 'candidate_random' %}">
-                  Next unrated candidate{% if random_candidate_is_filtered %} (filtered){% endif %} &rsaquo;
+                {% if next_candidate_available %}
+                <a class='btn btn-success' id='next-unrated-candidate' href="{% url 'next_candidate' %}">
+                  Next unrated candidate{% if next_candidate_is_filtered %} (filtered){% endif %} &rsaquo;
                 </a>
                 {% else %}
                 <a class='btn btn-secondary disabled' id='next-unrated-candidate' tabindex="-1" aria-disabled="true">
-                  No unrated candidates{% if random_candidate_is_filtered %} (filtered){% endif %}
+                  No unrated candidates{% if next_candidate_is_filtered %} (filtered){% endif %}
                 </a>
                 {% endif %}
 
