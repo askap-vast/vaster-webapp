@@ -287,30 +287,24 @@ def create_tag(request: HttpRequest):
 
 @login_required(login_url="/")
 def candidate_random(request):
-    """Redirect the user to an unrated candidate in the project."""
+    """Redirect the user to an unrated candidate, respecting session filters."""
 
     selected_project_hash_id = request.session.get("selected_project_hash_id")
 
-    if selected_project_hash_id:
+    default_inputs, default_float_values = get_candidate_form_defaults()
+    default_all_values = {**default_inputs, **default_float_values}
 
-        print(f"Filtering for candidates with project hash_id: {selected_project_hash_id}")
-        candidates = models.Candidate.objects.all()
-        candidates = candidates.filter(project=selected_project_hash_id)
+    session_data = request.session.get("current_filter_data", default_all_values)
 
+    candidates = build_candidate_queryset(
+        session_data, selected_project_hash_id, unrated_only=True
+    )
+
+    candidate = candidates.first()
+
+    if candidate:
+        return redirect(f"/candidate_rating/{str(candidate.hash_id)}")
     else:
-        candidates = models.Candidate.objects.all()
-
-    # Find candidates that are unrated in project
-    candidates = candidates.annotate(rating_count=Count("rating")).filter(rating_count=0)
-
-    # Pick a random candidate
-    random_candidate = candidates.order_by("?").first()
-
-    if random_candidate:
-        # Redirect to the candidate's detail page or any other appropriate URL
-        return redirect(f"/candidate_rating/{str(random_candidate.hash_id)}")
-    else:
-        # Handle the case where there are no unrated candidates
         messages.error(request, "No unrated candidates found.")
         return redirect("/")
 
@@ -373,6 +367,26 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
                 print(f"Value error: {e}")
                 converted_lc.append([row[0], row[1], row[2]])
 
+    default_inputs, default_float_values = get_candidate_form_defaults()
+    default_all_values = {**default_inputs, **default_float_values}
+
+    random_session_data = request.session.get("current_filter_data", default_all_values)
+    # Exclude 'rated' — candidate_random always overrides it to "false"
+    filters_without_rated = {
+        k: v for k, v in random_session_data.items() if k != "rated"
+    }
+    defaults_without_rated = {
+        k: v for k, v in default_all_values.items() if k != "rated"
+    }
+    random_candidate_is_filtered = bool(
+        get_new_values_diff(defaults_without_rated, filters_without_rated)
+    )
+
+    selected_project_hash_id = request.session.get("selected_project_hash_id")
+    random_candidate_available = build_candidate_queryset(
+        random_session_data, selected_project_hash_id, unrated_only=True
+    ).exists()
+
     context = {
         "CONFIDENCE_MAPPING": CONFIDENCE_MAPPING,
         "candidate": candidate,
@@ -383,6 +397,8 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
         "lightcurve_data": converted_lc,
         "arcmin_search": arcmin,
         "cand_type_choices": tuple((c.name, c.name) for c in models.Tag.objects.all()),
+        "random_candidate_is_filtered": random_candidate_is_filtered,
+        "random_candidate_available": random_candidate_available,
     }
     return render(request, "candidate_app/candidate_rating.html", context)
 
@@ -535,6 +551,122 @@ def filter_candidates_by_coords(
     else:
         print(f"Incoming variables did not pass the None or empty test - cols {ra_col} {dec_col}")
         return incoming
+
+
+def build_candidate_queryset(
+    session_data: dict,
+    project_hash_id: Optional[str] = None,
+    unrated_only: bool = False,
+) -> QuerySet:
+    """Build a filtered candidate queryset from session filter data.
+
+    Applies all filters present in session_data, including the three-state
+    'rated' filter ("" = all, "true" = rated only, "false" = unrated only).
+
+    If unrated_only=True, the 'rated' filter is overridden to "false" regardless
+    of what session_data contains.
+    """
+    if unrated_only:
+        session_data = {**session_data, "rated": "false"}
+
+    default_inputs, default_float_values = get_candidate_form_defaults()
+
+    inputs_to_filter = get_new_values_diff(default_inputs, session_data)
+    floats_to_filter = get_new_values_diff(default_float_values, session_data)
+
+    if project_hash_id:
+        candidates = models.Candidate.objects.filter(project=project_hash_id)
+    else:
+        candidates = models.Candidate.objects.all()
+
+    # Float filtering
+    if floats_to_filter:
+        candidates = candidates.filter(**{k: v for k, v in floats_to_filter.items()})
+
+    # Confidence filter
+    if "confidence" in inputs_to_filter:
+        candidates = candidates.filter(rating__rating=inputs_to_filter["confidence"])
+
+    # Tag filter
+    if "tag" in inputs_to_filter:
+        candidates = candidates.filter(rating__tag__hash_id=inputs_to_filter["tag"])
+
+    # Rated/unrated filter ("" = no filter, "true" = rated only, "false" = unrated only)
+    if "rated" in inputs_to_filter:
+        rated_value = inputs_to_filter["rated"]
+        if rated_value == "true":
+            candidates = candidates.annotate(rating_count=Count("rating")).filter(
+                rating_count__gt=0
+            )
+        elif rated_value == "false":
+            candidates = candidates.annotate(rating_count=Count("rating")).filter(
+                rating_count=0
+            )
+
+    # Observation filter
+    if "observation" in inputs_to_filter:
+        candidates = candidates.filter(observation=inputs_to_filter["observation"])
+
+    # Beam index filter
+    if "beam_index" in inputs_to_filter:
+        candidates = candidates.filter(beam__index=inputs_to_filter["beam_index"])
+
+    # Deep num filter
+    if "deep_num" in inputs_to_filter:
+        candidates = candidates.filter(deep_num=inputs_to_filter["deep_num"])
+
+    # Candidate cone search
+    if (
+        session_data.get("cand_ra_str")
+        and session_data.get("cand_dec_str")
+        and session_data.get("cand_arcmin_search_radius")
+    ):
+        candidates = filter_candidates_by_coords(
+            candidates,
+            session_data["cand_ra_str"],
+            session_data["cand_dec_str"],
+            "ra",
+            "dec",
+            session_data["cand_arcmin_search_radius"],
+            annotate=True,
+            sep_name="cand_sep",
+        )
+
+    # Beam cone search
+    if (
+        session_data.get("beam_ra_str")
+        and session_data.get("beam_dec_str")
+        and session_data.get("beam_arcmin_search_radius")
+    ):
+        candidates = filter_candidates_by_coords(
+            candidates,
+            session_data["beam_ra_str"],
+            session_data["beam_dec_str"],
+            "beam_ra",
+            "beam_dec",
+            session_data["beam_arcmin_search_radius"],
+            annotate=True,
+            sep_name="beam_sep",
+        )
+
+    # Deep cone search
+    if (
+        session_data.get("deep_ra_str")
+        and session_data.get("deep_dec_str")
+        and session_data.get("deep_arcmin_search_radius")
+    ):
+        candidates = filter_candidates_by_coords(
+            candidates,
+            session_data["deep_ra_str"],
+            session_data["deep_dec_str"],
+            "deep_ra_deg",
+            "deep_dec_deg",
+            session_data["deep_arcmin_search_radius"],
+            annotate=True,
+            sep_name="deep_sep",
+        )
+
+    return candidates
 
 
 @login_required(login_url="/")
@@ -712,133 +844,61 @@ def candidate_table(request: HttpRequest):
             )
 
     inputs_to_filter = get_new_values_diff(default_inputs, candidate_table_session_data)
-    floats_to_filter = get_new_values_diff(default_float_values, candidate_table_session_data)
+    floats_to_filter = get_new_values_diff(
+        default_float_values, candidate_table_session_data
+    )
 
-    if selected_project_hash_id:
-
-        print(f"Filtering for candidates with project hash_id: {selected_project_hash_id}")
-        candidates = models.Candidate.objects.all()
-        candidates = candidates.filter(project=selected_project_hash_id)
-
-    else:
-        candidates = models.Candidate.objects.all()
-
-    print("++++++++++++++++++++++++++++++++++++++")
-    print(candidates)
-    print(floats_to_filter)
-
-    ### Float Filtering ###
+    ### Track filtered columns (display concern only) ###
 
     filtered_columns = set()
     if floats_to_filter:
-
-        # These are the sliders that are used for filtering the candidates.
         filtered_columns = {key.split("__")[0] for key in floats_to_filter.keys()}
-        candidates = candidates.filter(**{key: value for key, value in floats_to_filter.items()})
-
-    ### Individual input filtering ###
 
     confidence_filter = None
     if "confidence" in inputs_to_filter:
-
-        # Fetch all ratings with the specified confidence
-        all_ratings = models.Rating.objects.filter(rating=inputs_to_filter["confidence"]).distinct()
-        candidate_hash_ids = all_ratings.values_list("candidate__hash_id", flat=True)
-        candidates = models.Candidate.objects.filter(hash_id__in=candidate_hash_ids)
         filtered_columns.add("rating.confidence")
         confidence_filter = inputs_to_filter["confidence"]
 
-    # Classification tag filter
     tag_filter_name = None
     if "tag" in inputs_to_filter:
-
-        # Bit of messing around here because a candidate can have multiple ratings
-        candidates_unset = candidates.filter(rating__tag=inputs_to_filter["tag"])
-        candidates_list = list(set(list(candidates_unset)))
-        candidate_hash_ids = [candidate.hash_id for candidate in candidates_list]
-        candidates = models.Candidate.objects.filter(hash_id__in=candidate_hash_ids)
-
         filtered_columns.add("rating.tag.name")
         tag_filter_name = models.Tag.objects.get(hash_id=inputs_to_filter["tag"]).name
 
-    # Ratings filter
-    if "rated" in inputs_to_filter:
-        rated_value = inputs_to_filter["rated"]
-        if rated_value == "true":
-            candidates = candidates.annotate(rating_count=Count("rating")).filter(rating_count__gt=0)
-            filtered_columns.add("rating_count")
-        elif rated_value == "false":
-            candidates = candidates.annotate(rating_count=Count("rating")).filter(rating_count=0)
-            filtered_columns.add("rating_count")
+    if "rated" in inputs_to_filter and inputs_to_filter["rated"] in ("true", "false"):
+        filtered_columns.add("rating_count")
 
-    # Obsid filter
     if "observation" in inputs_to_filter:
-        candidates = candidates.filter(observation=inputs_to_filter["observation"])
         filtered_columns.add("observation.id")
 
-    # Beam index filtering
-    if "beam_index" in inputs_to_filter:  # Because index of 0 is treated as false
-        candidates = candidates.filter(beam__index=inputs_to_filter["beam_index"])
+    if "beam_index" in inputs_to_filter:
         filtered_columns.add("beam.index")
 
-    # Deep num filtering
-    if "deep_num" in inputs_to_filter:  # Because index of 0 is treated as false
-        candidates = candidates.filter(deep_num=inputs_to_filter["deep_num"])
+    if "deep_num" in inputs_to_filter:
         filtered_columns.add("deep_num")
 
-    # Filter candidate by cone search
+    candidates = build_candidate_queryset(
+        candidate_table_session_data, selected_project_hash_id
+    )
+
     if (
         candidate_table_session_data["cand_ra_str"]
         and candidate_table_session_data["cand_dec_str"]
         and candidate_table_session_data["cand_arcmin_search_radius"]
     ):
-        candidates = filter_candidates_by_coords(
-            candidates,
-            candidate_table_session_data["cand_ra_str"],
-            candidate_table_session_data["cand_dec_str"],
-            "ra",
-            "dec",
-            candidate_table_session_data["cand_arcmin_search_radius"],
-            annotate=True,
-            sep_name="cand_sep",
-        )
-
         filtered_columns.add("cand_sep")
 
-    # Filter beam by beam position
     if (
         candidate_table_session_data["beam_ra_str"]
         and candidate_table_session_data["beam_dec_str"]
         and candidate_table_session_data["beam_arcmin_search_radius"]
     ):
-        candidates = filter_candidates_by_coords(
-            candidates,
-            candidate_table_session_data["beam_ra_str"],
-            candidate_table_session_data["beam_dec_str"],
-            "beam_ra",
-            "beam_dec",
-            candidate_table_session_data["beam_arcmin_search_radius"],
-            annotate=True,
-            sep_name="beam_sep",
-        )
         filtered_columns.add("beam_sep")
 
-    # Filter candidate by deep position
     if (
         candidate_table_session_data["deep_ra_str"]
         and candidate_table_session_data["deep_dec_str"]
         and candidate_table_session_data["deep_arcmin_search_radius"]
     ):
-        candidates = filter_candidates_by_coords(
-            candidates,
-            candidate_table_session_data["deep_ra_str"],
-            candidate_table_session_data["deep_dec_str"],
-            "deep_ra_deg",
-            "deep_dec_deg",
-            candidate_table_session_data["deep_arcmin_search_radius"],
-            annotate=True,
-            sep_name="deep_sep",
-        )
         filtered_columns.add("deep_sep")
 
     # Paginate
