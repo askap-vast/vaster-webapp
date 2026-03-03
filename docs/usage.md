@@ -52,7 +52,7 @@ On the right side of the candidate rating page, there is the sticky ratings moda
 
 ![Rate Candidate - Modal](images/usage/rate_candidate/modal.png "Rate Candidate Modal")
 
-Once rated, users will be able to see their previous rating of the candidate, and click on the the "Next unrated random candidate" which will redirect the user to a random candidate within the same selected project or all projects. Users can only create one rating per candidate but have the option of updating their previous rating if required.
+Once rated, users will be able to see their previous rating of the candidate, and click on the "Next unrated candidate" which will redirect the user to the next unrated candidate within the same selected project or all projects. Users can only create one rating per candidate but have the option of updating their previous rating if required.
 
 ![Rate Candidate Already Rated](images/usage/rate_candidate/already_rated.png "Rate Candidate Already Rated")
 
