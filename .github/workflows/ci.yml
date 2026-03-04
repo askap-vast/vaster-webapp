@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - name: Install dev dependencies
+        run: pip install -r requirements_dev.txt
+
+      - name: black
+        run: black --check ywangvaster_webapp/
+
+      - name: flake8
+        run: flake8 ywangvaster_webapp/
+
+  test:
+    runs-on: ubuntu-latest
+    env:
+      DB_NAME: ywangvaster
+      DB_USERNAME: ywangvaster
+      DB_PASSWORD: vast1234star
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DJANGO_SECRET_KEY: ci-test-secret-key
+      DJANGO_ALLOWED_HOSTS: localhost
+      DEBUG: 1
+      DJANGO_LOG_LEVEL: WARNING
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build PostgreSQL image with q3c
+        run: docker build -t ywangvaster-db -f containers/db/Dockerfile .
+
+      - name: Start PostgreSQL
+        run: |
+          docker run -d --name db \
+            -e POSTGRES_PASSWORD=password \
+            -e DB_NAME=$DB_NAME \
+            -e DB_USERNAME=$DB_USERNAME \
+            -e DB_PASSWORD=$DB_PASSWORD \
+            -p 5432:5432 \
+            ywangvaster-db
+
+      - name: Wait for PostgreSQL to be ready
+        run: until docker exec db pg_isready -U postgres; do sleep 1; done
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install vendor/django-q3c
+
+      - name: Create runtime directories
+        run: sudo mkdir -p /home/app/logs /ywangvaster_media /ywangvaster_staticfiles
+
+      - name: Django system check
+        working-directory: ywangvaster_webapp
+        run: python3 manage.py check
+
+      - name: Run migrations and tests
+        working-directory: ywangvaster_webapp
+        run: |
+          python3 manage.py migrate
+          python3 manage.py test candidate_app
