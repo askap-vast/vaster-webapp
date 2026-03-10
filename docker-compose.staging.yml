@@ -5,23 +5,8 @@ networks:
 
 volumes:
   django_media:
-    # driver: local
-    # driver_opts:
-    #   type: "none"
-    #   o: "bind"
-    #   device: "<path-to-volume>/django_media"
   postgres_data:
-    # driver: local
-    # driver_opts:
-    #   type: "none"
-    #   o: "bind"
-    #   device: "<path-to-volume>/postgres_data"
   django_static:
-    # driver: local
-    # driver_opts:
-    #   type: "none"
-    #   o: "bind"
-    #   device: "<path-to-volume>/postgres_data"
 
 services:
   db:
@@ -34,6 +19,7 @@ services:
     env_file: .env
     environment:
       PROD: True
+      STAGING: True
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -51,6 +37,7 @@ services:
     env_file: .env
     environment:
       PROD: True
+      STAGING: True
     volumes:
       - ./ywangvaster_webapp:/ywangvaster_webapp
       - django_media:/ywangvaster_media

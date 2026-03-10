@@ -1,31 +1,3 @@
-x-environment: &environment
-  PROD: False
-
-  # Postgres DB for Django UI
-
-  # PostgreSQL settings
-  DB_NAME: ywangvaster
-  DB_USERNAME: ywangvaster
-  DB_PASSWORD: vast1234star
-  DB_HOST: db
-  DB_PORT: 5432
-
-  # Do not remove, otherwise postgres container won't initialise properly
-  # Just has to be something that's non-zero
-  POSTGRES_PASSWORD: password
-
-  # DJango settings
-  DEBUG: 1
-  SECRET_KEY: foo
-  DJANGO_LOG_LEVEL: INFO
-  DJANGO_ALLOWED_HOSTS: localhost 0.0.0.0 [::1] *
-  DJANGO_SUPERUSER_USERNAME: admin
-  DJANGO_SUPERUSER_PASSWORD: test
-  DJANGO_SUPERUSER_EMAIL: none@nothing.com
-  DJANGO_SECRET_KEY: devkey
-  PYTHONDONTWRITEBYTECODE: 1
-  PYTHONUNBUFFERED: 1
-
 networks:
   ywang_vaster-network:
     name: ywang_vaster-network
@@ -52,7 +24,11 @@ services:
     build:
       context: .
       dockerfile: ./containers/db/Dockerfile
-    environment: *environment
+    env_file: .env
+    environment:
+      PROD: False
+      DEBUG: 1
+      DJANGO_LOG_LEVEL: INFO
     user: postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -68,7 +44,11 @@ services:
     build:
       context: .
       dockerfile: ./containers/web/Dockerfile
-    environment: *environment
+    env_file: .env
+    environment:
+      PROD: False
+      DEBUG: 1
+      DJANGO_LOG_LEVEL: INFO
     volumes:
       - ./ywangvaster_webapp:/ywangvaster_webapp
       - django_media:/ywangvaster_media

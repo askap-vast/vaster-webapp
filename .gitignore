@@ -1,4 +1,5 @@
 *.pyc
+.env
 .env.prod
 .env.prod.db
 env/*
