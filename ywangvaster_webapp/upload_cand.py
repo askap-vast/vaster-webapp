@@ -148,15 +148,15 @@ def send_observation_request(
 
         # Retrieve the value of the 'DATE-OBS' keyword
         _date_obs = header.get("DATE-OBS")
-#        _time_sys = header.get("TIMESYS")
+        #        _time_sys = header.get("TIMESYS")
 
         # Turn datetime into a proper datetime object for
-#        timesys = _time_sys.strip()
-#        datetime_object = datetime.fromisoformat(_date_obs)
-#        if timesys.upper() == "UTC":
-#            datetime_object = datetime_object.replace(tzinfo=timezone.utc)
+        #        timesys = _time_sys.strip()
+        #        datetime_object = datetime.fromisoformat(_date_obs)
+        #        if timesys.upper() == "UTC":
+        #            datetime_object = datetime_object.replace(tzinfo=timezone.utc)
 
-        datetime_object = Time(_date_obs).to_value('isot')
+        datetime_object = Time(_date_obs).to_value("isot")
 
     ### Send a request to create an observation record in the DB ###
     r = session.post(
@@ -164,8 +164,8 @@ def send_observation_request(
         data={
             "id": obs_id,
             "proj_id": project_id,
-#            "obs_start": datetime_object.isoformat(),
-            "obs_start": datetime_object, 
+            #            "obs_start": datetime_object.isoformat(),
+            "obs_start": datetime_object,
         },
     )
     print(r.text)
@@ -186,18 +186,20 @@ def send_beam_request(
     for series_name, fmt_list in [
         ("final", ["csv"]),
         # ("std", ["fits"]),
-       # ("chisquare_cand", ["csv"]),
+        # ("chisquare_cand", ["csv"]),
         ("chisquare_map1", ["png"]),
         ("chisquare_map2", ["png"]),
         # ("chisquare", ["fits"]),
-       #  ("peak_cand", ["csv"]),
+        #  ("peak_cand", ["csv"]),
         ("peak_map1", ["png"]),
         ("peak_map2", ["png"]),
         # ("peak", ["fits"]),
     ]:
 
         for fmt in fmt_list:
-            filename = os.path.join(directory, f"{obs_id}_{beam_id}_{series_name}.{fmt}")
+            filename = os.path.join(
+                directory, f"{obs_id}_{beam_id}_{series_name}.{fmt}"
+            )
             beam_upload_files[f"{series_name}_{fmt}"] = open(filename, "rb")
 
     try:
@@ -258,7 +260,9 @@ def send_cand_request(
     ]:
 
         for fmt in fmt_list:
-            filename = os.path.join(directory, f"{obs_id}_{beam_id}_{series_name}_{cand['name']}.{fmt}")
+            filename = os.path.join(
+                directory, f"{obs_id}_{beam_id}_{series_name}_{cand['name']}.{fmt}"
+            )
             if os.path.exists(filename):
                 cand_upload_files[f"{series_name}_{fmt}"] = open(filename, "rb")
 
@@ -288,7 +292,9 @@ def upload_data(base_url, token, project_id, obs_id, data_directory):
     cand_url = f"{base_url}/upload_candidate/"
 
     # Find all of the beam output files for this observation.
-    beam_final_candidate_files = find_files_with_pattern(rf"{obs_id}_.*_final\.csv", data_directory)
+    beam_final_candidate_files = find_files_with_pattern(
+        rf"{obs_id}_.*_final\.csv", data_directory
+    )
 
     print(f"beam_final_candidate_files: {beam_final_candidate_files}")
 
@@ -305,9 +311,13 @@ def upload_data(base_url, token, project_id, obs_id, data_directory):
     for beam_id in all_beam_ids:
 
         # Upload the metadata, fits and images for each beam
-        send_beam_request(session, beam_url, project_id, obs_id, beam_id, data_directory)
+        send_beam_request(
+            session, beam_url, project_id, obs_id, beam_id, data_directory
+        )
 
-        candidate_csv_path = os.path.join(data_directory, f"{obs_id}_{beam_id}_final.csv")
+        candidate_csv_path = os.path.join(
+            data_directory, f"{obs_id}_{beam_id}_final.csv"
+        )
 
         # List of candidates from the *_final.csv
         candidates = parse_csv_file(candidate_csv_path, "cand_list", project_id)
@@ -316,13 +326,17 @@ def upload_data(base_url, token, project_id, obs_id, data_directory):
 
         # Read in the lightcurve data files
         lightcurve_peak_flux = parse_csv_file(
-            os.path.join(data_directory, f"{obs_id}_{beam_id}_lightcurve_peak_flux.csv"),
+            os.path.join(
+                data_directory, f"{obs_id}_{beam_id}_lightcurve_peak_flux.csv"
+            ),
             "per_cand",
             project_id,
         )
 
         lightcurve_local_rms = parse_csv_file(
-            os.path.join(data_directory, f"{obs_id}_{beam_id}_lightcurve_local_rms.csv"),
+            os.path.join(
+                data_directory, f"{obs_id}_{beam_id}_lightcurve_local_rms.csv"
+            ),
             "per_cand",
             project_id,
         )
@@ -397,7 +411,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # set up the logger for stand-alone execution
-    formatter = logging.Formatter("%(asctime)s  %(name)s  %(lineno)-4d  %(levelname)-9s :: %(message)s")
+    formatter = logging.Formatter(
+        "%(asctime)s  %(name)s  %(lineno)-4d  %(levelname)-9s :: %(message)s"
+    )
     ch = logging.StreamHandler()
     ch.setFormatter(formatter)
 
@@ -434,8 +450,7 @@ if __name__ == "__main__":
 
     if errors:
         parser.error(
-            "The following required arguments are invalid:\n  "
-            + "\n  ".join(errors)
+            "The following required arguments are invalid:\n  " + "\n  ".join(errors)
         )
 
     upload_data(

@@ -44,7 +44,6 @@ from .views_utils import (
     get_session_filter_data,
 )
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -215,9 +214,7 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
 
     session_data, _, _, default_all_values = get_session_filter_data(request)
     # Exclude 'rated' — next_candidate always overrides it to "false"
-    filters_without_rated = {
-        k: v for k, v in session_data.items() if k != "rated"
-    }
+    filters_without_rated = {k: v for k, v in session_data.items() if k != "rated"}
     defaults_without_rated = {
         k: v for k, v in default_all_values.items() if k != "rated"
     }
@@ -267,7 +264,9 @@ def get_token(request):
 
             return JsonResponse({"token": token.key}, status=201)
         except:
-            return JsonResponse({"Error: Unable to create token for user": request.user}, status=500)
+            return JsonResponse(
+                {"Error: Unable to create token for user": request.user}, status=500
+            )
 
 
 @login_required(login_url="/")
@@ -294,9 +293,13 @@ def project_select(request):
 
             print(f"old project selected - {selected_project_hash_id}")
 
-            request.session["selected_project_hash_id"] = request.POST["selected_project_hash_id"]
+            request.session["selected_project_hash_id"] = request.POST[
+                "selected_project_hash_id"
+            ]
 
-            print(f"setting selected_project_hash_id to {request.session['selected_project_hash_id']}")
+            print(
+                f"setting selected_project_hash_id to {request.session['selected_project_hash_id']}"
+            )
 
     return redirect(request.META["HTTP_REFERER"])
 
@@ -320,7 +323,12 @@ def candidate_table(request: HttpRequest):
     # Get session data to keep filters when changing page
     # This only holds what values are used for the filtering, not all.
 
-    candidate_table_session_data, default_inputs, default_float_values, default_all_values = get_session_filter_data(request)
+    (
+        candidate_table_session_data,
+        default_inputs,
+        default_float_values,
+        default_all_values,
+    ) = get_session_filter_data(request)
 
     selected_project_hash_id = request.session.get("selected_project_hash_id")
 
@@ -469,10 +477,14 @@ def ratings_summary(request: HttpRequest):
     selected_project_hash_id = request.session.get("selected_project_hash_id")
     print(f"selected_project_hash_id - {selected_project_hash_id}")
 
-    current_ratings_filter = request.session.get("current_ratings_filter", DEFAULT_RATINGS_INPUT)
+    current_ratings_filter = request.session.get(
+        "current_ratings_filter", DEFAULT_RATINGS_INPUT
+    )
 
     if selected_project_hash_id:
-        ratings = models.Rating.objects.filter(candidate__project=selected_project_hash_id)
+        ratings = models.Rating.objects.filter(
+            candidate__project=selected_project_hash_id
+        )
     else:
         ratings = models.Rating.objects.all()
 
@@ -490,7 +502,9 @@ def ratings_summary(request: HttpRequest):
 
     # Handle the filter form
     if request.method == "POST":
-        form = forms.RatingFilterForm(request.POST, selected_project_hash_id=selected_project_hash_id)
+        form = forms.RatingFilterForm(
+            request.POST, selected_project_hash_id=selected_project_hash_id
+        )
 
         if form.is_valid():
 
@@ -514,7 +528,9 @@ def ratings_summary(request: HttpRequest):
             initial=current_ratings_filter,
         )
 
-    inputs_to_filter = get_new_values_diff(DEFAULT_RATINGS_INPUT, current_ratings_filter)
+    inputs_to_filter = get_new_values_diff(
+        DEFAULT_RATINGS_INPUT, current_ratings_filter
+    )
 
     # Filter the ratings
     if "observation" in inputs_to_filter:
@@ -532,13 +548,17 @@ def ratings_summary(request: HttpRequest):
     # Handle CSV download
     if request.method == "GET":
         if request.GET.get("download") == "csv":
-            return download_rating_csv_zip(ratings, "ratings_summary", DOWNLOAD_CANDIDATE_FIELDS)
+            return download_rating_csv_zip(
+                ratings, "ratings_summary", DOWNLOAD_CANDIDATE_FIELDS
+            )
 
     ### Echarts bar plots ###
 
     # For echarts bar plots of ratings per user and ratings per tag.
     # Convert QuerySet to list of dictionaries for ratings per user
-    ratings_per_user = list(ratings.values("user__username").annotate(count=Count("hash_id")))
+    ratings_per_user = list(
+        ratings.values("user__username").annotate(count=Count("hash_id"))
+    )
 
     # Convert QuerySet to list of dictionaries for ratings per tag
     ratings_per_tag = list(ratings.values("tag__name").annotate(count=Count("hash_id")))
@@ -563,7 +583,10 @@ def ratings_summary(request: HttpRequest):
 @login_required(login_url="/")
 def clear_ratings_filter(request: HttpRequest):
 
-    if "current_ratings_filter" in request.session or "clear_filter_data" in request.POST:
+    if (
+        "current_ratings_filter" in request.session
+        or "clear_filter_data" in request.POST
+    ):
         del request.session["current_ratings_filter"]
 
     return redirect("/ratings_summary/")
@@ -579,7 +602,9 @@ def upload_observation(request):
         if error_response:
             return error_response
 
-        print(f" --------------- Observation uploaded by user: {token.user} --------------- ")
+        print(
+            f" --------------- Observation uploaded by user: {token.user} --------------- "
+        )
         try:
 
             # Pull out the project id
@@ -610,9 +635,16 @@ def upload_observation(request):
             else:
                 project = models.Project.objects.get(id=project_id)
 
-            obs = serializers.ObservationSerializer(data=request.data, context={"user": token.user})
-            if models.Observation.objects.filter(project=project, id=request.data["id"]).exists():
-                return Response("Observation already created so skipping", status=status.HTTP_201_CREATED)
+            obs = serializers.ObservationSerializer(
+                data=request.data, context={"user": token.user}
+            )
+            if models.Observation.objects.filter(
+                project=project, id=request.data["id"]
+            ).exists():
+                return Response(
+                    "Observation already created so skipping",
+                    status=status.HTTP_201_CREATED,
+                )
             if obs.is_valid():
                 obs.save()
                 print(f"Observation {request.data['id']} saved!")
@@ -622,9 +654,14 @@ def upload_observation(request):
 
         except Exception as error:
             print("An exception occurred:", error)
-            return Response({"error-message": error}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error-message": error}, status=status.HTTP_400_BAD_REQUEST
+            )
 
-    return Response({"status": "error", "message": f"Not a POST request."}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(
+        {"status": "error", "message": f"Not a POST request."},
+        status=status.HTTP_400_BAD_REQUEST,
+    )
 
 
 @api_view(["POST"])
@@ -643,28 +680,41 @@ def upload_beam(request):
 
             # Check if beam has already been uploaded before.
             proj = models.Project.objects.get(id=request.data["proj_id"])
-            obs = models.Observation.objects.get(project=proj, id=request.data["obs_id"])
-            if models.Beam.objects.filter(project=proj, observation=obs, index=request.data["index"]).exists():
+            obs = models.Observation.objects.get(
+                project=proj, id=request.data["obs_id"]
+            )
+            if models.Beam.objects.filter(
+                project=proj, observation=obs, index=request.data["index"]
+            ).exists():
                 return Response(
                     f"Beam '{request.data['index']}' for obsservation '{request.data['obs_id']}' already created so skipping",
                     status=status.HTTP_200_OK,
                 )
 
             print("before serialiser for beam")
-            beam = serializers.BeamSerializer(data=request.data, context={"user": token.user})
+            beam = serializers.BeamSerializer(
+                data=request.data, context={"user": token.user}
+            )
 
             if beam.is_valid():
                 beam.save()
-                print(f"Beam {request.data['index']} saved to {request.data['obs_id']}!")
+                print(
+                    f"Beam {request.data['index']} saved to {request.data['obs_id']}!"
+                )
                 return Response(beam.data, status=status.HTTP_201_CREATED)
             logger.debug(request.data)
             return Response(beam.errors, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as error:
             print("An exception occurred:", error)
-            return Response({"error-message": error}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error-message": error}, status=status.HTTP_400_BAD_REQUEST
+            )
 
-    return Response({"status": "error", "message": f"Not a POST request."}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(
+        {"status": "error", "message": f"Not a POST request."},
+        status=status.HTTP_400_BAD_REQUEST,
+    )
 
 
 @api_view(["POST"])
@@ -677,12 +727,18 @@ def upload_candidate(request):
         if error_response:
             return error_response
 
-        print(f" --------------- Candidate uploaded by user: {token.user} --------------- ")
+        print(
+            f" --------------- Candidate uploaded by user: {token.user} --------------- "
+        )
 
         try:
             proj = models.Project.objects.get(id=request.data["proj_id"])
-            obs = models.Observation.objects.get(project=proj, id=request.data["obs_id"])
-            beam = models.Beam.objects.get(project=proj, observation=obs, index=request.data["beam_index"])
+            obs = models.Observation.objects.get(
+                project=proj, id=request.data["obs_id"]
+            )
+            beam = models.Beam.objects.get(
+                project=proj, observation=obs, index=request.data["beam_index"]
+            )
             # cand_obj_id = f"{proj.id}_{obs.id}_{beam.index}_{request.data['name']}"
             if models.Candidate.objects.filter(
                 project=proj,
@@ -695,12 +751,16 @@ def upload_candidate(request):
                     status=status.HTTP_200_OK,
                 )
 
-            cand = serializers.CandidateSerializer(data=request.data, context={"user": token.user})
+            cand = serializers.CandidateSerializer(
+                data=request.data, context={"user": token.user}
+            )
 
             if cand.is_valid():
                 cand.save()
                 print(cand.data)
-                return Response(f"Data from - {cand.data}", status=status.HTTP_201_CREATED)
+                return Response(
+                    f"Data from - {cand.data}", status=status.HTTP_201_CREATED
+                )
 
             logger.debug(request.data)
             return Response(f"{cand.errors}", status=status.HTTP_400_BAD_REQUEST)
@@ -708,10 +768,14 @@ def upload_candidate(request):
         except Exception as error:
             print("An exception occurred:", error)
             return Response(
-                {"status": "error", "message": f"Invalid or expired token - {error}"}, status=status.HTTP_403_FORBIDDEN
+                {"status": "error", "message": f"Invalid or expired token - {error}"},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
-    return Response({"status": "error", "message": f"Not a POST request."}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(
+        {"status": "error", "message": f"Not a POST request."},
+        status=status.HTTP_400_BAD_REQUEST,
+    )
 
 
 @login_required(login_url="/")
@@ -721,7 +785,9 @@ def site_admin(request):
     selected_project_hash_id = request.session.get("selected_project_hash_id")
 
     if selected_project_hash_id:
-        selected_projects = [models.Project.objects.get(hash_id=selected_project_hash_id)]
+        selected_projects = [
+            models.Project.objects.get(hash_id=selected_project_hash_id)
+        ]
     else:
         selected_projects = models.Project.objects.all()
 
@@ -732,7 +798,11 @@ def site_admin(request):
     colour_count = 0
     for project in selected_projects:
 
-        project_used_of_total = (project.total_file_size_gb / total_disk_space) * 100 if used_disk_space else 0
+        project_used_of_total = (
+            (project.total_file_size_gb / total_disk_space) * 100
+            if used_disk_space
+            else 0
+        )
 
         observations = project.obs_proj.annotate(
             candidate_count=Count("cand_obs"),
@@ -745,7 +815,9 @@ def site_admin(request):
                 "project": project,
                 "observations": observations,
                 "project_used_of_total": project_used_of_total,
-                "project_colour": PROJECT_COLOURS[(colour_count + 1) % len(PROJECT_COLOURS)],
+                "project_colour": PROJECT_COLOURS[
+                    (colour_count + 1) % len(PROJECT_COLOURS)
+                ],
             }
         )
 
@@ -773,13 +845,22 @@ def delete(request: HttpRequest):
         if model_class:
             try:
                 model_class.objects.get(hash_id=to_delete).delete()
-                return JsonResponse({"deleted_recordType": record_type, "deleted_hashId": to_delete}, status=201)
+                return JsonResponse(
+                    {"deleted_recordType": record_type, "deleted_hashId": to_delete},
+                    status=201,
+                )
             except Exception:
-                return JsonResponse({"deleted_recordType": record_type, "deleted_hashId": to_delete}, status=500)
+                return JsonResponse(
+                    {"deleted_recordType": record_type, "deleted_hashId": to_delete},
+                    status=500,
+                )
 
     else:
 
-        return JsonResponse({"message": f"User {request.user} is not authorised to delete records."}, status=401)
+        return JsonResponse(
+            {"message": f"User {request.user} is not authorised to delete records."},
+            status=401,
+        )
 
 
 @login_required(login_url="/")
@@ -792,7 +873,9 @@ def download_lightcurve_csv(request: HttpRequest, cand_hash_id: str):
 
         # Create the HttpResponse object with the appropriate CSV header.
         response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = f'attachment; filename="{candidate.name}_lightcurve.csv"'
+        response["Content-Disposition"] = (
+            f'attachment; filename="{candidate.name}_lightcurve.csv"'
+        )
 
         writer = csv.writer(response)
 
@@ -820,7 +903,9 @@ class AppChangePassword(TemplateView, View):
             print(pw_reset_form.errors.as_data())
             for field, errors in pw_reset_form.errors.as_data().items():
                 for error in errors:
-                    message = error.message % error.params if error.params else error.message
+                    message = (
+                        error.message % error.params if error.params else error.message
+                    )
                     messages.error(request, f"{message}")
 
         return redirect(request.META["HTTP_REFERER"])
@@ -831,12 +916,16 @@ class LoginView(TemplateView, View):
         return self.render_to_response({})
 
     def post(self, request, *args, **kwargs):
-        user = authenticate(username=request.POST.get("username"), password=request.POST.get("password"))
+        user = authenticate(
+            username=request.POST.get("username"), password=request.POST.get("password")
+        )
         if user is not None:
             if user.is_active:
                 login(request, user)
             else:
-                messages.warning(request, "The password is valid, but the account has been disabled!")
+                messages.warning(
+                    request, "The password is valid, but the account has been disabled!"
+                )
         else:
             messages.warning(request, "The username or password were incorrect.")
 

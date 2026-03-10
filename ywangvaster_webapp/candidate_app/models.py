@@ -6,7 +6,6 @@ from django.db import models
 from django.conf import settings
 from django.utils.functional import cached_property
 
-
 POSSIBLE_RATINGS = (
     ("T", "true"),
     ("F", "false"),
@@ -18,13 +17,23 @@ POSSIBLE_RATINGS = (
 def beam_upload_path(instance, filename):
     """Define a file path for beam files project_id/obs_id/beam_id/filename."""
 
-    return os.path.join(f"{instance.project.id}", f"{instance.observation.id}", f"{instance.index}", filename)
+    return os.path.join(
+        f"{instance.project.id}",
+        f"{instance.observation.id}",
+        f"{instance.index}",
+        filename,
+    )
 
 
 def cand_upload_path(instance, filename):
     """Define a file path for candidate project_id/obs_id/beam_id/filename."""
 
-    return os.path.join(f"{instance.project.id}", f"{instance.obs_id}", f"{instance.beam.index}", filename)
+    return os.path.join(
+        f"{instance.project.id}",
+        f"{instance.obs_id}",
+        f"{instance.beam.index}",
+        filename,
+    )
 
 
 class Upload(models.Model):
@@ -43,12 +52,20 @@ class Project(models.Model):
 
     hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    id = models.CharField(verbose_name="id", max_length=64, blank=True, null=True, unique=True)
-    name = models.CharField(verbose_name="Project name", max_length=64, blank=True, null=True)
-    description = models.CharField(verbose_name="Description", max_length=256, blank=True, null=True)
+    id = models.CharField(
+        verbose_name="id", max_length=64, blank=True, null=True, unique=True
+    )
+    name = models.CharField(
+        verbose_name="Project name", max_length=64, blank=True, null=True
+    )
+    description = models.CharField(
+        verbose_name="Description", max_length=256, blank=True, null=True
+    )
 
     # Meta data for when the object was uploaded / created
-    upload = models.ForeignKey(Upload, on_delete=models.CASCADE, related_name="proj_upload", default=None)
+    upload = models.ForeignKey(
+        Upload, on_delete=models.CASCADE, related_name="proj_upload", default=None
+    )
 
     def __str__(self):
         return f"{self.id}"
@@ -93,10 +110,14 @@ class Observation(models.Model):
     id = models.CharField()  # THis is the ID of the observation, eg. SB50230
     obs_start = models.DateTimeField(blank=True, null=True)
 
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="obs_proj", default=None)
+    project = models.ForeignKey(
+        Project, on_delete=models.CASCADE, related_name="obs_proj", default=None
+    )
 
     # Meta data for when the object was uploaded
-    upload = models.ForeignKey(Upload, on_delete=models.CASCADE, related_name="obs_upload", default=None)
+    upload = models.ForeignKey(
+        Upload, on_delete=models.CASCADE, related_name="obs_upload", default=None
+    )
 
     @cached_property
     def total_file_size_gb(self):
@@ -139,34 +160,60 @@ class Beam(models.Model):
     # Uploaded info
     obs_id = models.CharField()
     proj_id = models.CharField(max_length=64)
-    index = models.IntegerField()  # This is for 00, 01, 02, 03 - for an observation or survey
+    index = (
+        models.IntegerField()
+    )  # This is for 00, 01, 02, 03 - for an observation or survey
 
     # Meta data for when the object was uploaded
-    upload = models.ForeignKey(Upload, on_delete=models.CASCADE, related_name="beam_upload", default=None)
+    upload = models.ForeignKey(
+        Upload, on_delete=models.CASCADE, related_name="beam_upload", default=None
+    )
 
     # Linking back to the observation object.
-    observation = models.ForeignKey(Observation, on_delete=models.CASCADE, related_name="beam_obs", default=None)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="beam_proj", default=None)
+    observation = models.ForeignKey(
+        Observation, on_delete=models.CASCADE, related_name="beam_obs", default=None
+    )
+    project = models.ForeignKey(
+        Project, on_delete=models.CASCADE, related_name="beam_proj", default=None
+    )
 
     # Only if the user wants to add information to the beam.
-    description = models.CharField(verbose_name="Description", max_length=1024, blank=True, null=True)
+    description = models.CharField(
+        verbose_name="Description", max_length=1024, blank=True, null=True
+    )
 
     # Totals for files attached to the object
     total_file_count = models.IntegerField(blank=True, null=True)
     total_file_size_bytes = models.BigIntegerField(blank=True, null=True)
 
     # Save the files for each beam.
-    final_cand_csv = models.FileField(upload_to=beam_upload_path, max_length=1024, blank=True, null=True)
+    final_cand_csv = models.FileField(
+        upload_to=beam_upload_path, max_length=1024, blank=True, null=True
+    )
 
-    std_fits = models.FileField(upload_to=beam_upload_path, max_length=1024, blank=True, null=True)
+    std_fits = models.FileField(
+        upload_to=beam_upload_path, max_length=1024, blank=True, null=True
+    )
 
-    chisquare_map1_png = models.FileField(upload_to=beam_upload_path, max_length=1024, blank=True, null=True)
-    chisquare_map2_png = models.FileField(upload_to=beam_upload_path, max_length=1024, blank=True, null=True)
-    chisquare_fits = models.FileField(upload_to=beam_upload_path, max_length=1024, blank=True, null=True)
+    chisquare_map1_png = models.FileField(
+        upload_to=beam_upload_path, max_length=1024, blank=True, null=True
+    )
+    chisquare_map2_png = models.FileField(
+        upload_to=beam_upload_path, max_length=1024, blank=True, null=True
+    )
+    chisquare_fits = models.FileField(
+        upload_to=beam_upload_path, max_length=1024, blank=True, null=True
+    )
 
-    peak_map1_png = models.FileField(upload_to=beam_upload_path, max_length=1024, blank=True, null=True)
-    peak_map2_png = models.FileField(upload_to=beam_upload_path, max_length=1024, blank=True, null=True)
-    peak_fits = models.FileField(upload_to=beam_upload_path, max_length=1024, blank=True, null=True)
+    peak_map1_png = models.FileField(
+        upload_to=beam_upload_path, max_length=1024, blank=True, null=True
+    )
+    peak_map2_png = models.FileField(
+        upload_to=beam_upload_path, max_length=1024, blank=True, null=True
+    )
+    peak_fits = models.FileField(
+        upload_to=beam_upload_path, max_length=1024, blank=True, null=True
+    )
 
     FILE_FIELDS = [
         "final_cand_csv",
@@ -206,12 +253,20 @@ class Candidate(models.Model):
     # cand_obj_id = models.CharField(null=True, blank=True)
 
     # Meta data for when the object was uploaded
-    upload = models.ForeignKey(Upload, on_delete=models.CASCADE, related_name="cand_upload", default=None)
+    upload = models.ForeignKey(
+        Upload, on_delete=models.CASCADE, related_name="cand_upload", default=None
+    )
 
     # Linking back to the observation and beam objects.
-    beam = models.ForeignKey(Beam, on_delete=models.CASCADE, related_name="cand_beams", default=None)
-    observation = models.ForeignKey(Observation, on_delete=models.CASCADE, related_name="cand_obs", default=None)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="cand_proj", default=None)
+    beam = models.ForeignKey(
+        Beam, on_delete=models.CASCADE, related_name="cand_beams", default=None
+    )
+    observation = models.ForeignKey(
+        Observation, on_delete=models.CASCADE, related_name="cand_obs", default=None
+    )
+    project = models.ForeignKey(
+        Project, on_delete=models.CASCADE, related_name="cand_proj", default=None
+    )
 
     # Totals for files attached to the object
     total_file_count = models.IntegerField(blank=True, null=True)
@@ -227,7 +282,9 @@ class Candidate(models.Model):
 
     # Deepcutout files
     deepcutout_png = models.FileField(upload_to=cand_upload_path, null=True, blank=True)
-    deepcutout_fits = models.FileField(upload_to=cand_upload_path, null=True, blank=True)
+    deepcutout_fits = models.FileField(
+        upload_to=cand_upload_path, null=True, blank=True
+    )
 
     # Comes from the candidadate file data uploaded
     # source_id = models.IntegerField() # not needed in this web app.
@@ -295,8 +352,16 @@ class Tag(models.Model):
 
     hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    name = models.CharField(verbose_name="Classification tag", max_length=256, blank=True, null=True, unique=True)
-    description = models.CharField(verbose_name="Description", max_length=1024, blank=True, null=True)
+    name = models.CharField(
+        verbose_name="Classification tag",
+        max_length=256,
+        blank=True,
+        null=True,
+        unique=True,
+    )
+    description = models.CharField(
+        verbose_name="Description", max_length=1024, blank=True, null=True
+    )
 
     # Attach classifcations to a project or just them global?
     # project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="project")
@@ -308,7 +373,9 @@ class Tag(models.Model):
 class Rating(models.Model):
 
     hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name="rating", default=None)
+    candidate = models.ForeignKey(
+        Candidate, on_delete=models.CASCADE, related_name="rating", default=None
+    )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         related_name="rating",
@@ -317,7 +384,14 @@ class Rating(models.Model):
     )
     rating = models.CharField(max_length=1, choices=POSSIBLE_RATINGS, default=None)
     # tag = models.ForeignKey(Tag, on_delete=models.DO_NOTHING, related_name="rating", default=None)
-    tag = models.ForeignKey(Tag, on_delete=models.SET_NULL, null=True, blank=True, related_name="rating", default=None)
+    tag = models.ForeignKey(
+        Tag,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="rating",
+        default=None,
+    )
     date = models.DateTimeField(default=timezone.now, blank=True)
     notes = models.CharField(max_length=1024)
 
@@ -330,14 +404,22 @@ class Rating(models.Model):
 
 class ATNFPulsar(models.Model):
     id = models.BigAutoField(primary_key=True)
-    name = models.CharField(verbose_name="Pulsar Name", max_length=32, blank=False, unique=True)
+    name = models.CharField(
+        verbose_name="Pulsar Name", max_length=32, blank=False, unique=True
+    )
     ra_str = models.CharField(max_length=32)
     dec_str = models.CharField(max_length=32)
     decj = models.FloatField(verbose_name="Declination epoch (J2000, deg)")
     raj = models.FloatField(verbose_name="Right Ascension epoch (J2000, deg)")
-    DM = models.FloatField(verbose_name="Dispersion Measure (cm^-3 pc)", blank=True, null=True)
-    p0 = models.FloatField(verbose_name="Barycentric period of the pulsar (s)", blank=True, null=True)
-    s400 = models.FloatField(verbose_name="Mean flux density at 400 MHz (mJy)", blank=True, null=True)
+    DM = models.FloatField(
+        verbose_name="Dispersion Measure (cm^-3 pc)", blank=True, null=True
+    )
+    p0 = models.FloatField(
+        verbose_name="Barycentric period of the pulsar (s)", blank=True, null=True
+    )
+    s400 = models.FloatField(
+        verbose_name="Mean flux density at 400 MHz (mJy)", blank=True, null=True
+    )
 
     def __str__(self):
         return f"{self.name}"

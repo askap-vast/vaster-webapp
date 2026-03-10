@@ -10,7 +10,9 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from candidate_app.models import ATNFPulsar
 
-ATNF_LINK = "https://www.atnf.csiro.au/research/pulsar/psrcat/downloads/psrcat_pkg.tar.gz"
+ATNF_LINK = (
+    "https://www.atnf.csiro.au/research/pulsar/psrcat/downloads/psrcat_pkg.tar.gz"
+)
 
 
 class Command(BaseCommand):
@@ -58,14 +60,20 @@ class Command(BaseCommand):
             if (dec is not None) and (ra is not None):
                 pos = SkyCoord(ra, dec, unit=(u.hour, u.degree), frame="fk5")
             if (lat is not None) and (long is not None):
-                pos = SkyCoord(l=long, b=lat, unit=(u.degree, u.degree), frame="galactic").transform_to("fk5")
+                pos = SkyCoord(
+                    l=long, b=lat, unit=(u.degree, u.degree), frame="galactic"
+                ).transform_to("fk5")
 
             if pos is not None:
                 db_dict[name]["raj"] = pos.ra.degree
                 db_dict[name]["decj"] = pos.dec.degree
 
-                db_dict[name]["ra_str"] = pos.ra.to_string(unit=u.hourangle, sep=":", precision=2, pad=True)
-                db_dict[name]["dec_str"] = pos.dec.to_string(unit=u.deg, sep=":", precision=2, pad=True)
+                db_dict[name]["ra_str"] = pos.ra.to_string(
+                    unit=u.hourangle, sep=":", precision=2, pad=True
+                )
+                db_dict[name]["dec_str"] = pos.dec.to_string(
+                    unit=u.deg, sep=":", precision=2, pad=True
+                )
 
         with transaction.atomic():
             ATNFPulsar.objects.all().delete()

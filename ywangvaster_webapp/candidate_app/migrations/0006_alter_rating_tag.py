@@ -7,13 +7,20 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('candidate_app', '0005_create_tags'),
+        ("candidate_app", "0005_create_tags"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='rating',
-            name='tag',
-            field=models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='rating', to='candidate_app.tag'),
+            model_name="rating",
+            name="tag",
+            field=models.ForeignKey(
+                blank=True,
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="rating",
+                to="candidate_app.tag",
+            ),
         ),
     ]

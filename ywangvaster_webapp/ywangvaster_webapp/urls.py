@@ -32,11 +32,25 @@ urlpatterns = [
     path("ratings_summary/", views.ratings_summary, name="ratings_summary"),
     path("candidates/", views.candidate_table, name="candidates"),
     path("next_candidate/", views.next_candidate, name="next_candidate"),
-    path("clear_candidates_filter/", views.clear_candidates_filter, name="clear_candidates_filter"),
-    path("clear_ratings_filter/", views.clear_ratings_filter, name="clear_ratings_filter"),
-    path("candidate_rating/<str:cand_hash_id>/", views.candidate_rating, name="candidate_rating"),
+    path(
+        "clear_candidates_filter/",
+        views.clear_candidates_filter,
+        name="clear_candidates_filter",
+    ),
+    path(
+        "clear_ratings_filter/", views.clear_ratings_filter, name="clear_ratings_filter"
+    ),
+    path(
+        "candidate_rating/<str:cand_hash_id>/",
+        views.candidate_rating,
+        name="candidate_rating",
+    ),
     path("create_tag/", views.create_tag, name="create_tag"),
-    path("download_lightcurve/<str:cand_hash_id>", views.download_lightcurve_csv, name="download_lightcurve_csv"),
+    path(
+        "download_lightcurve/<str:cand_hash_id>",
+        views.download_lightcurve_csv,
+        name="download_lightcurve_csv",
+    ),
     path("project_select/", views.project_select, name="project_select"),
     # Get nearby objects (all databases in one)
     path("get_nearby_objects/", views.nearby_objects_table, name="get_nearby_objects"),

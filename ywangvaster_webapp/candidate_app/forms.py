@@ -22,7 +22,9 @@ class CandidateFilterForm(forms.Form):
 
         # Update the choices for observation_id based on the selected project
         if selected_project_hash_id:
-            self.fields["observation"].queryset = models.Observation.objects.filter(project=selected_project_hash_id)
+            self.fields["observation"].queryset = models.Observation.objects.filter(
+                project=selected_project_hash_id
+            )
         else:
             self.fields["observation"].queryset = models.Observation.objects.all()
 
@@ -56,7 +58,9 @@ class CandidateFilterForm(forms.Form):
         required=False,
     )
 
-    confidence = forms.ChoiceField(choices=confidence_choices, required=False, label="Confidence")
+    confidence = forms.ChoiceField(
+        choices=confidence_choices, required=False, label="Confidence"
+    )
 
     observation = forms.ModelChoiceField(
         models.Observation.objects.none(),
@@ -184,7 +188,9 @@ class RatingFilterForm(forms.Form):
 
         # Update the choices for observation_id based on the selected project
         if selected_project_hash_id:
-            self.fields["observation"].queryset = models.Observation.objects.filter(project=selected_project_hash_id)
+            self.fields["observation"].queryset = models.Observation.objects.filter(
+                project=selected_project_hash_id
+            )
         else:
             self.fields["observation"].queryset = models.Observation.objects.all()
 

@@ -20,7 +20,15 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="CandidateMinMaxStats",
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
                 ("min_chi_square", models.FloatField(blank=True, null=True)),
                 ("max_chi_square", models.FloatField(blank=True, null=True)),
                 ("min_chi_square_sigma", models.FloatField(blank=True, null=True)),
@@ -60,59 +68,102 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="Beam",
             fields=[
-                ("hash_id", models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                (
+                    "hash_id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
                 ("obs_id", models.CharField()),
                 ("proj_id", models.CharField(max_length=64)),
                 ("index", models.IntegerField()),
-                ("description", models.CharField(blank=True, max_length=1024, null=True, verbose_name="Description")),
+                (
+                    "description",
+                    models.CharField(
+                        blank=True,
+                        max_length=1024,
+                        null=True,
+                        verbose_name="Description",
+                    ),
+                ),
                 ("total_file_count", models.IntegerField(blank=True, null=True)),
-                ("total_file_size_bytes", models.BigIntegerField(blank=True, null=True)),
+                (
+                    "total_file_size_bytes",
+                    models.BigIntegerField(blank=True, null=True),
+                ),
                 (
                     "final_cand_csv",
                     models.FileField(
-                        blank=True, max_length=1024, null=True, upload_to=candidate_app.models.beam_upload_path
+                        blank=True,
+                        max_length=1024,
+                        null=True,
+                        upload_to=candidate_app.models.beam_upload_path,
                     ),
                 ),
                 (
                     "std_fits",
                     models.FileField(
-                        blank=True, max_length=1024, null=True, upload_to=candidate_app.models.beam_upload_path
+                        blank=True,
+                        max_length=1024,
+                        null=True,
+                        upload_to=candidate_app.models.beam_upload_path,
                     ),
                 ),
                 (
                     "chisquare_map1_png",
                     models.FileField(
-                        blank=True, max_length=1024, null=True, upload_to=candidate_app.models.beam_upload_path
+                        blank=True,
+                        max_length=1024,
+                        null=True,
+                        upload_to=candidate_app.models.beam_upload_path,
                     ),
                 ),
                 (
                     "chisquare_map2_png",
                     models.FileField(
-                        blank=True, max_length=1024, null=True, upload_to=candidate_app.models.beam_upload_path
+                        blank=True,
+                        max_length=1024,
+                        null=True,
+                        upload_to=candidate_app.models.beam_upload_path,
                     ),
                 ),
                 (
                     "chisquare_fits",
                     models.FileField(
-                        blank=True, max_length=1024, null=True, upload_to=candidate_app.models.beam_upload_path
+                        blank=True,
+                        max_length=1024,
+                        null=True,
+                        upload_to=candidate_app.models.beam_upload_path,
                     ),
                 ),
                 (
                     "peak_map1_png",
                     models.FileField(
-                        blank=True, max_length=1024, null=True, upload_to=candidate_app.models.beam_upload_path
+                        blank=True,
+                        max_length=1024,
+                        null=True,
+                        upload_to=candidate_app.models.beam_upload_path,
                     ),
                 ),
                 (
                     "peak_map2_png",
                     models.FileField(
-                        blank=True, max_length=1024, null=True, upload_to=candidate_app.models.beam_upload_path
+                        blank=True,
+                        max_length=1024,
+                        null=True,
+                        upload_to=candidate_app.models.beam_upload_path,
                     ),
                 ),
                 (
                     "peak_fits",
                     models.FileField(
-                        blank=True, max_length=1024, null=True, upload_to=candidate_app.models.beam_upload_path
+                        blank=True,
+                        max_length=1024,
+                        null=True,
+                        upload_to=candidate_app.models.beam_upload_path,
                     ),
                 ),
             ],
@@ -120,32 +171,63 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="Candidate",
             fields=[
-                ("hash_id", models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                (
+                    "hash_id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
                 ("proj_id", models.CharField(max_length=64)),
                 ("obs_id", models.CharField()),
                 ("beam_index", models.IntegerField()),
                 ("total_file_count", models.IntegerField(blank=True, null=True)),
-                ("total_file_size_bytes", models.BigIntegerField(blank=True, null=True)),
+                (
+                    "total_file_size_bytes",
+                    models.BigIntegerField(blank=True, null=True),
+                ),
                 ("lightcurve_data", models.JSONField(blank=True, null=True)),
                 (
                     "lightcurve_png",
-                    models.FileField(blank=True, null=True, upload_to=candidate_app.models.cand_upload_path),
+                    models.FileField(
+                        blank=True,
+                        null=True,
+                        upload_to=candidate_app.models.cand_upload_path,
+                    ),
                 ),
                 (
                     "slices_gif",
-                    models.FileField(blank=True, null=True, upload_to=candidate_app.models.cand_upload_path),
+                    models.FileField(
+                        blank=True,
+                        null=True,
+                        upload_to=candidate_app.models.cand_upload_path,
+                    ),
                 ),
                 (
                     "slices_fits",
-                    models.FileField(blank=True, null=True, upload_to=candidate_app.models.cand_upload_path),
+                    models.FileField(
+                        blank=True,
+                        null=True,
+                        upload_to=candidate_app.models.cand_upload_path,
+                    ),
                 ),
                 (
                     "deepcutout_png",
-                    models.FileField(blank=True, null=True, upload_to=candidate_app.models.cand_upload_path),
+                    models.FileField(
+                        blank=True,
+                        null=True,
+                        upload_to=candidate_app.models.cand_upload_path,
+                    ),
                 ),
                 (
                     "deepcutout_fits",
-                    models.FileField(blank=True, null=True, upload_to=candidate_app.models.cand_upload_path),
+                    models.FileField(
+                        blank=True,
+                        null=True,
+                        upload_to=candidate_app.models.cand_upload_path,
+                    ),
                 ),
                 ("name", models.CharField(max_length=100)),
                 ("ra_str", models.CharField(max_length=100)),
@@ -187,21 +269,52 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="Tag",
             fields=[
-                ("hash_id", models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                (
+                    "hash_id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
                 (
                     "name",
                     models.CharField(
-                        blank=True, max_length=256, null=True, unique=True, verbose_name="Classification tag"
+                        blank=True,
+                        max_length=256,
+                        null=True,
+                        unique=True,
+                        verbose_name="Classification tag",
                     ),
                 ),
-                ("description", models.CharField(blank=True, max_length=1024, null=True, verbose_name="Description")),
+                (
+                    "description",
+                    models.CharField(
+                        blank=True,
+                        max_length=1024,
+                        null=True,
+                        verbose_name="Description",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
             name="Upload",
             fields=[
-                ("hash_id", models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ("date", models.DateTimeField(blank=True, default=django.utils.timezone.now)),
+                (
+                    "hash_id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "date",
+                    models.DateTimeField(blank=True, default=django.utils.timezone.now),
+                ),
                 (
                     "user",
                     models.ForeignKey(
@@ -216,14 +329,27 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="Rating",
             fields=[
-                ("hash_id", models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                (
+                    "hash_id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
                 (
                     "rating",
                     models.CharField(
-                        choices=[("T", "true"), ("F", "false"), ("U", "unsure")], default=None, max_length=1
+                        choices=[("T", "true"), ("F", "false"), ("U", "unsure")],
+                        default=None,
+                        max_length=1,
                     ),
                 ),
-                ("date", models.DateTimeField(blank=True, default=django.utils.timezone.now)),
+                (
+                    "date",
+                    models.DateTimeField(blank=True, default=django.utils.timezone.now),
+                ),
                 ("notes", models.CharField(max_length=1024)),
                 (
                     "candidate",
@@ -257,10 +383,43 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="Project",
             fields=[
-                ("hash_id", models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ("id", models.CharField(blank=True, max_length=64, null=True, unique=True, verbose_name="id")),
-                ("name", models.CharField(blank=True, max_length=64, null=True, verbose_name="Project name")),
-                ("description", models.CharField(blank=True, max_length=256, null=True, verbose_name="Description")),
+                (
+                    "hash_id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "id",
+                    models.CharField(
+                        blank=True,
+                        max_length=64,
+                        null=True,
+                        unique=True,
+                        verbose_name="id",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        blank=True,
+                        max_length=64,
+                        null=True,
+                        verbose_name="Project name",
+                    ),
+                ),
+                (
+                    "description",
+                    models.CharField(
+                        blank=True,
+                        max_length=256,
+                        null=True,
+                        verbose_name="Description",
+                    ),
+                ),
                 (
                     "upload",
                     models.ForeignKey(
@@ -275,7 +434,15 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="Observation",
             fields=[
-                ("hash_id", models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                (
+                    "hash_id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
                 ("proj_id", models.CharField(max_length=64)),
                 ("id", models.CharField()),
                 ("obs_start", models.DateTimeField(blank=True, null=True)),

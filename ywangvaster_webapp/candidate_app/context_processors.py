@@ -16,7 +16,9 @@ def header_forms(request):
         selected_project_id = "All projects"
         selected_projects = models.Project.objects.all()
     else:
-        selected_projects = [models.Project.objects.get(hash_id=selected_project_hash_id)]
+        selected_projects = [
+            models.Project.objects.get(hash_id=selected_project_hash_id)
+        ]
         selected_project_id = selected_projects[0].id
 
     # Empty pw reset form for header
