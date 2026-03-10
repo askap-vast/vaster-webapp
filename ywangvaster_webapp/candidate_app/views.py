@@ -190,7 +190,12 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
                 date=timezone.now(),
             )
 
-            return redirect(request.META["HTTP_REFERER"])
+            if prev_rating:
+                # Updating an existing rating: stay on the same page
+                return redirect(request.META["HTTP_REFERER"])
+            else:
+                # New rating: go straight to the next unrated candidate
+                return redirect("next_candidate")
 
     # Convert the lightcurve data to mJy and put into a form for Echarts to use.
     converted_lc = []
