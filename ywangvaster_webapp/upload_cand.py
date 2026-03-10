@@ -6,7 +6,6 @@ import csv
 import json
 import argparse
 import requests
-from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 from astropy.io import fits
@@ -15,6 +14,9 @@ from astropy.time import Time
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+base_directory: str = os.path.dirname(os.path.realpath(__file__))
 
 
 class TokenAuth(requests.auth.AuthBase):
@@ -137,10 +139,9 @@ def send_observation_request(
     obs_url: str,
     project_id: str,
     obs_id: str,
-    directory: str = os.path.dirname(os.path.realpath(__file__)),
+    directory: str = base_directory,
 ):
-
-    ### Get the observation date from one of the fits files ###
+    # Get the observation date from one of the fits files #
     std_fits_obs_file_path = os.path.join(directory, f"{obs_id}_beam00_std.fits")
     with fits.open(std_fits_obs_file_path) as hdul:
         # Access the primary header
@@ -158,7 +159,7 @@ def send_observation_request(
 
         datetime_object = Time(_date_obs).to_value("isot")
 
-    ### Send a request to create an observation record in the DB ###
+    # Send a request to create an observation record in the DB #
     r = session.post(
         obs_url,
         data={
@@ -178,7 +179,7 @@ def send_beam_request(
     project_id: str,
     obs_id: str,
     beam_id: str,
-    directory: str = os.path.dirname(os.path.realpath(__file__)),
+    directory: str = base_directory,
 ):
     """Uploads beam specific files to the ywangvaster webapp."""
 
@@ -195,7 +196,6 @@ def send_beam_request(
         ("peak_map2", ["png"]),
         # ("peak", ["fits"]),
     ]:
-
         for fmt in fmt_list:
             filename = os.path.join(
                 directory, f"{obs_id}_{beam_id}_{series_name}.{fmt}"
@@ -231,19 +231,17 @@ def send_cand_request(
     cand: Dict,
     lightcurve_local_rms: Optional[Dict] = None,
     lightcurve_peak_flux: Optional[Dict] = None,
-    directory: str = os.path.dirname(os.path.realpath(__file__)),
+    directory: str = base_directory,
 ):
-
-    # Add the lightcurve data to the candidate, and in error bars and cast as strings for json handling.
+    # Add the lightcurve data to the candidate, and in error bars
+    # and cast as strings for json handling.
     if (
         lightcurve_peak_flux is not None
         and lightcurve_local_rms is not None
         and cand["name"] in lightcurve_peak_flux[0]
     ):
-
         lightcurve = [["Time", cand["name"], "rms_error"]]
         for lc, lc_err in zip(lightcurve_peak_flux, lightcurve_local_rms):
-
             assert (
                 lc["Time"] == lc_err["Time"]
             ), f"Time x-value for the lightcurve data is not the same in CSVs! {cand['name']}"
@@ -258,7 +256,6 @@ def send_cand_request(
         ("slices", ["gif", "fits"]),
         ("deepcutout", ["png", "fits"]),
     ]:
-
         for fmt in fmt_list:
             filename = os.path.join(
                 directory, f"{obs_id}_{beam_id}_{series_name}_{cand['name']}.{fmt}"
@@ -309,7 +306,6 @@ def upload_data(base_url, token, project_id, obs_id, data_directory):
 
     # For each beam
     for beam_id in all_beam_ids:
-
         # Upload the metadata, fits and images for each beam
         send_beam_request(
             session, beam_url, project_id, obs_id, beam_id, data_directory
@@ -343,7 +339,6 @@ def upload_data(base_url, token, project_id, obs_id, data_directory):
 
         # Loop through each possible candidate
         for cand in candidates:
-
             # Remove source_id
             cand.pop("source_id")
 

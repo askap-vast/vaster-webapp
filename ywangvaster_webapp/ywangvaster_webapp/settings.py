@@ -43,7 +43,8 @@ ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
-# Maximum size (in bytes) that a request can be before a SuspiciousOperation (RequestDataTooBig) is raised
+# Maximum size (in bytes) that a request can be before a
+# SuspiciousOperation (RequestDataTooBig) is raised
 DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 MB, adjust as necessary
 
 # Maximum size (in bytes) that a single uploaded file can be

@@ -14,7 +14,6 @@ confidence_choices = (
 
 
 class CandidateFilterForm(forms.Form):
-
     def __init__(self, *args, **kwargs):
         # Extract the selected project from the kwargs
         selected_project_hash_id = kwargs.pop("selected_project_hash_id", None)
@@ -31,7 +30,8 @@ class CandidateFilterForm(forms.Form):
     def _post_clean(self):
         """Additional cleaning step after the form's clean method.
 
-        Used to get the hash_id's out of the model choice fields for serialisation in later steps of the candidate_table page.
+        Used to get the hash_id's out of the model choice fields
+        for serialisation in later steps of the candidate_table page.
         """
         super()._post_clean()
 
@@ -168,7 +168,6 @@ class CreateTagForm(forms.ModelForm):
 
 
 class ProjectSelectForm(forms.Form):
-
     selected_project_hash_id = forms.ModelChoiceField(
         queryset=models.Project.objects.all(),
         to_field_name="hash_id",
@@ -180,7 +179,6 @@ class ProjectSelectForm(forms.Form):
 
 
 class RatingFilterForm(forms.Form):
-
     def __init__(self, *args, **kwargs):
         # Extract the selected project from the kwargs
         selected_project_hash_id = kwargs.pop("selected_project_hash_id", None)
@@ -197,7 +195,8 @@ class RatingFilterForm(forms.Form):
     def _post_clean(self):
         """Additional cleaning step after the form's clean method.
 
-        Used to get the hash_id's out of the model choice fields for serialisation in later steps of the candidate_table page.
+        Used to get the hash_id's out of the model choice fields
+        for serialisation in later steps of the candidate_table page.
         """
         super()._post_clean()
 

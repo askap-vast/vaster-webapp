@@ -37,7 +37,6 @@ def cand_upload_path(instance, filename):
 
 
 class Upload(models.Model):
-
     hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -49,7 +48,6 @@ class Upload(models.Model):
 
 
 class Project(models.Model):
-
     hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     id = models.CharField(
@@ -102,7 +100,6 @@ class Project(models.Model):
 
 
 class Observation(models.Model):
-
     hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     # From upload
@@ -154,7 +151,6 @@ class Observation(models.Model):
 
 
 class Beam(models.Model):
-
     hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     # Uploaded info
@@ -242,7 +238,6 @@ class Beam(models.Model):
 
 
 class Candidate(models.Model):
-
     hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     proj_id = models.CharField(max_length=64)
@@ -349,7 +344,6 @@ class Candidate(models.Model):
 
 
 class Tag(models.Model):
-
     hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     name = models.CharField(
@@ -371,7 +365,6 @@ class Tag(models.Model):
 
 
 class Rating(models.Model):
-
     hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     candidate = models.ForeignKey(
         Candidate, on_delete=models.CASCADE, related_name="rating", default=None
@@ -383,7 +376,8 @@ class Rating(models.Model):
         default=None,
     )
     rating = models.CharField(max_length=1, choices=POSSIBLE_RATINGS, default=None)
-    # tag = models.ForeignKey(Tag, on_delete=models.DO_NOTHING, related_name="rating", default=None)
+    # tag = models.ForeignKey(Tag, on_delete=models.DO_NOTHING,
+    # related_name="rating", default=None)
     tag = models.ForeignKey(
         Tag,
         on_delete=models.SET_NULL,
@@ -425,7 +419,7 @@ class ATNFPulsar(models.Model):
         return f"{self.name}"
 
 
-### For displaying the mins and maxs for the filtering the candidate table page ###
+# For displaying the mins and maxs for the filtering the candidate table page ###
 class CandidateMinMaxStats(models.Model):
     """This is updated on a trigger for each insert update or delete for the candidate table."""
 

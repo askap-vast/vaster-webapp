@@ -2,7 +2,6 @@ from django.http import HttpResponse
 from astropy.io import fits
 import numpy as np
 
-from django import template
 
 import os
 import shutil
@@ -26,7 +25,6 @@ def FITSTableType(val):
 
 
 def download_fits(request, queryset, table):
-
     opts = queryset.model._meta
 
     response = HttpResponse(content_type="application/octet-stream")
@@ -75,7 +73,7 @@ def count_files(directory):
     :return: Number of files under the "path" directory."""
 
     file_count = 0
-    for root, dirs, files in os.walk(directory):
+    for _root, _dirs, files in os.walk(directory):
         file_count += len(files)
 
     return file_count

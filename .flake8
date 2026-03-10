@@ -3,3 +3,6 @@ max-line-length = 88
 require-plugins = flake8-bugbear
 extend-ignore = E121,E123,E126,E226,E24,E704,W503,W504,E203,E501
 select = C,E,F,W,B,B950
+exclude = 
+  migrations
+  unused_migrations

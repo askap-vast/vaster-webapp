@@ -38,7 +38,7 @@ def get_type_count(dictionary, key):
 
 @register.filter
 def is_not_nan_or_none(value):
-    return not math.isnan(value) or not value is None
+    return not math.isnan(value) or value is not None
 
 
 @register.filter

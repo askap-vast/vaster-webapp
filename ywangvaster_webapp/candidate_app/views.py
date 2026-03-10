@@ -30,14 +30,12 @@ from .views_utils import (
     CONFIDENCE_MAPPING,
     DEFAULT_RATINGS_INPUT,
     DOWNLOAD_CANDIDATE_FIELDS,
-    FILTER_FORM_FLOAT_VARAIBLES,
     FILTER_CAND_VAR_MAPPING,
     PROJECT_COLOURS,
     get_simbad,
     get_atnf,
     filter_candidates_by_coords,
     build_candidate_queryset,
-    get_candidate_form_defaults,
     get_new_values_diff,
     download_rating_csv_zip,
     get_upload_token,
@@ -63,7 +61,8 @@ def home(request):
 
 
 def nearby_objects_table(request: HttpRequest):
-    """Render a table of nearby objects from the local DB (filtered by project), Simbad and ATNF pulsars."""
+    """Render a table of nearby objects from the local DB (filtered by
+    project), Simbad and ATNF pulsars."""
 
     dist_arcmin = 2
     selected_project_hash_id = request.session.get("selected_project_hash_id")
@@ -118,15 +117,12 @@ def nearby_objects_table(request: HttpRequest):
 
 @login_required(login_url="/")
 def create_tag(request: HttpRequest):
-
     if request.method == "POST":
-
         new_tag = forms.CreateTagForm(request.POST)
 
         print(f"Attempting to create new tag with request.POST: {request.POST}")
 
         if new_tag.is_valid():
-
             print(f"New tag is valid! Adding {request.POST['name']} DB.")
 
             new_tag.save()
@@ -165,14 +161,13 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
     # Grab the previous rating for this candidate and user
     try:
         prev_rating = models.Rating.objects.get(candidate=candidate)
-    except:
+    except Exception:
         prev_rating = None
 
     rate_form = forms.RateCandidateForm(initial={"confidence": "F", "tag": "None"})
     new_tag_form = forms.CreateTagForm()
 
     if request.method == "POST":
-
         rate_form = forms.RateCandidateForm(request.POST)
 
         if rate_form.is_valid():
@@ -194,8 +189,6 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
                 tag=tag,
                 date=timezone.now(),
             )
-
-            # TODO - after adding a tag, consider redirecting to next_candidate instead of back to the current page
 
             return redirect(request.META["HTTP_REFERER"])
 
@@ -263,7 +256,7 @@ def get_token(request):
                 token = Token.objects.create(user=request.user)
 
             return JsonResponse({"token": token.key}, status=201)
-        except:
+        except Exception:
             return JsonResponse(
                 {"Error: Unable to create token for user": request.user}, status=500
             )
@@ -271,7 +264,6 @@ def get_token(request):
 
 @login_required(login_url="/")
 def clear_candidates_filter(request: HttpRequest):
-
     if "current_filter_data" in request.session or "clear_filter_data" in request.POST:
         del request.session["current_filter_data"]
 
@@ -280,15 +272,12 @@ def clear_candidates_filter(request: HttpRequest):
 
 @login_required(login_url="/")
 def project_select(request):
-
     selected_project_hash_id = request.session.get("selected_project_hash_id")
 
     if request.POST:
-
         project_form = forms.ProjectSelectForm(request.POST)
 
         if project_form.is_valid():
-
             print(f"incoming post request - {request.POST}")
 
             print(f"old project selected - {selected_project_hash_id}")
@@ -298,7 +287,7 @@ def project_select(request):
             ]
 
             print(
-                f"setting selected_project_hash_id to {request.session['selected_project_hash_id']}"
+                f"setting selected_project_hash_id to {request.session['selected_project_hash_id']}"  # noqa: B950
             )
 
     return redirect(request.META["HTTP_REFERER"])
@@ -319,7 +308,6 @@ def change_password(request):
 
 @login_required(login_url="/")
 def candidate_table(request: HttpRequest):
-
     # Get session data to keep filters when changing page
     # This only holds what values are used for the filtering, not all.
 
@@ -349,7 +337,6 @@ def candidate_table(request: HttpRequest):
 
     # This is a filter request.
     if request.method == "POST":
-
         if get_new_values_diff(default_all_values, candidate_table_session_data):
             form = forms.CandidateFilterForm(
                 request.POST,
@@ -364,7 +351,6 @@ def candidate_table(request: HttpRequest):
             )
 
         if form.is_valid():
-
             cleaned_data = {**form.cleaned_data}
 
             # To allow the user to keep filtering and navigate back on page.
@@ -381,7 +367,6 @@ def candidate_table(request: HttpRequest):
 
             return redirect(f"{request.path}?{query_string}")
     else:
-
         if get_new_values_diff(default_all_values, candidate_table_session_data):
             form = forms.CandidateFilterForm(
                 selected_project_hash_id=selected_project_hash_id,
@@ -398,7 +383,7 @@ def candidate_table(request: HttpRequest):
         default_float_values, candidate_table_session_data
     )
 
-    ### Track filtered columns (display concern only) ###
+    # Track filtered columns (display concern only) #
 
     filtered_columns = set()
     if floats_to_filter:
@@ -488,7 +473,7 @@ def ratings_summary(request: HttpRequest):
     else:
         ratings = models.Rating.objects.all()
 
-    ### Ratings table ###
+    # Ratings table #
 
     # From the URL for the filter
     if request.method == "GET" and request.GET:
@@ -507,7 +492,6 @@ def ratings_summary(request: HttpRequest):
         )
 
         if form.is_valid():
-
             cleaned_data = {**form.cleaned_data}
             request.session["current_ratings_filter"] = cleaned_data
             current_ratings_filter = cleaned_data
@@ -552,7 +536,7 @@ def ratings_summary(request: HttpRequest):
                 ratings, "ratings_summary", DOWNLOAD_CANDIDATE_FIELDS
             )
 
-    ### Echarts bar plots ###
+    # Echarts bar plots #
 
     # For echarts bar plots of ratings per user and ratings per tag.
     # Convert QuerySet to list of dictionaries for ratings per user
@@ -582,7 +566,6 @@ def ratings_summary(request: HttpRequest):
 
 @login_required(login_url="/")
 def clear_ratings_filter(request: HttpRequest):
-
     if (
         "current_ratings_filter" in request.session
         or "clear_filter_data" in request.POST
@@ -595,9 +578,7 @@ def clear_ratings_filter(request: HttpRequest):
 @api_view(["POST"])
 @transaction.atomic
 def upload_observation(request):
-
     if request.method == "POST":
-
         token, error_response = get_upload_token(request)
         if error_response:
             return error_response
@@ -606,7 +587,6 @@ def upload_observation(request):
             f" --------------- Observation uploaded by user: {token.user} --------------- "
         )
         try:
-
             # Pull out the project id
             project_id = request.data["proj_id"]
 
@@ -659,7 +639,7 @@ def upload_observation(request):
             )
 
     return Response(
-        {"status": "error", "message": f"Not a POST request."},
+        {"status": "error", "message": "Not a POST request."},
         status=status.HTTP_400_BAD_REQUEST,
     )
 
@@ -667,9 +647,7 @@ def upload_observation(request):
 @api_view(["POST"])
 @transaction.atomic
 def upload_beam(request):
-
     if request.method == "POST":
-
         token, error_response = get_upload_token(request)
         if error_response:
             return error_response
@@ -677,7 +655,6 @@ def upload_beam(request):
         print(f" --------------- Beam uploaded by user: {token.user} --------------- ")
 
         try:
-
             # Check if beam has already been uploaded before.
             proj = models.Project.objects.get(id=request.data["proj_id"])
             obs = models.Observation.objects.get(
@@ -687,7 +664,7 @@ def upload_beam(request):
                 project=proj, observation=obs, index=request.data["index"]
             ).exists():
                 return Response(
-                    f"Beam '{request.data['index']}' for obsservation '{request.data['obs_id']}' already created so skipping",
+                    f"Beam '{request.data['index']}' for obsservation '{request.data['obs_id']}' already created so skipping",  # noqa: B950
                     status=status.HTTP_200_OK,
                 )
 
@@ -712,7 +689,7 @@ def upload_beam(request):
             )
 
     return Response(
-        {"status": "error", "message": f"Not a POST request."},
+        {"status": "error", "message": "Not a POST request."},
         status=status.HTTP_400_BAD_REQUEST,
     )
 
@@ -720,9 +697,7 @@ def upload_beam(request):
 @api_view(["POST"])
 @transaction.atomic
 def upload_candidate(request):
-
     if request.method == "POST":
-
         token, error_response = get_upload_token(request)
         if error_response:
             return error_response
@@ -747,7 +722,7 @@ def upload_candidate(request):
                 name=request.data["name"],
             ).exists():
                 return Response(
-                    f"Candidate {proj.id}_{obs.id}_{beam.index}_{request.data['name']} as already been uploaded/created so skipping",
+                    f"Candidate {proj.id}_{obs.id}_{beam.index}_{request.data['name']} as already been uploaded/created so skipping",  # noqa: B950
                     status=status.HTTP_200_OK,
                 )
 
@@ -773,14 +748,15 @@ def upload_candidate(request):
             )
 
     return Response(
-        {"status": "error", "message": f"Not a POST request."},
+        {"status": "error", "message": "Not a POST request."},
         status=status.HTTP_400_BAD_REQUEST,
     )
 
 
 @login_required(login_url="/")
 def site_admin(request):
-    """Display details of each project, observation, and the space used internally to the webapp."""
+    """Display details of each project, observation,
+    and the space used internally to the webapp."""
 
     selected_project_hash_id = request.session.get("selected_project_hash_id")
 
@@ -797,7 +773,6 @@ def site_admin(request):
     annotated_projects = []
     colour_count = 0
     for project in selected_projects:
-
         project_used_of_total = (
             (project.total_file_size_gb / total_disk_space) * 100
             if used_disk_space
@@ -838,7 +813,6 @@ def delete(request: HttpRequest):
     """Using a authorised POST request, delete records from the DB."""
 
     if request.user.is_staff and "recordType" in request.POST:
-
         record_type = request.POST.get("recordType")
         to_delete = request.POST.get("hashId")
         model_class = DELETABLE_MODELS.get(record_type)
@@ -856,7 +830,6 @@ def delete(request: HttpRequest):
                 )
 
     else:
-
         return JsonResponse(
             {"message": f"User {request.user} is not authorised to delete records."},
             status=401,
@@ -868,7 +841,6 @@ def download_lightcurve_csv(request: HttpRequest, cand_hash_id: str):
     """Download path for the candidate lightcurve csv file."""
 
     if request.method == "GET":
-
         candidate = get_object_or_404(models.Candidate, hash_id=cand_hash_id)
 
         # Create the HttpResponse object with the appropriate CSV header.
@@ -887,7 +859,6 @@ def download_lightcurve_csv(request: HttpRequest, cand_hash_id: str):
 
 # Poor name but has to be different than "ChangePassword" because is used by Django.
 class AppChangePassword(TemplateView, View):
-
     def get(self, request, *args, **kwargs):
         return self.render_to_response({})
 
@@ -901,7 +872,7 @@ class AppChangePassword(TemplateView, View):
             messages.success(request, "Your password was successfully updated!")
         else:
             print(pw_reset_form.errors.as_data())
-            for field, errors in pw_reset_form.errors.as_data().items():
+            for _field, errors in pw_reset_form.errors.as_data().items():
                 for error in errors:
                     message = (
                         error.message % error.params if error.params else error.message

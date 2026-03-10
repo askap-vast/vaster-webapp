@@ -8,7 +8,6 @@ from . import models
 
 
 def remove_leading_zero(coord_str: str):
-
     if coord_str.startswith("0"):
         return coord_str[1:]
     elif coord_str.startswith("-0"):
@@ -17,7 +16,6 @@ def remove_leading_zero(coord_str: str):
 
 
 class ObservationSerializer(serializers.ModelSerializer):
-
     hash_id = serializers.UUIDField(required=False)
 
     class Meta:
@@ -103,7 +101,7 @@ class BeamSerializer(serializers.ModelSerializer):
         validated_data["total_file_size_bytes"] = total_file_size_bytes
 
         print(
-            f" ---- Number of files in beam: {total_file_count}. Number of bytes for beam files: {total_file_size_bytes} ---- "
+            f" ---- Number of files in beam: {total_file_count}. Number of bytes for beam files: {total_file_size_bytes} ---- "  # noqa: B950
         )
 
         # Create the Upload metadata
@@ -127,7 +125,6 @@ CANDIDATE_FILE_FIELDS = [
 
 
 class CandidateSerializer(serializers.ModelSerializer):
-
     hash_id = serializers.UUIDField(required=False)
 
     class Meta:
@@ -162,7 +159,6 @@ class CandidateSerializer(serializers.ModelSerializer):
             f"+++++++++++++++ candidate serializer: BEAM INDEX {beam_index} +++++++++++++++"
         )
         assert beam is not None, f"Failed to find beam {beam_index} for {obs_id} in DB."
-        # validated_data["cand_obj_id"] = f"{proj.id}_{obs.id}_{beam.index}_{validated_data['name']}"
 
         # Make counts for uploaded files and file sizes.
         total_file_count = 0

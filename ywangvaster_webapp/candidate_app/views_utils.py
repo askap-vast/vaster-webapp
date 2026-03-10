@@ -212,7 +212,8 @@ def filter_candidates_by_coords(
     sep_name: Optional[str] = None,
     for_rating_table: Optional[bool] = False,
 ):
-    """Convert from str ra_hms and dec_dms to degrees and filter candidates that are within the arcmin_search_radius."""
+    """Convert from str ra_hms and dec_dms to degrees and filter
+    candidates that are within the arcmin_search_radius."""
 
     # Ensure that the incoming radius is a float value
     arcmin_search_radius = float(arcmin_search_radius)
@@ -222,9 +223,7 @@ def filter_candidates_by_coords(
         dec_deg = Angle(dec_str, unit=units.deg).deg
 
         if annotate:
-
             if sep_name:
-
                 filtered = (
                     incoming.filter(
                         Q(
@@ -252,7 +251,6 @@ def filter_candidates_by_coords(
                 )
 
             else:
-
                 filtered = (
                     incoming.filter(
                         Q(
@@ -280,7 +278,6 @@ def filter_candidates_by_coords(
             print(f"filtered candidates: {filtered}")
 
         elif for_rating_table:
-
             filtered = (
                 incoming.filter(
                     Q(
@@ -302,13 +299,12 @@ def filter_candidates_by_coords(
                     )
                     * 60,
                     # arcsec -> degrees # ???? How doe that turn into degrees???
-                    from_db=Value(f"Local"),
+                    from_db=Value("Local"),
                 )
                 .values()
             )
 
         else:
-
             filtered = incoming.filter(
                 Q(
                     Q3CRadialQuery(
@@ -377,7 +373,6 @@ def get_new_values_diff(original: dict, new: dict):
 
     new_values = {}
     for key, original_value in original.items():
-
         if key in new:
             if original_value != new[key] and new[key] is not None:
                 new_values[key] = new[key]
