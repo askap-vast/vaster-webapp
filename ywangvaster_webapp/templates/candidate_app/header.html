@@ -43,9 +43,9 @@
 {% endblock head %}
 
 
-<nav class="navbar navbar-expand-lg" style="background-color: #e3f2fd;">
+<nav class="navbar navbar-expand-lg" style="background-color: {% if staging or debug %}#fffde7{% else %}#e3f2fd{% endif %};">
   <div class="container-fluid">
-    <a class="navbar-brand" href="/">YWang VASTER</a>
+    <a class="navbar-brand" href="/">YWang VASTER{% if staging %} <span class="text-warning fw-bold">[STAGING]</span>{% elif debug %} <span class="text-warning fw-bold">[DEVELOP]</span>{% endif %}</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
       aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon" />
@@ -79,7 +79,7 @@
           <div>
             {% if messages %}
             {% for message in messages %}
-            <span class="text-warning navbar-text">
+            <span class="rounded-pill text-warning bg-white border border-warning navbar-text px-3 py-1">
               {{ message }}
             </span>
             {% endfor %}
@@ -107,7 +107,7 @@
             <div>
               {% if messages %}
               {% for message in messages %}
-              <span class="text-warning navbar-text">
+              <span class="rounded-pill text-warning bg-white border border-warning navbar-text px-3 py-1">
                 {{ message }}
               </span>
               {% endfor %}

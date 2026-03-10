@@ -8,3 +8,5 @@ env/*
 *dev310
 
 example_data*
+vendor
+staging-details.html

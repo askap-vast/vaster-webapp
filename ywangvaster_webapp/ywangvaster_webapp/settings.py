@@ -33,6 +33,7 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", None)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", False)
+STAGING = os.environ.get("STAGING", False)
 
 if DEBUG:
     logging.basicConfig(level=logging.DEBUG)
@@ -146,6 +147,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "candidate_app.context_processors.site_settings",
                 "candidate_app.context_processors.header_forms",
             ],
         },

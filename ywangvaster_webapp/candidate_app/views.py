@@ -4,6 +4,7 @@ import logging
 from uuid import uuid4
 from urllib.parse import urlencode
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.decorators import login_required
@@ -56,8 +57,16 @@ DELETABLE_MODELS = {
 
 def home(request):
     """Render the home page html."""
+    staging_details = None
+    if settings.STAGING:
+        staging_details_path = settings.BASE_DIR / "staging-details.html"
+        if staging_details_path.exists():
+            staging_details = staging_details_path.read_text()
+    print(staging_details)
 
-    return render(request, "candidate_app/home.html")
+    return render(
+        request, "candidate_app/home.html", {"staging_details": staging_details}
+    )
 
 
 def nearby_objects_table(request: HttpRequest):

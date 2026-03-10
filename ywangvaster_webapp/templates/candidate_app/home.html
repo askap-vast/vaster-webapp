@@ -15,6 +15,9 @@
   </p>
 
 
+  {% if staging_details %}
+  {{ staging_details|safe }}
+  {% endif %}
 </div>
 
 {% endblock %}

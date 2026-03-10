@@ -3,7 +3,15 @@ added to settings.py for each addition to the page context dictionary."""
 
 from . import models, forms
 
+from django.conf import settings
 from django.contrib.auth.forms import PasswordChangeForm as DjangoPasswordChangeForm
+
+
+def site_settings(request):
+    return {
+        "staging": settings.STAGING,
+        "debug": settings.DEBUG,
+    }
 
 
 def header_forms(request):
