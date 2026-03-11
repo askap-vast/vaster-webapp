@@ -238,6 +238,9 @@ class Beam(models.Model):
 
 
 class Candidate(models.Model):
+    class Meta:
+        ordering = ["name"]
+
     hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     proj_id = models.CharField(max_length=64)
@@ -365,6 +368,9 @@ class Tag(models.Model):
 
 
 class Rating(models.Model):
+    class Meta:
+        ordering = ["date"]
+
     hash_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     candidate = models.ForeignKey(
         Candidate, on_delete=models.CASCADE, related_name="rating", default=None

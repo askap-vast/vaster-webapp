@@ -152,7 +152,7 @@
             </tr>
         </thead>
         <tbody id='rating-summary-table-body'>
-            {% for rating in ratings %}
+            {% for rating in page_obj %}
             <tr>
                 {% if user.is_staff %}
                 <td>
