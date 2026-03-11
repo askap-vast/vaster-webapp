@@ -34,11 +34,23 @@ make dev-down
 
 ## Production
 
-To start the production version:
+### First-time HTTPS certificate setup
+
+Before starting production for the first time, obtain a Let's Encrypt TLS certificate. Ports 80 and 443 must be open and `vaster.duckdns.org` must resolve to the server:
+
+```bash
+make cert-init-prod EMAIL=your@email.com
+```
+
+This script creates a temporary self-signed cert, starts nginx, obtains a real certificate via the ACME webroot challenge, then reloads nginx.
+
+### Starting production
 
 ```bash
 make prod
 ```
+
+This starts all containers including nginx (HTTPS on port 443, HTTP→HTTPS redirect on port 80) and a certbot container that automatically renews the certificate every 12 hours.
 
 To shut down:
 
@@ -48,7 +60,15 @@ make prod-down
 
 ## Staging
 
-To start the staging version:
+### First-time HTTPS certificate setup
+
+```bash
+make cert-init-staging EMAIL=your@email.com
+```
+
+Same process as production but for `vaster-staging.duckdns.org`.
+
+### Starting staging
 
 ```bash
 make staging
@@ -96,4 +116,4 @@ mkdir -p /data/vaster_webapp/volumes/django_media
 sudo chown -R 999:999 /data/vaster_webapp/volumes/django_media
 ```
 
-Please note that port 80 on the host machine must be open for internet traffic to reach the webapp. Refer to this [guide](https://linuxconfig.org/how-to-open-allow-incoming-firewall-port-on-ubuntu-22-04-jammy-jellyfish) on how to open ports on Ubuntu 22.04.
+Please note that ports 80 and 443 on the host machine must be open for internet traffic to reach the webapp. Refer to this [guide](https://linuxconfig.org/how-to-open-allow-incoming-firewall-port-on-ubuntu-22-04-jammy-jellyfish) on how to open ports on Ubuntu 22.04.

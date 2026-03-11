@@ -15,3 +15,9 @@ staging:
 
 staging-down:
 	docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.staging.yml down
+
+cert-init-prod:
+	./init-letsencrypt.sh vaster.duckdns.org $(EMAIL)
+
+cert-init-staging:
+	./init-letsencrypt.sh vaster-staging.duckdns.org $(EMAIL) --staging

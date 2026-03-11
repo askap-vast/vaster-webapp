@@ -41,6 +41,10 @@ if DEBUG:
 
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
 
+# Trust X-Forwarded-Proto header from nginx so Django recognises HTTPS requests.
+# SECURE_SSL_REDIRECT is intentionally omitted — nginx handles the HTTP→HTTPS redirect.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 

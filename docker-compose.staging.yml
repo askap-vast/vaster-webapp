@@ -6,3 +6,7 @@ services:
   web:
     environment:
       STAGING: True
+
+  nginx:
+    volumes:
+      - ./containers/nginx/nginx.staging.conf:/etc/nginx/conf.d/default.conf

@@ -13,9 +13,10 @@ All of the candidate images and other files from the observations are stored a s
 
 ## Production
 
-The production version is very similar to development, however the Django application is run using [Gunicorn](https://gunicorn.org/) instead to assist with handling a number of requests at once. Two more containers are added in this configuration:
+The production version is very similar to development, however the Django application is run using [Gunicorn](https://gunicorn.org/) instead to assist with handling a number of requests at once. Three more containers are added in this configuration:
 
-- [Nginx](https://nginx.org/en/): Assists with load balancing of requests to the Django container and helps protect against various security threats from the greater internet.
+- [Nginx](https://nginx.org/en/): Terminates HTTPS (port 443) using Let's Encrypt certificates, redirects HTTP to HTTPS (port 80), proxies requests to Django, and serves static/media files directly.
+- [Certbot](https://certbot.eff.org/): Automatically renews the Let's Encrypt TLS certificate every 12 hours.
 - [Autoheal](https://github.com/willfarrell/docker-autoheal): A container that watches every other container and will restart them if it sees that they are in a damaged or some form of error state.
 
 The docker network structure for production is as follows:
@@ -34,6 +35,6 @@ The Docker Compose configuration is split across multiple files that are layered
 |------|---------|
 | `docker-compose.yml` | Base service definitions shared across all environments |
 | `docker-compose.dev.yml` | Development specific overrides (port mapping, debug settings) |
-| `docker-compose.prod.yml` | Production specific additions (Nginx, Autoheal, Gunicorn) |
+| `docker-compose.prod.yml` | Production specific additions (Nginx, Certbot, Autoheal, Gunicorn) |
 | `docker-compose.staging.yml` | Staging-specific overrides  |
 | `docker-compose.volumes.yml` | Local volume path configuration  |
