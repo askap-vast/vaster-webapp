@@ -17,3 +17,15 @@ volumes:
     #   type: "none"
     #   o: "bind"
     #   device: "<path-to-volume>/django_static"
+  certbot_conf:
+    # driver: local
+    # driver_opts:
+    #   type: "none"
+    #   o: "bind"
+    #   device: "<path-to-volume>/certbot_conf"
+  certbot_www:
+    # driver: local
+    # driver_opts:
+    #   type: "none"
+    #   o: "bind"
+    #   device: "<path-to-volume>/certbot_www"
