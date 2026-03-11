@@ -262,8 +262,22 @@
                           <div class='hstack gap-2'>
                             <div class='vstack gap-2 justify-content-center align-items-center'>
                               <h5>Coordinates</h5>
-                              <text>RA {{candidate.ra_str}}</text>
-                              <text>Dec {{ candidate.dec_str }}</text>
+                              <table class="table table-sm table-borderless mb-0 w-100">
+                                <tbody>
+                                  <tr>
+                                    <td class="text-muted fw-bold text-uppercase">RA, Dec</td>
+                                    <td>{{ coord_decimal }} <button type="button" class="copy-coord-btn" data-value="{{ coord_decimal }}" title="Copy" style="background:none;border:none;padding:0 4px;cursor:pointer;opacity:0.3;transition:opacity 0.15s;vertical-align:middle;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.3'"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="vertical-align:2px"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button></td>
+                                  </tr>
+                                  <tr>
+                                    <td class="text-muted fw-bold text-uppercase">RA, Dec</td>
+                                    <td>{{ coord_hmsdms }} <button type="button" class="copy-coord-btn" data-value="{{ coord_hmsdms }}" title="Copy" style="background:none;border:none;padding:0 4px;cursor:pointer;opacity:0.3;transition:opacity 0.15s;vertical-align:middle;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.3'"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="vertical-align:2px"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button></td>
+                                  </tr>
+                                  <tr>
+                                    <td class="text-muted fw-bold text-uppercase">Gl, Gb</td>
+                                    <td>{{ coord_galactic }} <button type="button" class="copy-coord-btn" data-value="{{ coord_galactic }}" title="Copy" style="background:none;border:none;padding:0 4px;cursor:pointer;opacity:0.3;transition:opacity 0.15s;vertical-align:middle;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.3'"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="vertical-align:2px"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button></td>
+                                  </tr>
+                                </tbody>
+                              </table>
                             </div>
                             <div class='vstack gap-2 justify-content-center align-items-center'>
                               <h5>Observation Time</h5>
@@ -971,6 +985,24 @@
       });
     });
   }
+</script>
+
+<script>
+  document.querySelectorAll('.copy-coord-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var value = btn.getAttribute('data-value');
+      var clipboardSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="vertical-align:2px"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>';
+      var checkSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="green" viewBox="0 0 16 16" style="vertical-align:2px"><path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/></svg>';
+      navigator.clipboard.writeText(value).then(function() {
+        btn.innerHTML = checkSvg;
+        btn.style.opacity = '1';
+        setTimeout(function() {
+          btn.innerHTML = clipboardSvg;
+          btn.style.opacity = '0.3';
+        }, 1500);
+      });
+    });
+  });
 </script>
 
 {% endblock %}

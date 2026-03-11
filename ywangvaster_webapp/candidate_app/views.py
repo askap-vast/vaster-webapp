@@ -10,6 +10,9 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 
+from astropy.coordinates import SkyCoord
+from astropy import units as u
+
 from django.utils import timezone
 from django.db import transaction
 from django.core.paginator import Paginator
@@ -233,11 +236,19 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
         session_data, selected_project_hash_id, unrated_only=True
     ).exists()
 
+    sky = SkyCoord(candidate.ra, candidate.dec, unit=u.degree)
+    coord_decimal = sky.to_string("decimal")
+    coord_hmsdms = sky.to_string("hmsdms", precision=4)
+    coord_galactic = sky.galactic.to_string("decimal")
+
     context = {
         "CONFIDENCE_MAPPING": CONFIDENCE_MAPPING,
         "candidate": candidate,
         "prev_rating": prev_rating,
         "time": time,
+        "coord_decimal": coord_decimal,
+        "coord_hmsdms": coord_hmsdms,
+        "coord_galactic": coord_galactic,
         "rate_form": rate_form,
         "new_tag_form": new_tag_form,
         "lightcurve_data": converted_lc,
