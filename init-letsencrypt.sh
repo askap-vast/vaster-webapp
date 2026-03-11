@@ -36,6 +36,12 @@ $COMPOSE up --no-deps -d nginx
 echo "### Waiting for nginx to be ready..."
 sleep 5
 
+echo "### Removing dummy certificate for $DOMAIN..."
+$COMPOSE run --rm --no-deps --entrypoint sh certbot -c \
+    "rm -rf /etc/letsencrypt/live/$DOMAIN \
+            /etc/letsencrypt/archive/$DOMAIN \
+            /etc/letsencrypt/renewal/$DOMAIN.conf"
+
 echo "### Requesting Let's Encrypt certificate for $DOMAIN..."
 $COMPOSE run --rm --no-deps certbot certonly \
     --webroot \
