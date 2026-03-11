@@ -1,0 +1,14 @@
+services:
+  db:
+    environment:
+      PROD: False
+      DEBUG: 1
+      DJANGO_LOG_LEVEL: INFO
+
+  web:
+    environment:
+      PROD: False
+      DEBUG: 1
+      DJANGO_LOG_LEVEL: INFO
+    ports:
+      - 80:80

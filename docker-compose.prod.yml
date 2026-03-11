@@ -1,72 +1,15 @@
-networks:
-  ywang_vaster-network:
-    name: ywang_vaster-network
-    driver: bridge
-
-volumes:
-  django_media:
-    # driver: local
-    # driver_opts:
-    #   type: "none"
-    #   o: "bind"
-    #   device: "<path-to-volume>/django_media"
-  postgres_data:
-    # driver: local
-    # driver_opts:
-    #   type: "none"
-    #   o: "bind"
-    #   device: "<path-to-volume>/postgres_data"
-  django_static:
-    # driver: local
-    # driver_opts:
-    #   type: "none"
-    #   o: "bind"
-    #   device: "<path-to-volume>/postgres_data"
-
 services:
   db:
-    hostname: db
-    container_name: ywangvaster-db
-    build:
-      context: .
-      dockerfile: ./containers/db/Dockerfile
-    user: postgres
-    env_file: .env
     environment:
       PROD: True
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready"]
-      interval: 4s
-      timeout: 5s
-      retries: 3
 
   web:
-    hostname: web
-    container_name: ywangvaster-web
-    build:
-      context: .
-      dockerfile: ./containers/web/Dockerfile
-    env_file: .env
     environment:
       PROD: True
     volumes:
-      - ./ywangvaster_webapp:/ywangvaster_webapp
-      - django_media:/ywangvaster_media
       - django_static:/ywangvaster_staticfiles
-      - ./logs:/home/app/logs/
     expose:
       - 80
-    healthcheck:
-      test: "curl --fail --silent --write-out 'HTTP CODE : %{http_code}\n' --output /dev/null http://127.0.0.1:80/"
-      start_period: 60s
-      interval: 60s
-      timeout: 20s
-      retries: 20
-    depends_on:
-      db:
-        condition: service_healthy
 
   nginx:
     hostname: nginx
@@ -91,3 +34,6 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock"
     environment:
       - AUTOHEAL_CONTAINER_LABEL=all
+
+volumes:
+  django_static:

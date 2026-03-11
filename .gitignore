@@ -1,5 +1,6 @@
 *.pyc
 .env
+docker-compose.volumes.yml
 .env.prod
 .env.prod.db
 env/*

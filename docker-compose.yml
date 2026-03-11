@@ -3,20 +3,6 @@ networks:
     name: ywang_vaster-network
     driver: bridge
 
-volumes:
-  django_media:
-    # driver: local
-    # driver_opts:
-    #   type: "none"
-    #   o: "bind"
-    #   device: "<path-to-volume>/django_media"
-  postgres_data:
-    # driver: local
-    # driver_opts:
-    #   type: "none"
-    #   o: "bind"
-    #   device: "<path-to-volume>/postgres_data"
-
 services:
   db:
     hostname: db
@@ -25,10 +11,6 @@ services:
       context: .
       dockerfile: ./containers/db/Dockerfile
     env_file: .env
-    environment:
-      PROD: False
-      DEBUG: 1
-      DJANGO_LOG_LEVEL: INFO
     user: postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -45,16 +27,16 @@ services:
       context: .
       dockerfile: ./containers/web/Dockerfile
     env_file: .env
-    environment:
-      PROD: False
-      DEBUG: 1
-      DJANGO_LOG_LEVEL: INFO
     volumes:
       - ./ywangvaster_webapp:/ywangvaster_webapp
       - django_media:/ywangvaster_media
       - ./logs:/home/app/logs/
-    ports:
-      - 80:80
+    healthcheck:
+      test: "curl --fail --silent --write-out 'HTTP CODE : %{http_code}\n' --output /dev/null http://127.0.0.1:80/"
+      start_period: 60s
+      interval: 60s
+      timeout: 20s
+      retries: 20
     depends_on:
       db:
         condition: service_healthy

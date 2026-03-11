@@ -62,7 +62,6 @@ def home(request):
         staging_details_path = settings.BASE_DIR / "staging-details.html"
         if staging_details_path.exists():
             staging_details = staging_details_path.read_text()
-    print(staging_details)
 
     return render(
         request, "candidate_app/home.html", {"staging_details": staging_details}

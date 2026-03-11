@@ -21,3 +21,19 @@ The production version is very similar to development, however the Django applic
 The docker network structure for production is as follows:
 
 ![Architecture - Production](./images/architecture/prod.png "Architecture - Production")
+
+## Staging
+
+The staging environment is identical to production in its container structure.
+
+## Docker Compose file structure
+
+The Docker Compose configuration is split across multiple files that are layered together by the `Makefile`:
+
+| File | Purpose |
+|------|---------|
+| `docker-compose.yml` | Base service definitions shared across all environments |
+| `docker-compose.dev.yml` | Development specific overrides (port mapping, debug settings) |
+| `docker-compose.prod.yml` | Production specific additions (Nginx, Autoheal, Gunicorn) |
+| `docker-compose.staging.yml` | Staging-specific overrides  |
+| `docker-compose.volumes.yml` | Local volume path configuration  |
