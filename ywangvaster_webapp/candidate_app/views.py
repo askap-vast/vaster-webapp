@@ -169,11 +169,9 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
     # Convert time to readable format
     time = candidate.observation.obs_start
 
-    # Grab the previous rating for this candidate and user
-    try:
-        prev_rating = models.Rating.objects.get(candidate=candidate)
-    except Exception:
-        prev_rating = None
+    # Grab previous ratings for this candidate (all users)
+    prev_ratings = models.Rating.objects.filter(candidate=candidate).order_by("-date")
+    prev_rating = prev_ratings.first()  # used for redirect logic / button label
 
     rate_form = forms.RateCandidateForm(initial={"confidence": "F", "tag": "None"})
     new_tag_form = forms.CreateTagForm()
@@ -186,11 +184,7 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
             tag_id = request.POST.get("tag")
             tag = models.Tag.objects.get(name=tag_id)
 
-            # Delete the old rating if it exists
-            if prev_rating:
-                prev_rating.delete()
-
-            # Create a new rating
+            # Create a new rating (never delete previous ratings)
             models.Rating.objects.create(
                 hash_id=uuid4(),
                 candidate=candidate,
@@ -245,6 +239,7 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
         "CONFIDENCE_MAPPING": CONFIDENCE_MAPPING,
         "candidate": candidate,
         "prev_rating": prev_rating,
+        "prev_ratings": prev_ratings,
         "time": time,
         "coord_decimal": coord_decimal,
         "coord_hmsdms": coord_hmsdms,

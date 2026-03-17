@@ -59,42 +59,34 @@
 
             {% if prev_rating %}
             <div id='prev_rating-{{prev_rating.hash_id}}' style="padding: 10px">
-
-              <text>Your previous rating for this candidate:</text>
-
-              <div class='vstack gap-2'>
-
+              <div class='vstack gap-2' style="padding-top: 8px">
                 <div class='hstack gap-2 d-flex'>
-                  <label class='fw-bold'>Real variable? </label>
-                  <text> {{ prev_rating.rating|get_label_mapping:CONFIDENCE_MAPPING }}</text>
+                  <label class='fw-bold'>User:</label>
+                  {{ prev_rating.user }}
                 </div>
-
                 <div class='hstack gap-2 d-flex'>
-                  <label class='fw-bold'>Tag: </label>
-                  <text> {{ prev_rating.tag }} </text>
+                  <label class='fw-bold'>Real variable?</label>
+                  {{ prev_rating.rating|get_label_mapping:CONFIDENCE_MAPPING }}
                 </div>
-
                 <div class='hstack gap-2 d-flex'>
-                  <label class='fw-bold'>Date: </label>
-                  <text> {{ prev_rating.date }}</text>
+                  <label class='fw-bold'>Tag:</label>
+                  {{ prev_rating.tag }}
                 </div>
-
                 <div class='hstack gap-2 d-flex'>
-                  <label class='fw-bold'>Notes: </label>
-                  {% if prev_rating.notes|length > 0 %}
-                  <div style="max-width: 300px; max-height: 200px; overflow-y: auto">
-                    <text>
-                      {{ prev_rating.notes }}</text>
+                  <label class='fw-bold'>Date:</label>
+                  {{ prev_rating.date }}
+                </div>
+                <div class='hstack gap-2 d-flex'>
+                  <label class='fw-bold'>Notes:</label>
+                  {% if prev_rating.notes %}
+                  <div style="max-width: 300px; max-height: 150px; overflow-y: auto">
+                    {{ prev_rating.notes }}
                   </div>
                   {% endif %}
                 </div>
-
               </div>
-
             </div>
-
             <hr />
-
             {% endif %}
 
             <form type='POST' method="POST" action="{% url 'candidate_rating' candidate.hash_id %}">
@@ -144,6 +136,56 @@
                 {% endif %}
               </div>
             </form>
+
+            {% with history=prev_ratings|slice:"1:" %}
+            {% if history %}
+            <hr />
+            <div class="accordion" id="ratingHistoryAccordion">
+              <div class="accordion-item">
+                <h2 class="accordion-header" id="ratingHistoryHeading" style="padding: 0">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#ratingHistoryCollapse" aria-expanded="false"
+                    aria-controls="ratingHistoryCollapse">
+                    Rating history
+                  </button>
+                </h2>
+                <div id="ratingHistoryCollapse" class="accordion-collapse collapse"
+                  aria-labelledby="ratingHistoryHeading" data-bs-parent="#ratingHistoryAccordion">
+                  <div class="accordion-body" style="padding: 10px">
+                    {% for r in history %}
+                    <div id='prev_rating-{{r.hash_id}}' class='vstack gap-2' style="border-top: 1px solid #ccc; padding-top: 8px; margin-top: 8px">
+                      <div class='hstack gap-2 d-flex'>
+                        <label class='fw-bold'>User:</label>
+                        {{ r.user }}
+                      </div>
+                      <div class='hstack gap-2 d-flex'>
+                        <label class='fw-bold'>Real variable?</label>
+                        {{ r.rating|get_label_mapping:CONFIDENCE_MAPPING }}
+                      </div>
+                      <div class='hstack gap-2 d-flex'>
+                        <label class='fw-bold'>Tag:</label>
+                        {{ r.tag }}
+                      </div>
+                      <div class='hstack gap-2 d-flex'>
+                        <label class='fw-bold'>Date:</label>
+                        {{ r.date }}
+                      </div>
+                      <div class='hstack gap-2 d-flex'>
+                        <label class='fw-bold'>Notes:</label>
+                        {% if r.notes %}
+                        <div style="max-width: 300px; max-height: 150px; overflow-y: auto">
+                          {{ r.notes }}
+                        </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+            {% endwith %}
 
           </div>
         </div>
@@ -243,17 +285,17 @@
 
                             <div class='vstack gap-2 justify-content-center align-items-center'>
                               <h5>Project</h5>
-                              <text> {{candidate.project.id}} </text>
+                               {{candidate.project.id}} 
                             </div>
 
                             <div class='vstack gap-2 justify-content-center align-items-center'>
                               <h5>SBID</h5>
-                              <text> {{candidate.observation.id}} </text>
+                               {{candidate.observation.id}} 
                             </div>
 
                             <div class='vstack gap-2 justify-content-center align-items-center'>
                               <h5>Beam index</h5>
-                              <text>{{candidate.beam.index}}</text>
+                              {{candidate.beam.index}}
                             </div>
                           </div>
 
@@ -281,7 +323,7 @@
                             </div>
                             <div class='vstack gap-2 justify-content-center align-items-center'>
                               <h5>Observation Time</h5>
-                              <text>{{candidate.observation.obs_start}}</text>
+                              {{candidate.observation.obs_start}}
                             </div>
                           </div>
 
