@@ -51,9 +51,16 @@
 
     <div class='col-lg-auto order-1 order-lg-2' id='rating-card-container'>
       <div id='rating-side-card'>
-        <div class='card' style="margin-top: 2.25%; padding: 1.5%">
+        <div class='card mt-3'>
           <div class='card-body'>
-            <h4>Rate: {{candidate.name}} </h4>
+            <button class="btn p-0 border-0 w-100 d-flex justify-content-between align-items-center" type="button"
+              data-bs-toggle="collapse" data-bs-target="#ratingCardBody"
+              aria-expanded="true" aria-controls="ratingCardBody">
+              <h4 class="mb-0">Rate: {{candidate.name}}</h4>
+              <span class="d-lg-none text-secondary rating-collapse-icon"><i class="fa-solid fa-chevron-down"></i></span>
+            </button>
+
+            <div class="collapse show" id="ratingCardBody">
 
             <hr />
 
@@ -76,10 +83,10 @@
                   <label class='fw-bold'>Date:</label>
                   {{ prev_rating.date }}
                 </div>
-                <div class='hstack gap-2 d-flex'>
+                <div class='vstack gap-1'>
                   <label class='fw-bold'>Notes:</label>
                   {% if prev_rating.notes %}
-                  <div style="max-width: 300px; max-height: 150px; overflow-y: auto">
+                  <div style="max-height: 150px; overflow-y: auto; word-break: break-word">
                     {{ prev_rating.notes }}
                   </div>
                   {% endif %}
@@ -170,10 +177,10 @@
                         <label class='fw-bold'>Date:</label>
                         {{ r.date }}
                       </div>
-                      <div class='hstack gap-2 d-flex'>
+                      <div class='vstack gap-1'>
                         <label class='fw-bold'>Notes:</label>
                         {% if r.notes %}
-                        <div style="max-width: 300px; max-height: 150px; overflow-y: auto">
+                        <div style="max-height: 150px; overflow-y: auto; word-break: break-word">
                           {{ r.notes }}
                         </div>
                         {% endif %}
@@ -187,18 +194,20 @@
             {% endif %}
             {% endwith %}
 
+            </div><!-- end #ratingCardBody -->
+
           </div>
         </div>
       </div>
     </div>
 
-    <div class='col-lg order-2 order-lg-1' id='mainContent'>
-      <div id="mainContent">
+    <div class='col-lg order-2 order-lg-1 main-scroll-col' id='mainContent'>
+      <div id="mainContentInner">
 
         <div class="container-fluid">
 
           <!-- This the summary of the candidate -->
-          <div class="row" style="padding: 1.5%">
+          <div class="row py-3">
             <div class='card'>
               <div class='card-body'>
 
@@ -549,7 +558,7 @@
           </div>
 
           <!-- This is the list of nearby sources for the candidate -->
-          <div class="row" style="padding: 1.5%">
+          <div class="row py-3">
             <h3>Nearby objects</h3>
             <div class='card'>
               <div class='card-body'>
@@ -577,7 +586,7 @@
           </div>
 
           <!-- This is the summary of the beam that found the candidate-->
-          <div class="row" style="padding: 1.5%">
+          <div class="row py-3">
             <h3>Statistical Maps</h3>
             <div class='card'>
               <div class='card-body'>

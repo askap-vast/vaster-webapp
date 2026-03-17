@@ -26,7 +26,9 @@ textarea {
 }
 div.card {
   padding: 1rem;
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+  box-shadow:
+    0 4px 8px 0 rgba(0, 0, 0, 0.2),
+    0 6px 20px 0 rgba(0, 0, 0, 0.19);
 }
 
 /* Classes for changing text colour */
@@ -139,12 +141,31 @@ div.card {
   white-space: nowrap;
 }
 
+.rating-collapse-icon {
+  transition: transform 0.2s ease;
+}
+
+button[aria-expanded="true"] .rating-collapse-icon {
+  transform: rotate(180deg);
+}
+
 @media (min-width: 1059px) {
+  #ratingCardBody {
+    display: block !important;
+  }
+
+  .main-scroll-col {
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+  }
+
   #rating-side-card {
     position: -webkit-sticky; /* For Safari */
     position: sticky;
     top: 0;
     max-width: 350px;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
     /* margin-top: 1.5%; */
     /* order: -1 !important; */
   }
@@ -153,15 +174,6 @@ div.card {
 @media (max-width: 1058.98px) {
   #rating-side-card {
     width: 100%;
-  }
-
-  #rating-card-container {
-    order: 1 !important;
-    position: -webkit-sticky; /* For Safari */
-    position: sticky;
-    top: 0;
-    width: 100%;
-    z-index: 999;
   }
 }
 
