@@ -799,6 +799,9 @@
     };
   }
 
+  const startTimeMs = new Date(lightcurve_data[0][0]).getTime();
+  const endTimeMs = new Date(lightcurve_data[lightcurve_data.length - 1][0]).getTime();
+
   let option = {
     tooltip: {
       trigger: 'axis',
@@ -820,7 +823,7 @@
     animation: false,
     dataZoom: [{
       type: 'slider',
-      xAxisIndex: [0],
+      xAxisIndex: [0, 1],
       filterMode: 'filter',
     }],
     height: 450,
@@ -828,13 +831,33 @@
       text: 'Lightcurve Peak Flux',
       position: "center"
     },
-    xAxis: {
-      type: 'time',
-      datazoom: true,
-      name: 'Time (UTC)',
-      nameLocation: 'middle',
-      nameGap: 25
-    },
+    xAxis: [
+      {
+        type: 'time',
+        datazoom: true,
+        name: 'Time (UTC)',
+        nameLocation: 'middle',
+        nameGap: 25
+      },
+      {
+        type: 'time',
+        position: 'top',
+        min: startTimeMs,
+        max: endTimeMs,
+        interval: 3600 * 1000,
+        axisLabel: {
+          formatter: function (value) {
+            const diffMin = Math.floor((value - startTimeMs) / 60000);
+            const hh = String(Math.floor(diffMin / 60)).padStart(2, '0');
+            const mm = String(diffMin % 60).padStart(2, '0');
+            return `${hh}:${mm}`;
+          }
+        },
+        name: 'Time since observation start',
+        nameLocation: 'middle',
+        nameGap: 35
+      }
+    ],
     yAxis: {
       type: 'value',
       min: minValue,
