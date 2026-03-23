@@ -19,7 +19,7 @@ Uploading candidates to the webapp can be done using the `ywangvaster_webapp/upl
 3. Use the following Python script to send candidate data to the webapp,
 
    ```bash
-   python3 ywangvaster_webapp/upload_cand.py --base_url http://<webapp_url>:80 --token <your_upload_token> --project_id <project_to_upload_to> --observation_id <the SBID> --data_directory <path_to_candidate_data>
+   python3 ywangvaster_webapp/upload_cand.py --base_url https://<webapp_url> --token <your_upload_token> --project_id <project_to_upload_to> --observation_id <the SBID> --data_directory <path_to_candidate_data>
    ```
 
 Notes:
