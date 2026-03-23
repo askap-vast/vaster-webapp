@@ -424,12 +424,16 @@ def build_candidate_queryset(
     if "rated" in inputs_to_filter:
         rated_value = inputs_to_filter["rated"]
         if rated_value == "true":
-            candidates = candidates.annotate(rating_count=Count("rating")).filter(
-                rating_count__gt=0
+            candidates = (
+                candidates.annotate(rating_count=Count("rating"))
+                .filter(rating_count__gt=0)
+                .order_by("name")
             )
         elif rated_value == "false":
-            candidates = candidates.annotate(rating_count=Count("rating")).filter(
-                rating_count=0
+            candidates = (
+                candidates.annotate(rating_count=Count("rating"))
+                .filter(rating_count=0)
+                .order_by("name")
             )
 
     # Observation filter
@@ -570,7 +574,9 @@ def download_rating_csv_zip(
     # Create a response with the zip file
     zip_buffer.seek(0)
     response = HttpResponse(zip_buffer, content_type="application/zip")
-    response["Content-Disposition"] = f'attachment; filename="{table}_data.zip"'
+    response["Content-Disposition"] = (
+        f'attachment; filename="{table}_data.zip"'  # noqa E702
+    )
 
     return response
 
