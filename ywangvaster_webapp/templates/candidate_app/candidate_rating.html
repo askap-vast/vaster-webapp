@@ -127,7 +127,7 @@
                 </button>
 
                 {% if next_candidate_available %}
-                <a class='btn btn-success' id='next-unrated-candidate' href="{% url 'next_candidate' %}">
+                <a class='btn btn-success' id='next-unrated-candidate' href="{% url 'next_candidate' %}" autofocus>
                   Next unrated candidate{% if next_candidate_is_filtered %} (filtered){% endif %} &rsaquo;
                 </a>
                 {% else %}
@@ -137,7 +137,7 @@
                 {% endif %}
 
                 {% else %}
-                <button class='btn btn-primary' id='submit-rating' type='submit'>
+                <button class='btn btn-primary' id='submit-rating' type='submit' autofocus>
                   Rate &amp; next &rsaquo;
                 </button>
                 {% endif %}
