@@ -6,16 +6,16 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('candidate_app', '0006_alter_rating_tag'),
+        ("candidate_app", "0006_alter_rating_tag"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='candidate',
-            options={'ordering': ['name']},
+            name="candidate",
+            options={"ordering": ["name"]},
         ),
         migrations.AlterModelOptions(
-            name='rating',
-            options={'ordering': ['date']},
+            name="rating",
+            options={"ordering": ["date"]},
         ),
     ]

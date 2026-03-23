@@ -126,6 +126,46 @@ PROJECT_COLOURS = [
     "#D9A0F7",
 ]
 
+CANDIDATE_SORT_FIELDS = {
+    "name",
+    "ra",
+    "dec",
+    "observation__id",
+    "beam__index",
+    "project__id",
+    "chi_square",
+    "chi_square_sigma",
+    "chi_square_log_sigma",
+    "peak_map",
+    "peak_map_sigma",
+    "peak_map_log_sigma",
+    "gaussian_map",
+    "gaussian_map_sigma",
+    "std_map",
+    "bright_sep_arcmin",
+    "beam_sep_deg",
+    "deep_sep_arcsec",
+    "deep_int_flux",
+    "deep_peak_flux",
+    "deep_num",
+    "md_deep",
+    "rating_count",
+    "cand_sep",
+    "beam_sep",
+    "deep_sep",
+}
+
+RATING_SORT_FIELDS = {
+    "candidate__name",
+    "candidate__observation__id",
+    "candidate__project__id",
+    "rating",
+    "tag__name",
+    "user",
+    "date",
+    "notes",
+}
+
 
 def get_atnf(ra_str: str, dec_str, dist_arcmin: float = 1.0) -> List[dict]:
     """Get a list of ANTF pulsars near coordindates"""
@@ -363,6 +403,9 @@ def get_candidate_form_defaults():
         "deep_ra_str": "",
         "deep_dec_str": "",
         "deep_arcmin_search_radius": 2.0,
+        # Sort
+        "sort_by": None,
+        "sort_dir": "asc",
     }
 
     return default_inputs, default_float_values
@@ -498,6 +541,36 @@ def build_candidate_queryset(
             annotate=True,
             sep_name="deep_sep",
         )
+
+    # Apply server-side sort
+    sort_by = session_data.get("sort_by")
+    sort_dir = session_data.get("sort_dir", "asc")
+
+    if sort_by and sort_by in CANDIDATE_SORT_FIELDS:
+        annotation_names = (
+            set(candidates.query.annotations.keys())
+            if candidates.query.annotations
+            else set()
+        )
+
+        # Ensure rating_count annotation exists if sorting by it and rated filter is not active
+        if (
+            sort_by == "rating_count"
+            and inputs_to_filter.get("rated", "") == ""
+            and "rating_count" not in annotation_names
+        ):
+            candidates = candidates.annotate(rating_count=Count("rating"))
+            annotation_names.add("rating_count")
+
+        # Guard cone search annotation fields — only sort if annotation exists
+        if (
+            sort_by in {"cand_sep", "beam_sep", "deep_sep"}
+            and sort_by not in annotation_names
+        ):
+            pass  # leave existing ordering intact
+        else:
+            prefix = "-" if sort_dir == "desc" else ""
+            candidates = candidates.order_by(f"{prefix}{sort_by}")
 
     return candidates
 

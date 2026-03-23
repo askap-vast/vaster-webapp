@@ -83,68 +83,98 @@
                 {% endif %}
 
                 {% if selected_project_id == "All projects"%}
-                <th scope="col" onclick="sortTable('rating-summary-table-body', this.cellIndex)">
-                    Project
-                    <span class="sort-arrow" />
+                <th scope="col">
+                    <a href="?sort_by=candidate__project__id&sort_dir={% if sort_by == 'candidate__project__id' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">
+                        Project
+                        {% if sort_by == 'candidate__project__id' %}<span class="sort-arrow {% if sort_dir == 'asc' %}sort-asc{% else %}sort-desc{% endif %}"></span>{% endif %}
+                    </a>
                 </th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', this.cellIndex)">
-                    Observation
-                    <span class="sort-arrow" />
+                <th scope="col">
+                    <a href="?sort_by=candidate__observation__id&sort_dir={% if sort_by == 'candidate__observation__id' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">
+                        Observation
+                        {% if sort_by == 'candidate__observation__id' %}<span class="sort-arrow {% if sort_dir == 'asc' %}sort-asc{% else %}sort-desc{% endif %}"></span>{% endif %}
+                    </a>
                 </th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', this.cellIndex)">
-                    Candidate
-                    <span class="sort-arrow" />
+                <th scope="col">
+                    <a href="?sort_by=candidate__name&sort_dir={% if sort_by == 'candidate__name' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">
+                        Candidate
+                        {% if sort_by == 'candidate__name' %}<span class="sort-arrow {% if sort_dir == 'asc' %}sort-asc{% else %}sort-desc{% endif %}"></span>{% endif %}
+                    </a>
                 </th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', this.cellIndex)">
-                    Rating
-                    <span class="sort-arrow" />
+                <th scope="col">
+                    <a href="?sort_by=rating&sort_dir={% if sort_by == 'rating' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">
+                        Rating
+                        {% if sort_by == 'rating' %}<span class="sort-arrow {% if sort_dir == 'asc' %}sort-asc{% else %}sort-desc{% endif %}"></span>{% endif %}
+                    </a>
                 </th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', this.cellIndex)">
-                    Tags
-                    <span class="sort-arrow" />
+                <th scope="col">
+                    <a href="?sort_by=tag__name&sort_dir={% if sort_by == 'tag__name' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">
+                        Tags
+                        {% if sort_by == 'tag__name' %}<span class="sort-arrow {% if sort_dir == 'asc' %}sort-asc{% else %}sort-desc{% endif %}"></span>{% endif %}
+                    </a>
                 </th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', this.cellIndex)">
-                    User
-                    <span class="sort-arrow" />
+                <th scope="col">
+                    <a href="?sort_by=user&sort_dir={% if sort_by == 'user' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">
+                        User
+                        {% if sort_by == 'user' %}<span class="sort-arrow {% if sort_dir == 'asc' %}sort-asc{% else %}sort-desc{% endif %}"></span>{% endif %}
+                    </a>
                 </th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', this.cellIndex, 'date')">
-                    Date
-                    <span class="sort-arrow" />
+                <th scope="col">
+                    <a href="?sort_by=date&sort_dir={% if sort_by == 'date' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">
+                        Date
+                        {% if sort_by == 'date' %}<span class="sort-arrow {% if sort_dir == 'asc' %}sort-asc{% else %}sort-desc{% endif %}"></span>{% endif %}
+                    </a>
                 </th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', this.cellIndex)">
-                    Notes
-                    <span class="sort-arrow" />
+                <th scope="col">
+                    <a href="?sort_by=notes&sort_dir={% if sort_by == 'notes' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">
+                        Notes
+                        {% if sort_by == 'notes' %}<span class="sort-arrow {% if sort_dir == 'asc' %}sort-asc{% else %}sort-desc{% endif %}"></span>{% endif %}
+                    </a>
                 </th>
 
                 {% else %}
 
-                <th scope="col" onclick="sortTable('rating-summary-table-body', this.cellIndex)">
-                    Observation
-                    <span class="sort-arrow" />
+                <th scope="col">
+                    <a href="?sort_by=candidate__observation__id&sort_dir={% if sort_by == 'candidate__observation__id' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">
+                        Observation
+                        {% if sort_by == 'candidate__observation__id' %}<span class="sort-arrow {% if sort_dir == 'asc' %}sort-asc{% else %}sort-desc{% endif %}"></span>{% endif %}
+                    </a>
                 </th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', this.cellIndex)">
-                    Candidate
-                    <span class="sort-arrow" />
+                <th scope="col">
+                    <a href="?sort_by=candidate__name&sort_dir={% if sort_by == 'candidate__name' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">
+                        Candidate
+                        {% if sort_by == 'candidate__name' %}<span class="sort-arrow {% if sort_dir == 'asc' %}sort-asc{% else %}sort-desc{% endif %}"></span>{% endif %}
+                    </a>
                 </th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', this.cellIndex)">
-                    Rating
-                    <span class="sort-arrow" />
+                <th scope="col">
+                    <a href="?sort_by=rating&sort_dir={% if sort_by == 'rating' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">
+                        Rating
+                        {% if sort_by == 'rating' %}<span class="sort-arrow {% if sort_dir == 'asc' %}sort-asc{% else %}sort-desc{% endif %}"></span>{% endif %}
+                    </a>
                 </th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', this.cellIndex)">
-                    Tags
-                    <span class="sort-arrow" />
+                <th scope="col">
+                    <a href="?sort_by=tag__name&sort_dir={% if sort_by == 'tag__name' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">
+                        Tags
+                        {% if sort_by == 'tag__name' %}<span class="sort-arrow {% if sort_dir == 'asc' %}sort-asc{% else %}sort-desc{% endif %}"></span>{% endif %}
+                    </a>
                 </th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', this.cellIndex)">
-                    User
-                    <span class="sort-arrow" />
+                <th scope="col">
+                    <a href="?sort_by=user&sort_dir={% if sort_by == 'user' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">
+                        User
+                        {% if sort_by == 'user' %}<span class="sort-arrow {% if sort_dir == 'asc' %}sort-asc{% else %}sort-desc{% endif %}"></span>{% endif %}
+                    </a>
                 </th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', this.cellIndex, 'date')">
-                    Date
-                    <span class="sort-arrow" />
+                <th scope="col">
+                    <a href="?sort_by=date&sort_dir={% if sort_by == 'date' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">
+                        Date
+                        {% if sort_by == 'date' %}<span class="sort-arrow {% if sort_dir == 'asc' %}sort-asc{% else %}sort-desc{% endif %}"></span>{% endif %}
+                    </a>
                 </th>
-                <th scope="col" onclick="sortTable('rating-summary-table-body', this.cellIndex)">
-                    Notes
-                    <span class="sort-arrow" />
+                <th scope="col">
+                    <a href="?sort_by=notes&sort_dir={% if sort_by == 'notes' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">
+                        Notes
+                        {% if sort_by == 'notes' %}<span class="sort-arrow {% if sort_dir == 'asc' %}sort-asc{% else %}sort-desc{% endif %}"></span>{% endif %}
+                    </a>
                 </th>
 
                 {% endif %}

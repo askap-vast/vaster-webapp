@@ -31,11 +31,13 @@ from ywangvaster_webapp.settings import MEDIA_ROOT
 from .utils import get_disk_space
 from . import forms, models, serializers
 from .views_utils import (
+    CANDIDATE_SORT_FIELDS,
     CONFIDENCE_MAPPING,
     DEFAULT_RATINGS_INPUT,
     DOWNLOAD_CANDIDATE_FIELDS,
     FILTER_CAND_VAR_MAPPING,
     PROJECT_COLOURS,
+    RATING_SORT_FIELDS,
     get_simbad,
     get_atnf,
     filter_candidates_by_coords,
@@ -372,6 +374,12 @@ def candidate_table(request: HttpRequest):
         if form.is_valid():
             cleaned_data = {**form.cleaned_data}
 
+            # Preserve sort state through filter form submit
+            cleaned_data["sort_by"] = candidate_table_session_data.get("sort_by")
+            cleaned_data["sort_dir"] = candidate_table_session_data.get(
+                "sort_dir", "asc"
+            )
+
             # To allow the user to keep filtering and navigate back on page.
             request.session["current_filter_data"] = cleaned_data
             candidate_table_session_data = cleaned_data
@@ -430,6 +438,20 @@ def candidate_table(request: HttpRequest):
     if "deep_num" in inputs_to_filter:
         filtered_columns.add("deep_num")
 
+    # Read sort params from GET, fall back to session values
+    sort_by = request.GET.get("sort_by", candidate_table_session_data.get("sort_by"))
+    sort_dir = request.GET.get(
+        "sort_dir", candidate_table_session_data.get("sort_dir", "asc")
+    )
+    if sort_dir not in ("asc", "desc"):
+        sort_dir = "asc"
+    if sort_by not in CANDIDATE_SORT_FIELDS:
+        sort_by = None
+
+    candidate_table_session_data["sort_by"] = sort_by
+    candidate_table_session_data["sort_dir"] = sort_dir
+    request.session["current_filter_data"] = candidate_table_session_data
+
     candidates = build_candidate_queryset(
         candidate_table_session_data, selected_project_hash_id
     )
@@ -470,6 +492,8 @@ def candidate_table(request: HttpRequest):
         "column_labels": FILTER_CAND_VAR_MAPPING,
         "tag_filter_name": tag_filter_name,
         "confidence_filter": confidence_filter,
+        "sort_by": sort_by or "",
+        "sort_dir": sort_dir,
     }
     return render(request, "candidate_app/candidate_table.html", content)
 
@@ -512,6 +536,11 @@ def ratings_summary(request: HttpRequest):
 
         if form.is_valid():
             cleaned_data = {**form.cleaned_data}
+
+            # Preserve sort state through filter form submit
+            cleaned_data["sort_by"] = current_ratings_filter.get("sort_by")
+            cleaned_data["sort_dir"] = current_ratings_filter.get("sort_dir", "asc")
+
             request.session["current_ratings_filter"] = cleaned_data
             current_ratings_filter = cleaned_data
 
@@ -548,6 +577,24 @@ def ratings_summary(request: HttpRequest):
     if "user" in inputs_to_filter:
         ratings = ratings.filter(user__id=inputs_to_filter["user"])
 
+    # Read sort params from GET, fall back to session values
+    ratings_sort_by = request.GET.get("sort_by", current_ratings_filter.get("sort_by"))
+    ratings_sort_dir = request.GET.get(
+        "sort_dir", current_ratings_filter.get("sort_dir", "asc")
+    )
+    if ratings_sort_dir not in ("asc", "desc"):
+        ratings_sort_dir = "asc"
+    if ratings_sort_by not in RATING_SORT_FIELDS:
+        ratings_sort_by = None
+
+    current_ratings_filter["sort_by"] = ratings_sort_by
+    current_ratings_filter["sort_dir"] = ratings_sort_dir
+    request.session["current_ratings_filter"] = current_ratings_filter
+
+    if ratings_sort_by:
+        prefix = "-" if ratings_sort_dir == "desc" else ""
+        ratings = ratings.order_by(f"{prefix}{ratings_sort_by}")
+
     # Handle CSV download
     if request.method == "GET":
         if request.GET.get("download") == "csv":
@@ -578,6 +625,8 @@ def ratings_summary(request: HttpRequest):
         "ratings": ratings,
         "ratings_per_user": ratings_per_user,
         "ratings_per_tag": ratings_per_tag,
+        "sort_by": ratings_sort_by or "",
+        "sort_dir": ratings_sort_dir,
     }
 
     return render(request, "candidate_app/ratings_summary.html", context)
@@ -865,7 +914,7 @@ def download_lightcurve_csv(request: HttpRequest, cand_hash_id: str):
         # Create the HttpResponse object with the appropriate CSV header.
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = (
-            f'attachment; filename="{candidate.name}_lightcurve.csv"'
+            f'attachment; filename="{candidate.name}_lightcurve.csv"'  # noqa E702
         )
 
         writer = csv.writer(response)

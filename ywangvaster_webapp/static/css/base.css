@@ -202,6 +202,10 @@ td,
 th {
   text-align: center;
 }
+th a {
+  text-decoration: none;
+  color: inherit;
+}
 tr {
   text-align: center;
 }
