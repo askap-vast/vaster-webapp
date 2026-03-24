@@ -12,10 +12,16 @@ RUN apt-get update && \
     echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
     apt-get update
 
-# Install PostgreSQL Client 16
-RUN apt-get install -y postgresql-client-16 libpq-dev cron && \
+# Install PostgreSQL Client 16 and JS9 build dependencies (nodejs + make)
+RUN apt-get install -y postgresql-client-16 libpq-dev cron nodejs npm make && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+# Vendor JS9 FITS viewer static files into /opt/js9_static.
+# The entrypoint copies these into the Django static directory at startup.
+# See scripts/vendor_js9.sh for details on why JS9 is vendored and how to update.
+COPY ./scripts/vendor_js9.sh /scripts/vendor_js9.sh
+RUN bash /scripts/vendor_js9.sh /opt/js9_static
 
 # Copy across the cron job for refreshing the pulsar table. Set it to run every week at 12am Sunday.
 COPY ./containers/web/refresh_pulsar_table_cron /etc/cron.d/refresh_pulsar_table_cron

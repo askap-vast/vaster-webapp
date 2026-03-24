@@ -1,6 +1,17 @@
 #!/bin/bash
 
-### Make migrations (incase of changes) and apply 
+### Copy vendored JS9 static files if not already present.
+# In development the source tree is volume-mounted, which hides anything the
+# Docker build placed inside /ywangvaster_webapp. This check ensures the files
+# are present regardless of whether the developer has run vendor_js9.sh locally.
+VENDORED_JS9_DEST="static/vendored/js9"
+if [ ! -f "${VENDORED_JS9_DEST}/js9.min.js" ]; then
+    echo "Copying vendored JS9 files from /opt/js9_static/ ..."
+    mkdir -p "${VENDORED_JS9_DEST}"
+    cp -r /opt/js9_static/. "${VENDORED_JS9_DEST}/"
+fi
+
+### Make migrations (incase of changes) and apply
 python3 manage.py makemigrations --noinput
 python3 manage.py makemigrations candidate_app --noinput
 python3 manage.py migrate 

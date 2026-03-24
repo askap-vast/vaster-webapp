@@ -1,6 +1,20 @@
 {% extends 'candidate_app/header.html' %}
 
 {% load utils %}
+{% load static %}
+
+{% block extra_head %}
+<!-- JS9 FITS viewer (vendored — see scripts/vendor_js9.sh) -->
+<link rel="stylesheet" href="{% static 'vendored/js9/js9support.css' %}">
+<link rel="stylesheet" href="{% static 'vendored/js9/js9.css' %}">
+<script src="{% static 'vendored/js9/js9prefs.js' %}"></script>
+<script>
+  JS9Prefs.globalOpts.installDir = "{% static 'vendored/js9/' %}";
+</script>
+<script src="{% static 'vendored/js9/js9support.min.js' %}"></script>
+<script src="{% static 'vendored/js9/js9.min.js' %}"></script>
+<script src="{% static 'vendored/js9/js9plugins.js' %}"></script>
+{% endblock extra_head %}
 
 {% block content %}
 
@@ -462,7 +476,8 @@
                           {% if candidate.deepcutout_fits %}
                           <div class="d-flex gap-2 mb-2">
                             <button class="btn btn-sm btn-outline-secondary active" id="deepTogglePng">PNG</button>
-                            <button class="btn btn-sm btn-outline-secondary" id="deepToggleFits">FITS</button>
+                            <button class="btn btn-sm btn-outline-secondary" id="deepToggleFirefly">Firefly</button>
+                            <button class="btn btn-sm btn-outline-secondary" id="deepToggleJS9">JS9</button>
                           </div>
                           {% endif %}
 
@@ -474,8 +489,11 @@
                           </div>
 
                           {% if candidate.deepcutout_fits %}
-                          <div id="deepFitsPanel" style="display:none; width:500px; height:600px;">
+                          <div id="deepFireflyPanel" style="display:none; width:500px; height:600px;">
                             <div id="fireflyDeep" style="width:100%; height:100%;"></div>
+                          </div>
+                          <div id="deepJS9Panel" style="display:none;">
+                            <iframe id="deepJS9Frame" src="" style="width:500px; height:540px; border:none;"></iframe>
                           </div>
                           {% endif %}
 
@@ -500,7 +518,8 @@
                           {% if candidate.slices_fits %}
                           <div class="d-flex gap-2 mb-2">
                             <button class="btn btn-sm btn-outline-secondary active" id="slicesToggleGif">GIF</button>
-                            <button class="btn btn-sm btn-outline-secondary" id="slicesToggleFits">FITS</button>
+                            <button class="btn btn-sm btn-outline-secondary" id="slicesToggleFirefly">Firefly</button>
+                            <button class="btn btn-sm btn-outline-secondary" id="slicesToggleJS9">JS9</button>
                           </div>
                           {% endif %}
 
@@ -518,8 +537,11 @@
                           </div>
 
                           {% if candidate.slices_fits %}
-                          <div id="slicesFitsPanel" style="display:none; width:500px; height:600px;">
+                          <div id="slicesFireflyPanel" style="display:none; width:500px; height:600px;">
                             <div id="fireflySlices" style="width:100%; height:100%;"></div>
+                          </div>
+                          <div id="slicesJS9Panel" style="display:none;">
+                            <iframe id="slicesJS9Frame" src="" style="width:500px; height:540px; border:none;"></iframe>
                           </div>
                           {% endif %}
 
@@ -986,7 +1008,7 @@
 
 <script type="module">
 
-  // TODO: Make this a proper html component and import 
+  // TODO: Make this a proper html component and import
 
   // This gif script is quite hastily put together and needs to be cleaned up.
 
@@ -1139,17 +1161,26 @@
 
 {% if candidate.deepcutout_fits %}
 <script>
-  const deepTogglePng  = document.getElementById('deepTogglePng');
-  const deepToggleFits = document.getElementById('deepToggleFits');
-  const deepPngPanel   = document.getElementById('deepPngPanel');
-  const deepFitsPanel  = document.getElementById('deepFitsPanel');
+  const deepTogglePng     = document.getElementById('deepTogglePng');
+  const deepToggleFirefly = document.getElementById('deepToggleFirefly');
+  const deepToggleJS9     = document.getElementById('deepToggleJS9');
+  const deepPngPanel      = document.getElementById('deepPngPanel');
+  const deepFireflyPanel  = document.getElementById('deepFireflyPanel');
+  const deepJS9Panel      = document.getElementById('deepJS9Panel');
   let fireflyDeepLoaded = false;
+  let js9DeepLoaded = false;
 
-  deepToggleFits.addEventListener('click', () => {
-    deepPngPanel.style.display = 'none';
-    deepFitsPanel.style.display = '';
-    deepTogglePng.classList.remove('active');
-    deepToggleFits.classList.add('active');
+  function deepShowPanel(activePanel, activeBtn) {
+    [deepPngPanel, deepFireflyPanel, deepJS9Panel].forEach(p => p.style.display = 'none');
+    [deepTogglePng, deepToggleFirefly, deepToggleJS9].forEach(b => b.classList.remove('active'));
+    activePanel.style.display = '';
+    activeBtn.classList.add('active');
+  }
+
+  deepTogglePng.addEventListener('click', () => deepShowPanel(deepPngPanel, deepTogglePng));
+
+  deepToggleFirefly.addEventListener('click', () => {
+    deepShowPanel(deepFireflyPanel, deepToggleFirefly);
     if (!fireflyDeepLoaded) {
       fireflyDeepLoaded = true;
       if (fireflyReady) {
@@ -1160,28 +1191,38 @@
     }
   });
 
-  deepTogglePng.addEventListener('click', () => {
-    deepFitsPanel.style.display = 'none';
-    deepPngPanel.style.display = '';
-    deepToggleFits.classList.remove('active');
-    deepTogglePng.classList.add('active');
+  deepToggleJS9.addEventListener('click', () => {
+    deepShowPanel(deepJS9Panel, deepToggleJS9);
+    if (!js9DeepLoaded) {
+      js9DeepLoaded = true;
+      document.getElementById('deepJS9Frame').src = '/js9_viewer/?url={{ candidate.deepcutout_fits.url }}';
+    }
   });
 </script>
 {% endif %}
 
 {% if candidate.slices_fits %}
 <script>
-  const slicesToggleGif  = document.getElementById('slicesToggleGif');
-  const slicesToggleFits = document.getElementById('slicesToggleFits');
-  const slicesGifPanel   = document.getElementById('slicesGifPanel');
-  const slicesFitsPanel  = document.getElementById('slicesFitsPanel');
+  const slicesToggleGif     = document.getElementById('slicesToggleGif');
+  const slicesToggleFirefly = document.getElementById('slicesToggleFirefly');
+  const slicesToggleJS9     = document.getElementById('slicesToggleJS9');
+  const slicesGifPanel      = document.getElementById('slicesGifPanel');
+  const slicesFireflyPanel  = document.getElementById('slicesFireflyPanel');
+  const slicesJS9Panel      = document.getElementById('slicesJS9Panel');
   let fireflySlicesLoaded = false;
+  let js9SlicesLoaded = false;
 
-  slicesToggleFits.addEventListener('click', () => {
-    slicesGifPanel.style.display = 'none';
-    slicesFitsPanel.style.display = '';
-    slicesToggleGif.classList.remove('active');
-    slicesToggleFits.classList.add('active');
+  function slicesShowPanel(activePanel, activeBtn) {
+    [slicesGifPanel, slicesFireflyPanel, slicesJS9Panel].forEach(p => p.style.display = 'none');
+    [slicesToggleGif, slicesToggleFirefly, slicesToggleJS9].forEach(b => b.classList.remove('active'));
+    activePanel.style.display = '';
+    activeBtn.classList.add('active');
+  }
+
+  slicesToggleGif.addEventListener('click', () => slicesShowPanel(slicesGifPanel, slicesToggleGif));
+
+  slicesToggleFirefly.addEventListener('click', () => {
+    slicesShowPanel(slicesFireflyPanel, slicesToggleFirefly);
     if (!fireflySlicesLoaded) {
       fireflySlicesLoaded = true;
       if (fireflyReady) {
@@ -1192,11 +1233,12 @@
     }
   });
 
-  slicesToggleGif.addEventListener('click', () => {
-    slicesFitsPanel.style.display = 'none';
-    slicesGifPanel.style.display = '';
-    slicesToggleFits.classList.remove('active');
-    slicesToggleGif.classList.add('active');
+  slicesToggleJS9.addEventListener('click', () => {
+    slicesShowPanel(slicesJS9Panel, slicesToggleJS9);
+    if (!js9SlicesLoaded) {
+      js9SlicesLoaded = true;
+      document.getElementById('slicesJS9Frame').src = '/js9_viewer/?url={{ candidate.slices_fits.url }}';
+    }
   });
 </script>
 {% endif %}

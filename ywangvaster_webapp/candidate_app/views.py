@@ -8,6 +8,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.clickjacking import xframe_options_exempt
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 
 from astropy.coordinates import SkyCoord
@@ -255,6 +256,16 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
         "next_candidate_available": next_candidate_available,
     }
     return render(request, "candidate_app/candidate_rating.html", context)
+
+
+@xframe_options_exempt
+@login_required(login_url="/")
+def js9_viewer(request):
+    fits_url = request.GET.get("url", "")
+    # Only allow URLs that point to our own media files
+    if fits_url and not fits_url.startswith(settings.MEDIA_URL):
+        fits_url = ""
+    return render(request, "candidate_app/js9_viewer.html", {"fits_url": fits_url})
 
 
 @login_required(login_url="/")

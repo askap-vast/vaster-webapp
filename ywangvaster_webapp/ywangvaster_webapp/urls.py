@@ -55,6 +55,7 @@ urlpatterns = [
     # Get nearby objects (all databases in one)
     path("get_nearby_objects/", views.nearby_objects_table, name="get_nearby_objects"),
     # To get or create a token for a user by a post request
+    path("js9_viewer/", views.js9_viewer, name="js9_viewer"),
     path("get_token/", views.get_token, name="get_token"),
     # Add records to the DB using a POST request
     path("upload_observation/", views.upload_observation, name="upload_observation"),
