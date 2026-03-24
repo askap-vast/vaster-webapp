@@ -17,7 +17,7 @@ from django.utils import timezone
 from django.db import transaction
 from django.core.paginator import Paginator
 from django.views.generic import TemplateView, View
-from django.db.models import Count
+from django.db.models import Count, OuterRef, Subquery
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -576,6 +576,15 @@ def ratings_summary(request: HttpRequest):
 
     if "user" in inputs_to_filter:
         ratings = ratings.filter(user__id=inputs_to_filter["user"])
+
+    # Show only the latest rating per candidate
+    latest_per_candidate = (
+        models.Rating.objects.filter(candidate=OuterRef("candidate_id"))
+        .order_by("-date")
+        .values("pk")[:1]
+    )
+    ratings = ratings.filter(pk=Subquery(latest_per_candidate))
+    ratings = ratings.annotate(total_ratings=Count("candidate__rating"))
 
     # Read sort params from GET, fall back to session values
     ratings_sort_by = request.GET.get("sort_by", current_ratings_filter.get("sort_by"))

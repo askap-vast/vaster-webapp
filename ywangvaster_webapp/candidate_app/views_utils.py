@@ -164,6 +164,7 @@ RATING_SORT_FIELDS = {
     "user",
     "date",
     "notes",
+    "total_ratings",
 }
 
 

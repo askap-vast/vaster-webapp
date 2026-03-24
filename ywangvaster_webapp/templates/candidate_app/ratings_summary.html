@@ -131,6 +131,12 @@
                         {% if sort_by == 'notes' %}<span class="sort-arrow {% if sort_dir == 'asc' %}sort-asc{% else %}sort-desc{% endif %}"></span>{% endif %}
                     </a>
                 </th>
+                <th scope="col">
+                    <a href="?sort_by=total_ratings&sort_dir={% if sort_by == 'total_ratings' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">
+                        # Ratings
+                        {% if sort_by == 'total_ratings' %}<span class="sort-arrow {% if sort_dir == 'asc' %}sort-asc{% else %}sort-desc{% endif %}"></span>{% endif %}
+                    </a>
+                </th>
 
                 {% else %}
 
@@ -176,6 +182,12 @@
                         {% if sort_by == 'notes' %}<span class="sort-arrow {% if sort_dir == 'asc' %}sort-asc{% else %}sort-desc{% endif %}"></span>{% endif %}
                     </a>
                 </th>
+                <th scope="col">
+                    <a href="?sort_by=total_ratings&sort_dir={% if sort_by == 'total_ratings' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">
+                        # Ratings
+                        {% if sort_by == 'total_ratings' %}<span class="sort-arrow {% if sort_dir == 'asc' %}sort-asc{% else %}sort-desc{% endif %}"></span>{% endif %}
+                    </a>
+                </th>
 
                 {% endif %}
 
@@ -209,6 +221,7 @@
                 <td style='max-width: 200px; max-height:200px; overflow-y: auto; word-wrap: break-word'>
                     {{ rating.notes }}
                 </td>
+                <td>{{ rating.total_ratings }}</td>
             </tr>
             {% endfor %}
         </tbody>
