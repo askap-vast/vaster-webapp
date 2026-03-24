@@ -6,7 +6,7 @@
 {% block head %}
 
 <head>
-  {% load static %}
+  {% load static crispy_forms_tags %}
   <meta charset="utf-8" />
 
   <link rel="icon" href='/static/favicon.ico'>
@@ -195,7 +195,7 @@
 
         <form id='reset-user-password' method='post' action={% url 'change_password' %}>
           {% csrf_token %}
-          {{ pw_reset_form }}
+          {{ pw_reset_form|crispy }}
           <button class='btn btn-primary' type="submit">Save changes</button>
         </form>
 
@@ -219,6 +219,7 @@
       placeholder: 'All projects',
       allowClear: true,
       dropdownParent: $('#manageModal'),
+      width: '300px',
     });
   });
 </script>

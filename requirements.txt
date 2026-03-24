@@ -9,6 +9,7 @@ charset-normalizer==3.4.4
 cryptography==46.0.5
 Django==6.0.2
 django-crispy-forms==2.5
+crispy-bootstrap5==2024.10
 # django-q3c is installed from vendor/django-q3c/ in the Dockerfile
 djangorestframework==3.16.1
 gunicorn==25.1.0
