@@ -27,6 +27,8 @@ services:
     depends_on:
       web:
         condition: service_healthy
+      firefly:
+        condition: service_started
 
   certbot:
     image: certbot/certbot

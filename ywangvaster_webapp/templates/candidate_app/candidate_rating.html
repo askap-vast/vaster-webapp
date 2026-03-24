@@ -459,12 +459,25 @@
                           <h5>Deep</h5>
                           {% if candidate.deepcutout_png %}
 
-                          <div class='vstack gap-1 justify-content-center align-items-center' id='gif-and-buttons'>
-
-                            <img src="{{ candidate.deepcutout_png.url }}"
-                              style="width: 100%; height: 100%; max-width: 600px; max-height: 600px; min-width: 500px; min-height: 500px">
-
+                          {% if candidate.deepcutout_fits %}
+                          <div class="d-flex gap-2 mb-2">
+                            <button class="btn btn-sm btn-outline-secondary active" id="deepTogglePng">PNG</button>
+                            <button class="btn btn-sm btn-outline-secondary" id="deepToggleFits">FITS</button>
                           </div>
+                          {% endif %}
+
+                          <div id="deepPngPanel">
+                            <div class='vstack gap-1 justify-content-center align-items-center'>
+                              <img src="{{ candidate.deepcutout_png.url }}"
+                                style="width: 100%; height: 100%; max-width: 600px; max-height: 600px; min-width: 500px; min-height: 500px">
+                            </div>
+                          </div>
+
+                          {% if candidate.deepcutout_fits %}
+                          <div id="deepFitsPanel" style="display:none; width:500px; height:600px;">
+                            <div id="fireflyDeep" style="width:100%; height:100%;"></div>
+                          </div>
+                          {% endif %}
 
                           {% else %}
                           <div class='image-placeholder'
@@ -484,16 +497,31 @@
                           <h5>Slices</h5>
                           {% if candidate.slices_gif %}
 
-                          <div class='vstack gap-1 justify-content-center align-items-center' id='gif-and-buttons'>
-
-                            <canvas class="d-flex" id="gifCanvas" style="padding-left: 40px"></canvas>
-                            <div class="controls">
-                              <button class='btn btn-primary' id="playPauseBtn">Pause</button>
-                              <input type="range" id="frameSlider" min="0" step="1">
-                              <span id="frameCounter">0 / 0</span>
-                            </div>
-
+                          {% if candidate.slices_fits %}
+                          <div class="d-flex gap-2 mb-2">
+                            <button class="btn btn-sm btn-outline-secondary active" id="slicesToggleGif">GIF</button>
+                            <button class="btn btn-sm btn-outline-secondary" id="slicesToggleFits">FITS</button>
                           </div>
+                          {% endif %}
+
+                          <div id="slicesGifPanel">
+                            <div class='vstack gap-1 justify-content-center align-items-center' id='gif-and-buttons'>
+
+                              <canvas class="d-flex" id="gifCanvas" style="padding-left: 40px"></canvas>
+                              <div class="controls">
+                                <button class='btn btn-primary' id="playPauseBtn">Pause</button>
+                                <input type="range" id="frameSlider" min="0" step="1">
+                                <span id="frameCounter">0 / 0</span>
+                              </div>
+
+                            </div>
+                          </div>
+
+                          {% if candidate.slices_fits %}
+                          <div id="slicesFitsPanel" style="display:none; width:500px; height:600px;">
+                            <div id="fireflySlices" style="width:100%; height:100%;"></div>
+                          </div>
+                          {% endif %}
 
                           {% else %}
                           <div class='image-placeholder'
@@ -1088,5 +1116,91 @@
     });
   });
 </script>
+
+{% if candidate.deepcutout_fits or candidate.slices_fits %}
+<script>
+  var fireflyReady = false;
+  var fireflyDeepPending = false;
+  var fireflySlicesPending = false;
+
+  function onFireflyLoaded() {
+    fireflyReady = true;
+    if (fireflyDeepPending) {
+      firefly.showImage('fireflyDeep', { URL: 'http://nginx/media/{{ candidate.deepcutout_fits.name }}' });
+      fireflyDeepPending = false;
+    }
+    if (fireflySlicesPending) {
+      firefly.showImage('fireflySlices', { URL: 'http://nginx/media/{{ candidate.slices_fits.name }}' });
+      fireflySlicesPending = false;
+    }
+  }
+</script>
+<script src="/firefly/firefly_loader.js"></script>
+
+{% if candidate.deepcutout_fits %}
+<script>
+  const deepTogglePng  = document.getElementById('deepTogglePng');
+  const deepToggleFits = document.getElementById('deepToggleFits');
+  const deepPngPanel   = document.getElementById('deepPngPanel');
+  const deepFitsPanel  = document.getElementById('deepFitsPanel');
+  let fireflyDeepLoaded = false;
+
+  deepToggleFits.addEventListener('click', () => {
+    deepPngPanel.style.display = 'none';
+    deepFitsPanel.style.display = '';
+    deepTogglePng.classList.remove('active');
+    deepToggleFits.classList.add('active');
+    if (!fireflyDeepLoaded) {
+      fireflyDeepLoaded = true;
+      if (fireflyReady) {
+        firefly.showImage('fireflyDeep', { URL: 'http://nginx/media/{{ candidate.deepcutout_fits.name }}' });
+      } else {
+        fireflyDeepPending = true;
+      }
+    }
+  });
+
+  deepTogglePng.addEventListener('click', () => {
+    deepFitsPanel.style.display = 'none';
+    deepPngPanel.style.display = '';
+    deepToggleFits.classList.remove('active');
+    deepTogglePng.classList.add('active');
+  });
+</script>
+{% endif %}
+
+{% if candidate.slices_fits %}
+<script>
+  const slicesToggleGif  = document.getElementById('slicesToggleGif');
+  const slicesToggleFits = document.getElementById('slicesToggleFits');
+  const slicesGifPanel   = document.getElementById('slicesGifPanel');
+  const slicesFitsPanel  = document.getElementById('slicesFitsPanel');
+  let fireflySlicesLoaded = false;
+
+  slicesToggleFits.addEventListener('click', () => {
+    slicesGifPanel.style.display = 'none';
+    slicesFitsPanel.style.display = '';
+    slicesToggleGif.classList.remove('active');
+    slicesToggleFits.classList.add('active');
+    if (!fireflySlicesLoaded) {
+      fireflySlicesLoaded = true;
+      if (fireflyReady) {
+        firefly.showImage('fireflySlices', { URL: 'http://nginx/media/{{ candidate.slices_fits.name }}' });
+      } else {
+        fireflySlicesPending = true;
+      }
+    }
+  });
+
+  slicesToggleGif.addEventListener('click', () => {
+    slicesFitsPanel.style.display = 'none';
+    slicesGifPanel.style.display = '';
+    slicesToggleFits.classList.remove('active');
+    slicesToggleGif.classList.add('active');
+  });
+</script>
+{% endif %}
+
+{% endif %}
 
 {% endblock %}

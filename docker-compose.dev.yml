@@ -10,5 +10,18 @@ services:
       PROD: False
       DEBUG: 1
       DJANGO_LOG_LEVEL: INFO
+
+  nginx:
+    hostname: nginx
+    container_name: ywangvaster-nginx-dev
+    image: nginx:1.28
+    volumes:
+      - django_media:/ywangvaster_media
+      - ./containers/nginx/nginx.dev.conf:/etc/nginx/conf.d/default.conf
     ports:
       - 80:80
+    depends_on:
+      web:
+        condition: service_healthy
+      firefly:
+        condition: service_started

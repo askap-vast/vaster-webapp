@@ -20,6 +20,15 @@ services:
       timeout: 5s
       retries: 3
 
+  firefly:
+    image: ipac/firefly:latest
+    container_name: ywangvaster-firefly
+    volumes:
+      - django_media:/firefly/shared-workarea
+    environment:
+      - VISUALIZE_FITS_SEARCH_PATH=/firefly/shared-workarea
+    mem_limit: 4g
+
   web:
     hostname: web
     container_name: ywangvaster-web
