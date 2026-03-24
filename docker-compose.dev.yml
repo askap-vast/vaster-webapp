@@ -24,4 +24,4 @@ services:
       web:
         condition: service_healthy
       firefly:
-        condition: service_started
+        condition: service_healthy

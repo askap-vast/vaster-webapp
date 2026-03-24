@@ -28,6 +28,16 @@ services:
     environment:
       - VISUALIZE_FITS_SEARCH_PATH=/firefly/shared-workarea
     mem_limit: 4g
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q --spider http://localhost:8080/firefly/ || exit 1",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
 
   web:
     hostname: web
