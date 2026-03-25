@@ -26,9 +26,9 @@ echo "Result from auth_table check: " $TABLE_CHECK
 
 if  [[ "$TABLE_CHECK" == *"$DJANGO_SUPERUSER_USERNAME"* ]]; then
 
-    echo "Django superuser with username $DJANGO_SUPERUSER_USERNAME has already been created." 
+    echo "Django superuser with username $DJANGO_SUPERUSER_USERNAME has already been created."
 
-else 
+else
     echo "Postgres DB is missing the django superuser $DJANGO_SUPERUSER_USERNAME - Adding it to the DB."
 
     python3 manage.py createsuperuser --noinput --username $DJANGO_SUPERUSER_USERNAME --email $DJANGO_SUPERUSER_EMAIL
@@ -36,21 +36,17 @@ else
     # Since it is a fresh DB, load up the ANTF pulsar table
     python3 manage.py refresh_pulsar_table
 
-    if [[ $PROD == "true" ]]; then 
+fi
 
-        echo "--- Running as PROD version - $PROD ---"
+if [[ $PROD == "true" ]]; then
 
-        echo "Copying across the static files."
+    echo "--- Running as PROD version - $PROD ---"
 
-        python manage.py collectstatic --noinput
+    echo "Copying across the static files."
 
-    else
+    python manage.py collectstatic --noinput
 
-        echo "Not copying across the static files."
-
-    fi
-
-fi 
+fi
 
 ### Do the setup for the cron job for the refresh_pulsar_table
 
