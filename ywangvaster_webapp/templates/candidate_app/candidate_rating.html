@@ -1148,11 +1148,11 @@
   function onFireflyLoaded() {
     fireflyReady = true;
     if (fireflyDeepPending) {
-      firefly.showImage('fireflyDeep', { FILE: '{{ candidate.deepcutout_fits.name }}' });
+      firefly.showImage('fireflyDeep', { FILE: '/firefly/shared-workarea/{{ candidate.deepcutout_fits.name }}' });
       fireflyDeepPending = false;
     }
     if (fireflySlicesPending) {
-      firefly.showImage('fireflySlices', { FILE: '{{ candidate.slices_fits.name }}' });
+      firefly.showImage('fireflySlices', { FILE: '/firefly/shared-workarea/{{ candidate.slices_fits.name }}' });
       fireflySlicesPending = false;
     }
   }
@@ -1184,7 +1184,7 @@
     if (!fireflyDeepLoaded) {
       fireflyDeepLoaded = true;
       if (fireflyReady) {
-        firefly.showImage('fireflyDeep', { FILE: '{{ candidate.deepcutout_fits.name }}' });
+        firefly.showImage('fireflyDeep', { FILE: '/firefly/shared-workarea/{{ candidate.deepcutout_fits.name }}' });
       } else {
         fireflyDeepPending = true;
       }
@@ -1226,7 +1226,7 @@
     if (!fireflySlicesLoaded) {
       fireflySlicesLoaded = true;
       if (fireflyReady) {
-        firefly.showImage('fireflySlices', { FILE: '{{ candidate.slices_fits.name }}' });
+        firefly.showImage('fireflySlices', { FILE: '/firefly/shared-workarea/{{ candidate.slices_fits.name }}' });
       } else {
         fireflySlicesPending = true;
       }
