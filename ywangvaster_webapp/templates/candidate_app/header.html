@@ -252,6 +252,12 @@
   // On page render, run the getToken function to give the user their upload token
   document.addEventListener('DOMContentLoaded', getToken(false))
 
+  // Initialize Bootstrap tooltips globally
+  document.addEventListener('DOMContentLoaded', function () {
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltipTriggerList.forEach(function (el) { new bootstrap.Tooltip(el); });
+  });
+
   async function copyUserToken() {
 
     let tokenDiv = document.getElementById('tokenToUpdate');

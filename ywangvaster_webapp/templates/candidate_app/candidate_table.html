@@ -205,7 +205,8 @@
                   <multi-input-slider label="Chi square" id="chi_square" num-sliders="2"
                     slider-min="{{default_float_values.chi_square__gte}}"
                     slider-max="{{default_float_values.chi_square__lte}}"
-                    initial-values="[{{updated_float_values.chi_square__gte}}, {{updated_float_values.chi_square__lte}}]" />
+                    initial-values="[{{updated_float_values.chi_square__gte}}, {{updated_float_values.chi_square__lte}}]"
+                    tooltip="The value of the chi-squared map at the source position." />
                 </div>
                 {% endif %}
 
@@ -214,7 +215,8 @@
                   <multi-input-slider label='Chi square sigma' id="chi_square_sigma" num-sliders="2"
                     slider-min="{{default_float_values.chi_square_sigma__gte}}"
                     slider-max="{{default_float_values.chi_square_sigma__lte}}"
-                    initial-values="[{{updated_float_values.chi_square_sigma__gte}}, {{updated_float_values.chi_square_sigma__lte}}]" />
+                    initial-values="[{{updated_float_values.chi_square_sigma__gte}}, {{updated_float_values.chi_square_sigma__lte}}]"
+                    tooltip="The significance of the chi-square value, expressed in sigma, assuming a theoretical chi-squared distribution." />
                 </div>
                 {% endif %}
 
@@ -223,7 +225,8 @@
                   <multi-input-slider label='Chi square log sigma' id="chi_square_log_sigma" num-sliders="2"
                     slider-min="{{default_float_values.chi_square_log_sigma__gte}}"
                     slider-max="{{default_float_values.chi_square_log_sigma__lte}}"
-                    initial-values="[{{updated_float_values.chi_square_log_sigma__gte}}, {{updated_float_values.chi_square_log_sigma__lte}}]" />
+                    initial-values="[{{updated_float_values.chi_square_log_sigma__gte}}, {{updated_float_values.chi_square_log_sigma__lte}}]"
+                    tooltip="The significance of the chi-square value in log space, measured relative to the overall chi-square map distribution." />
                 </div>
                 {% endif %}
               </div>
@@ -236,7 +239,8 @@
                   <multi-input-slider label='Peak map' id="peak_map" num-sliders="2"
                     slider-min="{{default_float_values.peak_map__gte}}"
                     slider-max="{{default_float_values.peak_map__lte}}"
-                    initial-values="[{{updated_float_values.peak_map__gte}}, {{updated_float_values.peak_map__lte}}]" />
+                    initial-values="[{{updated_float_values.peak_map__gte}}, {{updated_float_values.peak_map__lte}}]"
+                    tooltip="The value of the peak map at the source position." />
                 </div>
                 {% endif %}
 
@@ -245,7 +249,8 @@
                   <multi-input-slider label='Peak map sigma' id="peak_map_sigma" num-sliders="2"
                     slider-min="{{default_float_values.peak_map_sigma__gte}}"
                     slider-max="{{default_float_values.peak_map_sigma__lte}}"
-                    initial-values="[{{updated_float_values.peak_map_sigma__gte}}, {{updated_float_values.peak_map_sigma__lte}}]" />
+                    initial-values="[{{updated_float_values.peak_map_sigma__gte}}, {{updated_float_values.peak_map_sigma__lte}}]"
+                    tooltip="The significance of the peak-map value, expressed in sigma, assuming the expected theoretical distribution." />
                 </div>
                 {% endif %}
 
@@ -254,7 +259,8 @@
                   <multi-input-slider label='Peak map log sigma' id="peak_map_log_sigma" num-sliders="2"
                     slider-min="{{default_float_values.peak_map_log_sigma__gte}}"
                     slider-max="{{default_float_values.peak_map_log_sigma__lte}}"
-                    initial-values="[{{updated_float_values.peak_map_log_sigma__gte}}, {{updated_float_values.peak_map_log_sigma__lte}}]" />
+                    initial-values="[{{updated_float_values.peak_map_log_sigma__gte}}, {{updated_float_values.peak_map_log_sigma__lte}}]"
+                    tooltip="The significance of the peak-map value in log space, measured relative to the overall peak-map distribution." />
                 </div>
                 {% endif %}
               </div>
@@ -285,7 +291,8 @@
                   <multi-input-slider label='Std map' id="std_map" num-sliders="2"
                     slider-min="{{default_float_values.std_map__gte}}"
                     slider-max="{{default_float_values.std_map__lte}}"
-                    initial-values="[{{updated_float_values.std_map__gte}}, {{updated_float_values.std_map__lte}}]" />
+                    initial-values="[{{updated_float_values.std_map__gte}}, {{updated_float_values.std_map__lte}}]"
+                    tooltip="The value of the standard-deviation map at the source position." />
                 </div>
                 {% endif %}
               </div>
@@ -298,7 +305,8 @@
                   <multi-input-slider label='Beam sep deg' id="beam_sep_deg" num-sliders="2"
                     slider-min="{{default_float_values.beam_sep_deg__gte}}"
                     slider-max="{{default_float_values.beam_sep_deg__lte}}"
-                    initial-values="[{{updated_float_values.beam_sep_deg__gte}}, {{updated_float_values.beam_sep_deg__lte}}]" />
+                    initial-values="[{{updated_float_values.beam_sep_deg__gte}}, {{updated_float_values.beam_sep_deg__lte}}]"
+                    tooltip="The distance, in degrees, from the source to the beam centre." />
                 </div>
                 {% endif %}
 
@@ -307,7 +315,8 @@
                   <multi-input-slider label='Modulation index' id="md_deep" num-sliders="2"
                     slider-min="{{default_float_values.md_deep__gte}}"
                     slider-max="{{default_float_values.md_deep__lte}}"
-                    initial-values="[{{updated_float_values.md_deep__gte}}, {{updated_float_values.md_deep__lte}}]" />
+                    initial-values="[{{updated_float_values.md_deep__gte}}, {{updated_float_values.md_deep__lte}}]"
+                    tooltip="A measure of variability, defined as the ratio between the standard deviation and the deep-image peak flux." />
                 </div>
                 {% endif %}
 
@@ -316,7 +325,8 @@
                   <multi-input-slider label='Deep sep arcsec' id="deep_sep_arcsec" num-sliders="2"
                     slider-min="{{default_float_values.deep_sep_arcsec__gte}}"
                     slider-max="{{default_float_values.deep_sep_arcsec__lte}}"
-                    initial-values="[{{updated_float_values.deep_sep_arcsec__gte}}, {{updated_float_values.deep_sep_arcsec__lte}}]" />
+                    initial-values="[{{updated_float_values.deep_sep_arcsec__gte}}, {{updated_float_values.deep_sep_arcsec__lte}}]"
+                    tooltip="The distance, in arcseconds, to the nearest source in the deep (full-integration) image." />
                 </div>
                 {% endif %}
 
@@ -325,7 +335,8 @@
                   <multi-input-slider label='Deep peak flux' id="deep_peak_flux" num-sliders="2"
                     slider-min="{{default_float_values.deep_peak_flux__gte}}"
                     slider-max="{{default_float_values.deep_peak_flux__lte}}"
-                    initial-values="[{{updated_float_values.deep_peak_flux__gte}}, {{updated_float_values.deep_peak_flux__lte}}]" />
+                    initial-values="[{{updated_float_values.deep_peak_flux__gte}}, {{updated_float_values.deep_peak_flux__lte}}]"
+                    tooltip="The peak flux density of the nearest source in the deep (full-integration) image, in mJy." />
                 </div>
                 {% endif %}
 
@@ -334,7 +345,8 @@
                   <multi-input-slider label='Deep int flux' id="deep_int_flux" num-sliders="2"
                     slider-min="{{default_float_values.deep_int_flux__gte}}"
                     slider-max="{{default_float_values.deep_int_flux__lte}}"
-                    initial-values="[{{updated_float_values.deep_int_flux__gte}}, {{updated_float_values.deep_int_flux__lte}}]" />
+                    initial-values="[{{updated_float_values.deep_int_flux__gte}}, {{updated_float_values.deep_int_flux__lte}}]"
+                    tooltip="The integrated flux density of the nearest source in the deep (full-integration) image, in mJy." />
                 </div>
                 {% endif %}
 
@@ -343,7 +355,8 @@
                   <multi-input-slider label='Bright sep (arcmin)' id="bright_sep_arcmin" num-sliders="2"
                     slider-min="{{default_float_values.bright_sep_arcmin__gte}}"
                     slider-max="{{default_float_values.bright_sep_arcmin__lte}}"
-                    initial-values="[{{updated_float_values.bright_sep_arcmin__gte}}, {{updated_float_values.bright_sep_arcmin__lte}}]" />
+                    initial-values="[{{updated_float_values.bright_sep_arcmin__gte}}, {{updated_float_values.bright_sep_arcmin__lte}}]"
+                    tooltip="The distance, in arcminutes, to the nearest bright source (> 50 mJy)." />
                 </div>
                 {% endif %}
 

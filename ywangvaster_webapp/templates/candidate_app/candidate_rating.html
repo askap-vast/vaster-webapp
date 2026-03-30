@@ -364,15 +364,15 @@
                           <tbody>
                             <tr>
                               <td class="text-center">Chi^2</td>
-                              <td class="text-center">{{ candidate.chi_square|floatformat:3 }}</td>
-                              <td class="text-center">{{ candidate.chi_square_sigma|floatformat:3 }}</td>
-                              <td class="text-center">{{ candidate.chi_square_log_sigma|floatformat:3 }}</td>
+                              <td class="text-center">{{ candidate.chi_square|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The value of the chi-squared map at the source position." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
+                              <td class="text-center">{{ candidate.chi_square_sigma|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The significance of the chi-square value, expressed in sigma, assuming a theoretical chi-squared distribution." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
+                              <td class="text-center">{{ candidate.chi_square_log_sigma|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The significance of the chi-square value in log space, measured relative to the overall chi-square map distribution." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
                             </tr>
                             <tr>
                               <td class="text-center">Peak map</td>
-                              <td class="text-center">{{ candidate.peak_map|floatformat:3}}</td>
-                              <td class="text-center">{{ candidate.peak_map_sigma|floatformat:3 }}</td>
-                              <td class="text-center">{{ candidate.peak_map_log_sigma|floatformat:3 }}</td>
+                              <td class="text-center">{{ candidate.peak_map|floatformat:3}} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The value of the peak map at the source position." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
+                              <td class="text-center">{{ candidate.peak_map_sigma|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The significance of the peak-map value, expressed in sigma, assuming the expected theoretical distribution." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
+                              <td class="text-center">{{ candidate.peak_map_log_sigma|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The significance of the peak-map value in log space, measured relative to the overall peak-map distribution." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
                             </tr>
                             <tr>
                               <td class="text-center">Gaussian map</td>
@@ -382,13 +382,13 @@
                             </tr>
                             <tr>
                               <td class="text-center">Standard deviation</td>
-                              <td class="text-center">{{ candidate.std_map|floatformat:3}}</td>
+                              <td class="text-center">{{ candidate.std_map|floatformat:3}} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The value of the standard-deviation map at the source position." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
                               <td class="text-center">-</td>
                               <td class="text-center">-</td>
                             </tr>
                             <tr>
                               <td class="text-center">Modulation index</td>
-                              <td class="text-center">{{ candidate.md_deep|floatformat:3 }}</td>
+                              <td class="text-center">{{ candidate.md_deep|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="A measure of variability, defined as the ratio between the standard deviation and the deep-image peak flux." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
                               <td class="text-center">-</td>
                               <td class="text-center">-</td>
                             </tr>
@@ -422,9 +422,9 @@
 
                             <tr>
                               <td class="text-center">Sep</td>
-                              <td class="text-center">{{ candidate.deep_sep_arcsec|floatformat:4 }} (arcsec)</td>
-                              <td class="text-center">{{ candidate.beam_sep_deg|floatformat:4 }} (degrees)</td>
-                              <td class="text-center">{{ candidate.bright_sep_arcmin|floatformat:4 }} (arcmin)</td>
+                              <td class="text-center">{{ candidate.deep_sep_arcsec|floatformat:4 }} (arcsec) <span data-bs-toggle="tooltip" data-bs-placement="top" title="The distance, in arcseconds, to the nearest source in the deep (full-integration) image." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
+                              <td class="text-center">{{ candidate.beam_sep_deg|floatformat:4 }} (degrees) <span data-bs-toggle="tooltip" data-bs-placement="top" title="The distance, in degrees, from the source to the beam centre." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
+                              <td class="text-center">{{ candidate.bright_sep_arcmin|floatformat:4 }} (arcmin) <span data-bs-toggle="tooltip" data-bs-placement="top" title="The distance, in arcminutes, to the nearest bright source (> 50 mJy)." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
                             </tr>
                           </tbody>
                         </table>
@@ -447,11 +447,11 @@
                             </tr>
                             <tr>
                               <td class="text-center">Peak Flux</td>
-                              <td class="text-center">{{ candidate.deep_peak_flux|floatformat:3 }}</td>
+                              <td class="text-center">{{ candidate.deep_peak_flux|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The peak flux density of the nearest source in the deep (full-integration) image, in mJy." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
                             </tr>
                             <tr>
                               <td class="text-center">Int Flux</td>
-                              <td class="text-center">{{ candidate.deep_int_flux|floatformat:3 }}</td>
+                              <td class="text-center">{{ candidate.deep_int_flux|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The integrated flux density of the nearest source in the deep (full-integration) image, in mJy." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
                             </tr>
                           </tbody>
 
