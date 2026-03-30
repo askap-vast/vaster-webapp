@@ -78,17 +78,15 @@ def nearby_objects_table(request: HttpRequest):
     """Render a table of nearby objects from the local DB (filtered by
     project), Simbad and ATNF pulsars."""
 
-    dist_arcmin = 2
-    selected_project_hash_id = request.session.get("selected_project_hash_id")
+    if request.method != "POST":
+        return HttpResponse(status=400)
 
-    if request.method == "POST":
-        data = json.loads(request.body.decode())
+    data = json.loads(request.body.decode())
 
-        ra_str = data.get("ra_str")
-        dec_str = data.get("dec_str")
-        dist_arcmin = float(data.get("dist_arcmin", 1))
-        selected_project_hash_id = data.get("selected_project_hash_id")
-        exclude_hash_id = data.get("exclude_id")
+    ra_str = data.get("ra_str")
+    dec_str = data.get("dec_str")
+    dist_arcmin = float(data.get("dist_arcmin", 1))
+    exclude_hash_id = data.get("exclude_id")
 
     result = []
     simbad_results = get_simbad(ra_str, dec_str, dist_arcmin)
@@ -98,10 +96,7 @@ def nearby_objects_table(request: HttpRequest):
     atnf_results = get_atnf(ra_str, dec_str, dist_arcmin)
     result.extend(atnf_results)
 
-    if selected_project_hash_id or selected_project_hash_id != "":
-        incoming = models.Candidate.objects.filter(project_id=selected_project_hash_id)
-    else:
-        incoming = models.Candidate.objects.all()
+    incoming = models.Candidate.objects.all()
 
     # if we are given a candidate ID then exclude it from the results
     if exclude_hash_id:

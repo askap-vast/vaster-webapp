@@ -46,7 +46,7 @@
                 {% endif %}
 
             </td>
-            <td class="text-center">{{result.from_db}}</td>
+            <td class="text-center">{{result.from_db}}{% if result.from_db == 'Local' %} - {{result.obs_id}} (beam {{result.beam_index}}){% endif %}</td>
             <td class="text-center">{{result.ra_str}}</td>
             <td class="text-center">{{ result.dec_str }}</td>
             <td class="text-center">{{ result.sep|floatformat:3 }}</td>
