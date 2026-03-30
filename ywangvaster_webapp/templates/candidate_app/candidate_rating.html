@@ -585,7 +585,15 @@
                         <div class='col-lg order-2 order-lg-2'>
 
                           {% if lightcurve_data %}
-                          <div id="lightcurve_echarts" style="height: 600px; min-width: 505px; padding: 0px"></div>
+                          <div style="position: relative;">
+                            <div style="position: absolute; top: 4px; right: 100px; z-index: 10;">
+                              <div class="btn-group btn-group-sm" role="group">
+                                <button id="lightcurve_zoom_fixed" class="btn btn-secondary">FIXED</button>
+                                <button id="lightcurve_zoom_auto" class="btn btn-outline-secondary">AUTO</button>
+                              </div>
+                            </div>
+                            <div id="lightcurve_echarts" style="height: 600px; min-width: 505px; padding: 0px"></div>
+                          </div>
                           {% else %}
                           <div class='image-placeholder'
                             style=" width: 100%; height: 600px; background: grey; border: 2px solid black;">
@@ -817,36 +825,98 @@
   // Remove title, make chart min/max from error values
   values.shift();
   errValues.shift();
-  let minValue = -0.5;
+  const FIXED_MIN = -0.5;
+  let minValue = FIXED_MIN;
   let maxValue = 1.01 * (Math.max(...values) + Math.max(...errValues));
 
-  // Function to render the error bars
-  function renderErrorBar(params, api) {
-    const xValue = api.value(0);
-    const yValue = api.value(1);
-    const err = parseFloat(api.value(2)); // Not sure parse to float is needed.
+  let autoZoom = false;
 
-    const highPoint = api.coord([xValue, yValue + err]);
-    const lowPoint = api.coord([xValue, yValue - err]);
+  function buildYAxis(yMin, yMax) {
+    return {
+      type: 'value',
+      min: yMin,
+      max: yMax,
+      axisLabel: {
+        formatter: function (input) {
+          return Number(input).toFixed(2);
+        },
+      },
+      name: 'Peak Flux Density (mJy/beam)',
+      nameLocation: 'middle',
+      nameGap: 50
+    };
+  }
 
-    const style = api.style({
-      stroke: '#5470C6',
-      fill: null,
+  // Draw error bars using ECharts' graphic component rather than a custom series.
+  //
+  // Background: ECharts custom series use a renderItem callback that is supposed to be
+  // re-called whenever the coordinate system changes (e.g. when the y-axis range is
+  // updated). In practice, ECharts does not reliably re-invoke renderItem when only the
+  // axis range changes with no data change, so old error bars would remain on screen.
+  //
+  // Instead, we call this function explicitly after every axis or zoom change. It uses
+  // convertToPixel() to translate data coordinates into canvas pixel coordinates using
+  // the chart's current state, then pushes the result as graphic elements.
+  //
+  // Arguments:
+  //   yMin, yMax — the current y-axis range (used to clamp error bar endpoints)
+  function drawErrorBars(yMin, yMax) {
+    // Convert the y-axis data bounds to pixel coordinates.
+    // Note: pixel y increases downward, so pxTop (data yMax) < pxBottom (data yMin).
+    const pxBottom = lightcurveChart.convertToPixel({ yAxisIndex: 0 }, yMin);
+    const pxTop    = lightcurveChart.convertToPixel({ yAxisIndex: 0 }, yMax);
+
+    // Determine the visible x range from the current dataZoom state.
+    // dataZoom exposes either absolute values (startValue/endValue, ms timestamps) or
+    // percentages (start/end, 0–100). We prefer absolute values when available.
+    const opt = lightcurveChart.getOption();
+    const dz = opt.dataZoom[0];
+    const allTimes = lightcurve_data.slice(1).map(row => new Date(row[0]).getTime());
+    const tMin = Math.min(...allTimes);
+    const tMax = Math.max(...allTimes);
+    const visStart = dz.startValue != null ? dz.startValue : tMin + (dz.start / 100) * (tMax - tMin);
+    const visEnd   = dz.endValue   != null ? dz.endValue   : tMin + (dz.end   / 100) * (tMax - tMin);
+
+    // Build one graphic element per data row (skipping the header row at index 0).
+    // We always produce the same number of elements so that ECharts can match them
+    // by index on subsequent calls — if we skipped invisible elements, the count
+    // would vary and stale elements from a previous render could remain.
+    const elements = lightcurve_data.slice(1).map(row => {
+      const t    = new Date(row[0]).getTime();
+      const yVal = Number(row[1]);
+      const yErr = Number(row[2]);
+
+      // Points outside the current x zoom window are hidden rather than removed,
+      // keeping the element count stable.
+      if (t < visStart || t > visEnd) {
+        return { type: 'line', invisible: true, shape: { x1: 0, y1: 0, x2: 0, y2: 0 } };
+      }
+
+      const xPx    = lightcurveChart.convertToPixel({ xAxisIndex: 0 }, t);
+      // Convert the top and bottom of the error bar (value ± error) to pixel y.
+      const rawTop = lightcurveChart.convertToPixel({ yAxisIndex: 0 }, yVal + yErr);
+      const rawBot = lightcurveChart.convertToPixel({ yAxisIndex: 0 }, yVal - yErr);
+
+      // Clamp pixel y to the plot area so error bars don't overflow the axis bounds.
+      // Math.max(pxTop, ...) prevents drawing above the chart top;
+      // Math.min(pxBottom, ...) prevents drawing below the chart bottom.
+      const yHigh = Math.max(pxTop, Math.min(pxBottom, rawTop));
+      const yLow  = Math.max(pxTop, Math.min(pxBottom, rawBot));
+
+      return {
+        type: 'line',
+        // If both ends clamped to the same pixel the bar is fully outside the axis
+        // range — mark invisible rather than drawing a zero-length line.
+        invisible: yHigh === yLow,
+        shape: { x1: xPx, y1: yHigh, x2: xPx, y2: yLow },
+        style: { stroke: '#5470C6', lineWidth: 1 },
+        silent: true,  // don't capture mouse events
+      };
     });
 
-    return {
-      type: 'group',
-      children: [{
-        type: 'line',
-        shape: {
-          x1: highPoint[0],
-          y1: highPoint[1],
-          x2: lowPoint[0],
-          y2: lowPoint[1]
-        },
-        style: style
-      }]
-    };
+    // Wrap all elements in a single named group so ECharts replaces the whole set
+    // atomically on each update rather than trying to merge individual elements.
+    lightcurveChart.setOption({ graphic: [{ type: 'group', id: 'errorbars', children: elements }] });
   }
 
   const startTimeMs = new Date(lightcurve_data[0][0]).getTime();
@@ -908,53 +978,73 @@
         nameGap: 35
       }
     ],
-    yAxis: {
-      type: 'value',
-      min: minValue,
-      max: maxValue,
-      axisLabel: {
-        formatter: function (input) {
-          let value = Number(input)
-          return value.toFixed(2);
-        },
-        minInterval: 1,
-      },
-      name: 'Peak Flux Density (mJy/beam)',
-      nameLocation: 'middle',
-      nameGap: 50
-    },
+    yAxis: buildYAxis(minValue, maxValue),
     series: [{
-        data: lightcurve_data,
-        dimensions: ["Time", "{{candidate.name}}", "Error bars"],
-        encode: {
-          x: 0,
-          y: 1,
-          tooltip: 1,
-        },
-        type: 'line',
-        smooth: false,
-        lineStyle: {
-          color: '#5470C6'
-        }
-      },
-      {
-        type: 'custom',
-        name: 'error',
-        renderItem: (params, api) => renderErrorBar(params, api),
-        dimensions: ["Time", "{{candidate.name}}", "Error bars"],
-        encode: {
-          x: 0,
-          y: 1,
-          tooltip: 2,
-        },
-        data: lightcurve_data,
-        z: 100
-      },
-    ],
+      data: lightcurve_data,
+      dimensions: ["Time", "{{candidate.name}}", "Error bars"],
+      encode: { x: 0, y: 1, tooltip: 1 },
+      type: 'line',
+      smooth: false,
+      lineStyle: { color: '#5470C6' }
+    }],
   };
 
   // Set the options to the chart
   lightcurveChart.setOption(option);
+  drawErrorBars(minValue, maxValue);
+
+  // Returns [yMin, yMax] for the data points visible within the given x range (ms timestamps)
+  function getYRangeForXRange(startMs, endMs) {
+    const dataRows = lightcurve_data.slice(1); // skip header
+    const visible = dataRows.filter(row => {
+      const t = new Date(row[0]).getTime();
+      return t >= startMs && t <= endMs;
+    });
+    if (visible.length === 0) return [FIXED_MIN, maxValue];
+    const lows = visible.map(row => Number(row[1]) - Number(row[2]));
+    const highs = visible.map(row => Number(row[1]) + Number(row[2]));
+    const dataMin = Math.min(...lows);
+    const dataMax = Math.max(...highs);
+    const padding = (dataMax - dataMin) * 0.15 || 0.5;
+    return [dataMin - padding, dataMax + padding];
+  }
+
+  function applyYAxis() {
+    let yMin, yMax;
+    if (!autoZoom) {
+      yMin = FIXED_MIN;
+      yMax = maxValue;
+    } else {
+      const opt = lightcurveChart.getOption();
+      const dz = opt.dataZoom[0];
+      const allTimes = lightcurve_data.slice(1).map(row => new Date(row[0]).getTime());
+      const tMin = Math.min(...allTimes);
+      const tMax = Math.max(...allTimes);
+      const startMs = dz.startValue != null ? dz.startValue : tMin + (dz.start / 100) * (tMax - tMin);
+      const endMs = dz.endValue != null ? dz.endValue : tMin + (dz.end / 100) * (tMax - tMin);
+      [yMin, yMax] = getYRangeForXRange(startMs, endMs);
+    }
+    lightcurveChart.setOption({ yAxis: buildYAxis(yMin, yMax) });
+    drawErrorBars(yMin, yMax);
+  }
+
+  lightcurveChart.on('dataZoom', function () {
+    if (autoZoom) {
+      applyYAxis();
+    } else {
+      drawErrorBars(FIXED_MIN, maxValue);
+    }
+  });
+
+  function setZoomMode(zoom) {
+    autoZoom = zoom;
+    document.getElementById('lightcurve_zoom_fixed').className = zoom ? 'btn btn-sm btn-outline-secondary' : 'btn btn-sm btn-secondary';
+    document.getElementById('lightcurve_zoom_auto').className = zoom ? 'btn btn-sm btn-secondary' : 'btn btn-sm btn-outline-secondary';
+    applyYAxis();
+  }
+
+  document.getElementById('lightcurve_zoom_fixed').addEventListener('click', () => setZoomMode(false));
+  document.getElementById('lightcurve_zoom_auto').addEventListener('click', () => setZoomMode(true));
 
   // Add event listener for window resize
   window.addEventListener("resize", () => {
