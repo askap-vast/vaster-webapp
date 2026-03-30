@@ -1209,20 +1209,19 @@
 
 {% if candidate.deepcutout_fits or candidate.slices_fits %}
 <script>
-  var fireflyReady = false;
-  var fireflyDeepPending = false;
-  var fireflySlicesPending = false;
 
   function onFireflyLoaded() {
-    fireflyReady = true;
-    if (fireflyDeepPending) {
-      firefly.showImage('fireflyDeep', { FILE: '/firefly/shared-workarea/{{ candidate.deepcutout_fits.name }}' });
-      fireflyDeepPending = false;
-    }
-    if (fireflySlicesPending) {
-      firefly.showImage('fireflySlices', { FILE: '/firefly/shared-workarea/{{ candidate.slices_fits.name }}' });
-      fireflySlicesPending = false;
-    }
+    firefly.showImage('fireflyDeep', {
+      FILE: '/firefly/shared-workarea/{{ candidate.deepcutout_fits.name }}',
+      <!-- RangeValues: firefly.util.image.RangeValues.serializeSimple('Sigma', -2, 8, 'Linear') -->
+      ColorTable: 3
+    });
+    firefly.showImage('fireflySlices', {
+      FILE: '/firefly/shared-workarea/{{ candidate.slices_fits.name }}',
+      <!-- RangeValues: firefly.util.image.RangeValues.serializeSimple('Sigma', -2, 8, 'Linear') -->
+    });
+    console.log(firefly);
+    console.log('/firefly/shared-workarea/{{ candidate.deepcutout_fits.name }}')
   }
 </script>
 <script src="/firefly/firefly_loader.js"></script>
@@ -1247,13 +1246,6 @@
   deepToggleFirefly.addEventListener('click', () => {
     deepShowPanel(deepFireflyPanel, deepToggleFirefly);
   });
-
-  // Load Firefly by default
-  if (fireflyReady) {
-    firefly.showImage('fireflyDeep', { FILE: '/firefly/shared-workarea/{{ candidate.deepcutout_fits.name }}' });
-  } else {
-    fireflyDeepPending = true;
-  }
 </script>
 {% endif %}
 
@@ -1276,14 +1268,6 @@
 
   slicesToggleFirefly.addEventListener('click', () => {
     slicesShowPanel(slicesFireflyPanel, slicesToggleFirefly);
-    if (!fireflySlicesLoaded) {
-      fireflySlicesLoaded = true;
-      if (fireflyReady) {
-        firefly.showImage('fireflySlices', { FILE: '/firefly/shared-workarea/{{ candidate.slices_fits.name }}' });
-      } else {
-        fireflySlicesPending = true;
-      }
-    }
   });
 </script>
 {% endif %}
