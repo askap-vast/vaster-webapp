@@ -1211,17 +1211,21 @@
 <script>
 
   function onFireflyLoaded() {
+    // Set default stretch to Z-scale linear using raw integer constants from Firefly's RangeValues.js.
+    // The documented string API (serializeSimple) has no 'zscale' alias — 'zscale' is absent from
+    // the boundsStrToConst lookup map, so it silently falls back to percentage stretch.
+    // The only way to get Z-scale is via RangeValues.make() with the raw constants:
+    //   lowerWhich=91 (ZSCALE), upperWhich=91 (ZSCALE), algorithm=44 (STRETCH_LINEAR)
+    // Source: https://github.com/Caltech-IPAC/firefly/blob/dev/src/firefly/js/visualize/RangeValues.js
+    const zscaleLinear = firefly.util.image.RangeValues.make(91, 0, 91, 0, NaN, 2, 44).toJSON();
     firefly.showImage('fireflyDeep', {
       FILE: '/firefly/shared-workarea/{{ candidate.deepcutout_fits.name }}',
-      <!-- RangeValues: firefly.util.image.RangeValues.serializeSimple('Sigma', -2, 8, 'Linear') -->
-      ColorTable: 3
+      RangeValues: zscaleLinear,
     });
     firefly.showImage('fireflySlices', {
       FILE: '/firefly/shared-workarea/{{ candidate.slices_fits.name }}',
-      <!-- RangeValues: firefly.util.image.RangeValues.serializeSimple('Sigma', -2, 8, 'Linear') -->
+      RangeValues: zscaleLinear,
     });
-    console.log(firefly);
-    console.log('/firefly/shared-workarea/{{ candidate.deepcutout_fits.name }}')
   }
 </script>
 <script src="/firefly/firefly_loader.js"></script>
