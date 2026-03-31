@@ -177,10 +177,12 @@ class CandidateSerializer(serializers.ModelSerializer):
             date=timezone.now(),
         )
 
-        return models.Candidate.objects.create(
+        candidate = models.Candidate.objects.create(
             project=proj,
             observation=obs,
             beam=beam,
             upload=upload,
             **validated_data,
         )
+        candidate.rerank_best_beam_group()
+        return candidate

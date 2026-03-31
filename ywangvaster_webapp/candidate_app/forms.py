@@ -43,6 +43,15 @@ class CandidateFilterForm(forms.Form):
         if observation:
             self.cleaned_data["observation"] = str(observation.hash_id)
 
+    is_best_beam_choices = (
+        ("", "---"),
+        ("true", "Best beam only"),
+        ("false", "Not best beam"),
+    )
+    is_best_beam = forms.ChoiceField(
+        choices=is_best_beam_choices, required=False, initial="true"
+    )
+
     rated_choices = (
         ("", "---"),
         ("true", "Rated"),

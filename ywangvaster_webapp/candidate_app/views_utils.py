@@ -64,6 +64,7 @@ DOWNLOAD_CANDIDATE_FIELDS = [
     "deep_int_flux",
     "md_deep",
     "lightcurve_data",
+    "is_best_beam",
 ]
 
 FILTER_FORM_FLOAT_VARAIBLES = [
@@ -100,6 +101,7 @@ FILTER_CAND_VAR_MAPPING = {
     "deep_peak_flux": "Deep Peak Flux",
     "deep_sep_arcsec": "Deep Sep (arcsec)",
     "md_deep": "Modulation Index",
+    "is_best_beam": "Best Beam",
     "rated": "Rating Count",
     "observation.id": "Observation",
     "beam.index": "Beam Index",
@@ -150,6 +152,7 @@ CANDIDATE_SORT_FIELDS = {
     "deep_num",
     "md_deep",
     "rating_count",
+    "is_best_beam",
     "cand_sep",
     "beam_sep",
     "deep_sep",
@@ -384,6 +387,7 @@ def get_candidate_form_defaults():
             )
 
     default_inputs = {
+        "is_best_beam": "true",
         "rated": "",
         "ratings_count": None,
         "tag": None,
@@ -454,6 +458,14 @@ def build_candidate_queryset(
     # Float filtering
     if floats_to_filter:
         candidates = candidates.filter(**{k: v for k, v in floats_to_filter.items()})
+
+    # is_best_beam filter
+    if "is_best_beam" in inputs_to_filter:
+        value = inputs_to_filter["is_best_beam"]
+        if value == "true":
+            candidates = candidates.filter(is_best_beam=True)
+        elif value == "false":
+            candidates = candidates.filter(is_best_beam=False)
 
     # Confidence filter
     if "confidence" in inputs_to_filter:

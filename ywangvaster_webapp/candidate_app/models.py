@@ -2,9 +2,16 @@ import os
 import uuid
 from django.utils import timezone
 
-from django.db import models
+from django.db import models, transaction
 from django.conf import settings
 from django.utils.functional import cached_property
+from django.db.models import Q
+
+from django_q3c.expressions import Q3CRadialQuery
+
+# Radius used to group candidates as detections of the same source when
+# determining which beam is closest to the source.
+BEST_BEAM_RADIUS_DEG = 5 / 3600.0  # 5 arcsec
 
 POSSIBLE_RATINGS = (
     ("T", "true"),
@@ -316,6 +323,8 @@ class Candidate(models.Model):
     deep_dec_deg = models.FloatField()
     deep_sep_arcsec = models.FloatField()
 
+    is_best_beam = models.BooleanField(default=False)
+
     # Deep statistics
     deep_name = models.CharField(max_length=100)
     deep_num = models.IntegerField()
@@ -330,6 +339,37 @@ class Candidate(models.Model):
         "deepcutout_png",
         "deepcutout_fits",
     ]
+
+    def rerank_best_beam_group(self):
+        """Within a 5 arcsec radius of this candidate in the same observation,
+        set is_best_beam=True for the candidate with the lowest beam_sep_deg
+        (hash_id as a deterministic tiebreaker) and False for all others.
+
+        Uses SELECT FOR UPDATE so concurrent uploads of nearby candidates
+        serialise their updates to this group.
+        """
+        with transaction.atomic():
+            group = (
+                Candidate.objects.select_for_update()
+                .filter(observation=self.observation)
+                .filter(
+                    Q(
+                        Q3CRadialQuery(
+                            center_ra=self.ra,
+                            center_dec=self.dec,
+                            ra_col="ra",
+                            dec_col="dec",
+                            radius=BEST_BEAM_RADIUS_DEG,
+                        )
+                    )
+                )
+                .order_by("beam_sep_deg", "hash_id")
+            )
+            best = group.first()
+            if best is None:
+                return
+            group.filter(hash_id=best.hash_id).update(is_best_beam=True)
+            group.exclude(hash_id=best.hash_id).update(is_best_beam=False)
 
     def delete(self, *args, **kwargs):
         # Delete associated files

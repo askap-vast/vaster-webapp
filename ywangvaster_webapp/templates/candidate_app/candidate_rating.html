@@ -289,6 +289,11 @@
                       <div class='vstack gap-4 justify-content-center align-items-center'>
 
                         <div class='container'>
+                          {% if not candidate.is_best_beam %}
+                          <div class="alert alert-warning" role="alert">
+                            <strong>Not best beam:</strong> another detection of this source in this observation has a smaller beam separation.
+                          </div>
+                          {% endif %}
                           <h3 style="padding-bottom: 20px;">Summary</h3>
                           <div class='hstack gap-2'>
 

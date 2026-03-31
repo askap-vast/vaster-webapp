@@ -74,6 +74,17 @@
 
                 <div class='col'>
 
+                  <h5>Best Beam</h5>
+
+                  <div class='fieldWrapper'>
+                    <label for="{{ form.is_best_beam.id_for_label }}">Best beam: </label>
+                    {{ form.is_best_beam }}
+                  </div>
+
+                </div>
+
+                <div class='col'>
+
                   <h5>Ratings</h5>
 
                   <div class='vstack gap-2' style="padding-bottom: 10px">
@@ -497,6 +508,10 @@
         {% elif filtered == "rating_count" %}
 
         <td>{{ cand.rating_count }}</td>
+
+        {% elif filtered == "is_best_beam" %}
+
+        <td>{{ cand.is_best_beam }}</td>
 
         {% else %}
 

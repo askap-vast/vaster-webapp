@@ -421,6 +421,12 @@ def candidate_table(request: HttpRequest):
         filtered_columns.add("rating.tag.name")
         tag_filter_name = models.Tag.objects.get(hash_id=inputs_to_filter["tag"]).name
 
+    if "is_best_beam" in inputs_to_filter and inputs_to_filter["is_best_beam"] in (
+        "true",
+        "false",
+    ):
+        filtered_columns.add("is_best_beam")
+
     if "rated" in inputs_to_filter and inputs_to_filter["rated"] in ("true", "false"):
         filtered_columns.add("rating_count")
 
