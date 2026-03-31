@@ -565,7 +565,7 @@
 
                           {% if lightcurve_data %}
                           <div style="position: relative;">
-                            <div style="position: absolute; top: 4px; right: 100px; z-index: 10;">
+                            <div id="lightcurve_toggle_buttons" style="position: absolute; top: 4px; right: 10%; z-index: 10;">
                               <div class="btn-group btn-group-sm" role="group">
                                 <button id="lightcurve_zoom_fixed" class="btn btn-secondary">FIXED</button>
                                 <button id="lightcurve_zoom_auto" class="btn btn-outline-secondary">AUTO</button>
@@ -925,6 +925,7 @@
       xAxisIndex: [0, 1],
       filterMode: 'filter',
     }],
+    grid: { right: '10%' },
     height: 450,
     title: {
       text: 'Lightcurve Peak Flux',
@@ -1028,6 +1029,7 @@
   // Add event listener for window resize
   window.addEventListener("resize", () => {
     lightcurveChart.resize();
+    applyYAxis();
   });
 </script>
 
