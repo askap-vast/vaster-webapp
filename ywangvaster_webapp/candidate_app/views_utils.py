@@ -377,14 +377,15 @@ def get_candidate_form_defaults():
     aggs = models.CandidateMinMaxStats.objects.values().last()
 
     # Get the default values for the float sliders.
+    JY_TO_MJY_FIELDS = {"deep_peak_flux", "deep_int_flux"}
     default_float_values = {}
     for variable in FILTER_FORM_FLOAT_VARAIBLES:
         for x, y in zip(["min", "max"], ["gte", "lte"]):
-            default_float_values[f"{variable}__{y}"] = (
-                float(aggs[f"{x}_{variable}"])
-                if aggs[f"{x}_{variable}"] is not None
-                else None
-            )
+            raw = aggs[f"{x}_{variable}"]
+            value = float(raw) if raw is not None else None
+            if value is not None and variable in JY_TO_MJY_FIELDS:
+                value *= 1000
+            default_float_values[f"{variable}__{y}"] = value
 
     default_inputs = {
         "is_best_beam": "true",
@@ -455,9 +456,19 @@ def build_candidate_queryset(
     else:
         candidates = models.Candidate.objects.all()
 
-    # Float filtering
+    # Float filtering — convert mJy display values back to Jy for DB query
+    MJY_FILTER_KEYS = {
+        "deep_peak_flux__gte",
+        "deep_peak_flux__lte",
+        "deep_int_flux__gte",
+        "deep_int_flux__lte",
+    }
     if floats_to_filter:
-        candidates = candidates.filter(**{k: v for k, v in floats_to_filter.items()})
+        converted = {
+            k: (v / 1000 if k in MJY_FILTER_KEYS else v)
+            for k, v in floats_to_filter.items()
+        }
+        candidates = candidates.filter(**converted)
 
     # is_best_beam filter
     if "is_best_beam" in inputs_to_filter:

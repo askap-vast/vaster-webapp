@@ -235,6 +235,8 @@ def candidate_rating(request, cand_hash_id, arcmin=2):
     context = {
         "CONFIDENCE_MAPPING": CONFIDENCE_MAPPING,
         "candidate": candidate,
+        "deep_peak_flux_mjy": candidate.deep_peak_flux * 1000,
+        "deep_int_flux_mjy": candidate.deep_int_flux * 1000,
         "prev_rating": prev_rating,
         "prev_ratings": prev_ratings,
         "time": time,

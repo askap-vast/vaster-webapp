@@ -439,11 +439,11 @@
                             </tr>
                             <tr>
                               <td class="text-center">Peak Flux</td>
-                              <td class="text-center">{{ candidate.deep_peak_flux|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The peak flux density of the nearest source in the deep (full-integration) image, in mJy." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
+                              <td class="text-center">{{ deep_peak_flux_mjy|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The peak flux density of the nearest source in the deep (full-integration) image, in mJy." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
                             </tr>
                             <tr>
                               <td class="text-center">Int Flux</td>
-                              <td class="text-center">{{ candidate.deep_int_flux|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The integrated flux density of the nearest source in the deep (full-integration) image, in mJy." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
+                              <td class="text-center">{{ deep_int_flux_mjy|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The integrated flux density of the nearest source in the deep (full-integration) image, in mJy." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
                             </tr>
                           </tbody>
 
