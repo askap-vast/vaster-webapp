@@ -465,7 +465,7 @@ def build_candidate_queryset(
     }
     if floats_to_filter:
         converted = {
-            k: (v / 1000 if k in MJY_FILTER_KEYS else v)
+            k: (float(v) / 1000 if k in MJY_FILTER_KEYS and v is not None else v)
             for k, v in floats_to_filter.items()
         }
         candidates = candidates.filter(**converted)
