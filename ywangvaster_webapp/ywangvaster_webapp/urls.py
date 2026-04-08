@@ -24,6 +24,7 @@ from candidate_app import views
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", views.home, name="home"),
+    path("aladin_iframe/<str:target>/", views.aladin_iframe, name="aladin_iframe"),
     path("site_admin/", views.site_admin, name="site_admin"),
     path("login/", views.LoginView.as_view(), name="login"),
     path("logout/", views.LogoutView.as_view(), name="logout"),

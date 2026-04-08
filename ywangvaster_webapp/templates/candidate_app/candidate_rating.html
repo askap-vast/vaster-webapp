@@ -554,13 +554,10 @@
 
                         <div class='col-lg order-1 order-lg-1'>
 
-                          <div id="aladin-lite-div" class="hstack gap-2 justify-content-center align-items-center p-3"
-                            style="min-width: 450px; height: 600px;">
-                            Loading Aladin Lite plugin
-                            <div class="spinner-border text-primary" role="status">
-                              <span class="visually-hidden" />
-                            </div>
-                          </div>
+                          <iframe src="{% url 'aladin_iframe' candidate.name %}"
+                            style="width: 100%; height: 600px; min-width: 450px; border: none;"
+                            loading="lazy">
+                          </iframe>
 
                         </div>
 
@@ -1167,34 +1164,10 @@
 
 {% endif %}
 
-<!-- Aladin sky applet -->
-<script type="text/javascript" src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8"
-  defer>
-</script>
-
-<script>
-  window.onload = function () {
-    makeAladinWindow()
-  }
-
-  async function makeAladinWindow() {
-
-    // Remove the loading spinner in the div 
-    let aladinDiv = document.getElementById('aladin-lite-div')
-    aladinDiv.innerHTML = ''
-
-    A.init.then(() => {
-      let aladin = A.aladin('#aladin-lite-div', {
-        showCooGridControl: true,
-        showSimbadPointerControl: true,
-        showCooGrid: false,
-        // survey: "P/DSS2/color",
-        fov: 2 / 60, // 1, // degress of field of view
-        target: "{{candidate.name}}",
-      });
-    });
-  }
-</script>
+<!-- Firefly loaded directly - Aladin is now in an iframe so no conflicts -->
+{% if candidate.deepcutout_fits or candidate.slices_fits %}
+<script src="/firefly/firefly_loader.js"></script>
+{% endif %}
 
 <script>
   document.querySelectorAll('.copy-coord-btn').forEach(function(btn) {
@@ -1235,7 +1208,6 @@
     });
   }
 </script>
-<script src="/firefly/firefly_loader.js"></script>
 
 {% if candidate.deepcutout_fits %}
 <script>

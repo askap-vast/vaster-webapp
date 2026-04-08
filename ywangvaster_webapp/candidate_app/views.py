@@ -8,6 +8,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 
 from astropy.coordinates import SkyCoord
@@ -58,6 +59,11 @@ DELETABLE_MODELS = {
     "candidate": models.Candidate,
     "rating": models.Rating,
 }
+
+
+@xframe_options_sameorigin
+def aladin_iframe(request, target):
+    return render(request, "candidate_app/aladin_iframe.html", {"target": target})
 
 
 def home(request):

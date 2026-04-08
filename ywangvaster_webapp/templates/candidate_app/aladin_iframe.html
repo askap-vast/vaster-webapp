@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Aladin Sky View</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+    #aladin-lite-div {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="aladin-lite-div"></div>
+
+  <script type="text/javascript" src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8"></script>
+  <script>
+    A.init.then(() => {
+      let aladin = A.aladin('#aladin-lite-div', {
+        showCooGridControl: true,
+        showSimbadPointerControl: true,
+        showCooGrid: false,
+        survey: "P/DSS2/color",
+        fov: 2 / 60,
+        target: "{{ target }}",
+      });
+    });
+  </script>
+</body>
+</html>
