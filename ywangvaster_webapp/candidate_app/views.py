@@ -619,11 +619,13 @@ def ratings_summary(request: HttpRequest):
     # For echarts bar plots of ratings per user and ratings per tag.
     # Convert QuerySet to list of dictionaries for ratings per user
     ratings_per_user = list(
-        ratings.values("user__username").annotate(count=Count("hash_id"))
+        ratings.order_by().values("user__username").annotate(count=Count("hash_id"))
     )
 
     # Convert QuerySet to list of dictionaries for ratings per tag
-    ratings_per_tag = list(ratings.values("tag__name").annotate(count=Count("hash_id")))
+    ratings_per_tag = list(
+        ratings.order_by().values("tag__name").annotate(count=Count("hash_id"))
+    )
 
     # Paginate
     paginator = Paginator(ratings, 25)
