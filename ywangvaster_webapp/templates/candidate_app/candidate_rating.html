@@ -605,7 +605,7 @@
                 <div class="hstack gap-2 justify-content-center" style="padding-bottom: 17px">
                   <form id="searchForm" onsubmit="return handleFormSubmit(event)">
                     <label for='arcmin-input'>Search nearby within arcmin </label>
-                    <input id="arcmin-input" type="text" name="arcmin" value="{{arcmin_search}}" size="2">
+                    <input id="arcmin-input" type="number" name="arcmin" value="{{arcmin_search}}" min="0" max="60" size="2">
 
                     <button type="submit" class="btn btn-primary">Search</button>
                   </form>

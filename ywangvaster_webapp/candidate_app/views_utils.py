@@ -3,6 +3,9 @@ import zipfile
 from io import StringIO, BytesIO
 from typing import List, Optional
 
+import logging
+import requests
+
 from astropy import units
 from astroquery.simbad import Simbad
 from astropy.coordinates import Angle, SkyCoord
@@ -17,6 +20,8 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 
 from . import models
+
+logger = logging.getLogger(__name__)
 
 CONFIDENCE_MAPPING = {
     "T": "True",
@@ -243,6 +248,90 @@ def get_simbad(ra_str: str, dec_str: str, dist_arcmin: float = 1.0) -> List[dict
             )
 
     return simbad_result_table
+
+
+def get_das(ra_str: str, dec_str: str, dist_arcmin: float = 1.0) -> List[dict]:
+    """Get nearby objects from radio catalogues via the DAS VizieR cone search API."""
+
+    catalogues = [
+        "VIII/65",  # NVSS
+        "J/ApJS/255/30",  # VLASS
+        "J/other/PASA/38.58",  # RACS-low
+        "J/other/PASA/41.3",  # RACS-mid
+        "VIII/100",  # GLEAM
+    ]
+
+    from_db_dict = {
+        "VIII/65": "NVSS",
+        "J/ApJS/255/30": "VLASS",
+        "J/other/PASA/38.58": "RACS-low",
+        "J/other/PASA/41.3": "RACS-mid",
+        "VIII/100": "GLEAM",
+    }
+
+    ra = Angle(ra_str, unit=units.hour)
+    dec = Angle(dec_str, unit=units.deg)
+    coord = SkyCoord(ra.deg, dec.deg, unit=units.deg)
+    radius_deg = dist_arcmin / 60.0
+
+    payload = {
+        "ra": float(coord.ra.deg),
+        "dec": float(coord.dec.deg),
+        "radius": radius_deg,
+        "catalogues": catalogues,
+    }
+
+    results = []
+
+    try:
+        response = requests.post(
+            "https://das.datacentral.org.au/vast",
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=30,
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        if data.get("status") != "ok":
+            logger.warning("DAS API returned non-ok status: %s", data.get("status_msg"))
+            return results
+
+        results_data = data.get("results", {})
+        for cat in catalogues:
+            cat_data = results_data.get(cat, {})
+            if not cat_data:
+                continue
+
+            offsets = cat_data.get("offsets", [])
+            ras = cat_data.get("ra", [])
+            decs = cat_data.get("dec", [])
+            ids = cat_data.get("ids", [])
+            object_url_base = cat_data.get("object_url", "")
+
+            for i in range(len(ids)):
+                obj_coord = SkyCoord(ra=float(ras[i]), dec=float(decs[i]), unit="deg")
+                results.append(
+                    {
+                        "name": ids[i],
+                        "from_db": from_db_dict[cat],
+                        "ra_str": obj_coord.ra.to_string(
+                            unit=units.hour, sep=":", pad=True
+                        )[:11],
+                        "dec_str": obj_coord.dec.to_string(
+                            unit=units.deg, sep=":", pad=True
+                        )[:11],
+                        "sep": float(offsets[i]) if i < len(offsets) else None,
+                        "object_url": f"{object_url_base}{ids[i]}",
+                    }
+                )
+
+    except requests.RequestException as exc:
+        logger.error("DAS request failed: %s", exc)
+    except (KeyError, ValueError) as exc:
+        logger.error("DAS response parsing failed: %s", exc)
+
+    return results
 
 
 def filter_candidates_by_coords(

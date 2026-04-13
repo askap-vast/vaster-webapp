@@ -41,6 +41,7 @@ from .views_utils import (
     RATING_SORT_FIELDS,
     get_simbad,
     get_atnf,
+    get_das,
     filter_candidates_by_coords,
     build_candidate_queryset,
     get_new_values_diff,
@@ -90,7 +91,7 @@ def nearby_objects_table(request: HttpRequest):
 
     ra_str = data.get("ra_str")
     dec_str = data.get("dec_str")
-    dist_arcmin = float(data.get("dist_arcmin", 1))
+    dist_arcmin = min(float(data.get("dist_arcmin", 1)), 60.0)
     exclude_hash_id = data.get("exclude_id")
 
     result = []
@@ -100,6 +101,9 @@ def nearby_objects_table(request: HttpRequest):
 
     atnf_results = get_atnf(ra_str, dec_str, dist_arcmin)
     result.extend(atnf_results)
+
+    das_results = get_das(ra_str, dec_str, dist_arcmin)
+    result.extend(das_results)
 
     incoming = models.Candidate.objects.all()
 
