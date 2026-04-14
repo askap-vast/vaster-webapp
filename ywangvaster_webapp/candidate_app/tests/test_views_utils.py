@@ -112,11 +112,19 @@ class TestBuildCandidateQueryset(TestCase):
         self.beam = make_beam(self.obs)
 
     # --- is_best_beam ---
+    #
+    # Both candidates are within 5 arcsec (~0.34 arcsec apart) so they share a
+    # rerank group. c_best wins (lower beam_sep_deg) and is set to True; c_other
+    # is set to False. Explicit reranking + refresh_from_db ensures the DB state
+    # is correct regardless of any side effects from create().
 
     @_patch_defaults
     def test_is_best_beam_true_filters_to_best_only(self, _mock):
-        c_best = make_candidate(self.beam, ra=10.0, dec=20.0, is_best_beam=True)
-        c_other = make_candidate(self.beam, ra=11.0, dec=20.0, is_best_beam=False)
+        c_best = make_candidate(self.beam, ra=10.0, dec=20.0, beam_sep_deg=0.1)
+        c_other = make_candidate(self.beam, ra=10.0001, dec=20.0, beam_sep_deg=0.5)
+        c_best.rerank_best_beam_group()
+        c_best.refresh_from_db()
+        c_other.refresh_from_db()
         session = {**_MOCK_DEFAULT_INPUTS, "is_best_beam": "true"}
         pks = list(build_candidate_queryset(session).values_list("pk", flat=True))
         self.assertIn(c_best.pk, pks)
@@ -124,8 +132,11 @@ class TestBuildCandidateQueryset(TestCase):
 
     @_patch_defaults
     def test_is_best_beam_false_filters_to_non_best_only(self, _mock):
-        c_best = make_candidate(self.beam, ra=10.0, dec=20.0, is_best_beam=True)
-        c_other = make_candidate(self.beam, ra=11.0, dec=20.0, is_best_beam=False)
+        c_best = make_candidate(self.beam, ra=10.0, dec=20.0, beam_sep_deg=0.1)
+        c_other = make_candidate(self.beam, ra=10.0001, dec=20.0, beam_sep_deg=0.5)
+        c_best.rerank_best_beam_group()
+        c_best.refresh_from_db()
+        c_other.refresh_from_db()
         session = {**_MOCK_DEFAULT_INPUTS, "is_best_beam": "false"}
         pks = list(build_candidate_queryset(session).values_list("pk", flat=True))
         self.assertNotIn(c_best.pk, pks)
@@ -133,8 +144,11 @@ class TestBuildCandidateQueryset(TestCase):
 
     @_patch_defaults
     def test_is_best_beam_empty_string_no_filter(self, _mock):
-        c_best = make_candidate(self.beam, ra=10.0, dec=20.0, is_best_beam=True)
-        c_other = make_candidate(self.beam, ra=11.0, dec=20.0, is_best_beam=False)
+        c_best = make_candidate(self.beam, ra=10.0, dec=20.0, beam_sep_deg=0.1)
+        c_other = make_candidate(self.beam, ra=10.0001, dec=20.0, beam_sep_deg=0.5)
+        c_best.rerank_best_beam_group()
+        c_best.refresh_from_db()
+        c_other.refresh_from_db()
         session = {**_MOCK_DEFAULT_INPUTS, "is_best_beam": ""}
         pks = list(build_candidate_queryset(session).values_list("pk", flat=True))
         self.assertIn(c_best.pk, pks)
