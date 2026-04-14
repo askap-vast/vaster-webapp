@@ -1,5 +1,7 @@
 services:
   db:
+    ports:
+      - "5432:5432"
     environment:
       PROD: False
       DEBUG: 1
