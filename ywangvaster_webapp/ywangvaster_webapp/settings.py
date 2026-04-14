@@ -39,7 +39,7 @@ if DEBUG:
     logging.basicConfig(level=logging.DEBUG)
     logging.debug("Settings file loaded")
 
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost").split(" ")
 
 # Trust X-Forwarded-Proto header from nginx so Django recognises HTTPS requests.
 # SECURE_SSL_REDIRECT is intentionally omitted — nginx handles the HTTP→HTTPS redirect.

@@ -64,17 +64,14 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
+          pip install -r requirements_dev.txt
           pip install vendor/django-q3c
-
-      - name: Create runtime directories
-        run: sudo mkdir -p /home/app/logs /ywangvaster_media /ywangvaster_staticfiles
 
       - name: Django system check
         working-directory: ywangvaster_webapp
-        run: python3 manage.py check
+        run: python3 manage.py check --settings=ywangvaster_webapp.testing_settings
 
       - name: Run migrations and tests
-        working-directory: ywangvaster_webapp
         run: |
-          python3 manage.py migrate
-          python3 manage.py test candidate_app
+          cd ywangvaster_webapp && python3 manage.py migrate --settings=ywangvaster_webapp.testing_settings
+          cd .. && pytest
