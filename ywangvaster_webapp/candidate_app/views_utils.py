@@ -258,6 +258,7 @@ def get_das(ra_str: str, dec_str: str, dist_arcmin: float = 1.0) -> List[dict]:
         "J/ApJS/255/30",  # VLASS
         "J/other/PASA/38.58",  # RACS-low
         "J/other/PASA/41.3",  # RACS-mid
+        "J/other/PASA/41.84",  # SRSC
         "VIII/100",  # GLEAM
     ]
 
@@ -266,6 +267,7 @@ def get_das(ra_str: str, dec_str: str, dist_arcmin: float = 1.0) -> List[dict]:
         "J/ApJS/255/30": "VLASS",
         "J/other/PASA/38.58": "RACS-low",
         "J/other/PASA/41.3": "RACS-mid",
+        "J/other/PASA/41.84": "SRSC",
         "VIII/100": "GLEAM",
     }
 
