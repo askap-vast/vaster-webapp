@@ -291,6 +291,11 @@ class Candidate(models.Model):
         upload_to=cand_upload_path, null=True, blank=True
     )
 
+    # Dynamic spectra
+    dynamic_spectra_png = models.FileField(
+        upload_to=cand_upload_path, null=True, blank=True
+    )
+
     # Comes from the candidadate file data uploaded
     # source_id = models.IntegerField() # not needed in this web app.
     name = models.CharField(max_length=100)
@@ -338,6 +343,7 @@ class Candidate(models.Model):
         "slices_fits",
         "deepcutout_png",
         "deepcutout_fits",
+        "dynamic_spectra_png",
     ]
 
     def rerank_best_beam_group(self):

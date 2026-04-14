@@ -61,6 +61,11 @@ urlpatterns = [
     path("upload_observation/", views.upload_observation, name="upload_observation"),
     path("upload_beam/", views.upload_beam, name="upload_beam"),
     path("upload_candidate/", views.upload_candidate, name="upload_candidate"),
+    path(
+        "upload_dynamic_spectra/",
+        views.upload_dynamic_spectra,
+        name="upload_dynamic_spectra",
+    ),
     # Delete records from the DB
     path("delete/", views.delete, name="delete"),
 ]

@@ -845,6 +845,114 @@ def upload_candidate(request):
     )
 
 
+@api_view(["POST"])
+@transaction.atomic
+def upload_dynamic_spectra(request):
+    token, error_response = get_upload_token(request)
+    if error_response:
+        return error_response
+
+    name = request.data.get("name")
+    hash_id = request.data.get("hash")
+
+    if not name and not hash_id:
+        return Response(
+            {
+                "status": "error",
+                "message": "Provide either 'name' or 'hash' to identify the candidate.",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if name and hash_id:
+        return Response(
+            {
+                "status": "error",
+                "message": "Provide only one of 'name' or 'hash', not both.",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if hash_id:
+        try:
+            candidate = models.Candidate.objects.get(hash_id=hash_id)
+        except models.Candidate.DoesNotExist:
+            return Response(
+                {
+                    "status": "error",
+                    "message": f"No candidate found with hash '{hash_id}'.",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception as e:
+            return Response(
+                {"status": "error", "message": f"Invalid hash format: {e}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    else:
+        matches = models.Candidate.objects.filter(name=name)
+        count = matches.count()
+        if count == 0:
+            return Response(
+                {
+                    "status": "error",
+                    "message": f"No candidate found with name '{name}'.",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if count > 1:
+            return Response(
+                {
+                    "status": "error",
+                    "message": (
+                        f"Found {count} candidates with name '{name}'. "
+                        "Use --hash to identify the candidate unambiguously."
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        candidate = matches.first()
+
+    uploaded_file = request.FILES.get("dynamic_spectra_png")
+    if not uploaded_file:
+        return Response(
+            {
+                "status": "error",
+                "message": "No file provided. Include a 'dynamic_spectra_png' file in the request.",  # noqa: B950
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if (
+        uploaded_file.content_type != "image/png"
+        or not uploaded_file.name.lower().endswith(".png")
+    ):
+        return Response(
+            {
+                "status": "error",
+                "message": (
+                    "File must be a PNG image, got content type"
+                    f" '{uploaded_file.content_type}'."
+                ),
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    candidate.dynamic_spectra_png = uploaded_file
+    candidate.save()
+
+    return Response(
+        {
+            "status": "ok",
+            "message": (
+                f"Dynamic spectra uploaded for candidate '{candidate.name}'"
+                f" ({candidate.hash_id})."
+            ),
+        },
+        status=status.HTTP_200_OK,
+    )
+
+
 @login_required(login_url="/")
 def site_admin(request):
     """Display details of each project, observation,

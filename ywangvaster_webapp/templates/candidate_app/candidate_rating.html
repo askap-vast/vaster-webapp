@@ -624,6 +624,26 @@
             </div>
           </div>
 
+          {% if candidate.dynamic_spectra_png %}
+          <div class="row py-3">
+            <h3>Dynamic Spectra</h3>
+            <div class='card'>
+              <div class='card-body'>
+                <div class='container-fluid'>
+                  <div class='row'>
+                    <div class='col-lg'>
+                      <div class='vstack gap-1 justify-content-center align-items-center'>
+                        <img src="{{ candidate.dynamic_spectra_png.url }}"
+                          style="max-width: 50%; height: auto;">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
           <!-- This is the summary of the beam that found the candidate-->
           <div class="row py-3">
             <h3>Statistical Maps</h3>

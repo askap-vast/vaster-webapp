@@ -13,19 +13,12 @@ from astropy.time import Time
 
 import logging
 
+from script_utils import make_session, setup_logging, validate_url, validate_token
+
 logger = logging.getLogger(__name__)
 
 
 base_directory: str = os.path.dirname(os.path.realpath(__file__))
-
-
-class TokenAuth(requests.auth.AuthBase):
-    def __init__(self, token: str):
-        self.token = str(token)
-
-    def __call__(self, r):
-        r.headers["Authorization"] = self.token
-        return r
 
 
 def group_dictionaries(tuples_list):
@@ -282,8 +275,7 @@ def send_cand_request(
 def upload_data(base_url, token, project_id, obs_id, data_directory):
     """Upload a obs/observation to the YWANG-VASTER webapp."""
     # Set up session
-    session = requests.session()
-    session.auth = TokenAuth(token)
+    session = make_session(token)
     obs_url = f"{base_url}/upload_observation/"
     beam_url = f"{base_url}/upload_beam/"
     cand_url = f"{base_url}/upload_candidate/"
@@ -405,26 +397,18 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # set up the logger for stand-alone execution
-    formatter = logging.Formatter(
-        "%(asctime)s  %(name)s  %(lineno)-4d  %(levelname)-9s :: %(message)s"
-    )
-    ch = logging.StreamHandler()
-    ch.setFormatter(formatter)
-
-    # Set up local logger
-    logger.setLevel(args.loglvl)
-    logger.addHandler(ch)
-    logger.propagate = False
+    setup_logging(logger, loglevels[args.loglvl])
 
     # Validate arguments before doing anything
     errors = []
 
-    if not args.base_url.startswith(("http://", "https://")):
-        errors.append(f"--base_url does not look like a valid URL: '{args.base_url}'")
+    url_error = validate_url(args.base_url)
+    if url_error:
+        errors.append(url_error)
 
-    if not re.fullmatch(r"[0-9a-fA-F]{40}", args.token):
-        errors.append("--token must be a 40-character hexadecimal string.")
+    token_error = validate_token(args.token)
+    if token_error:
+        errors.append(token_error)
 
     if not args.project_id.strip():
         errors.append("--project_id must not be empty.")
