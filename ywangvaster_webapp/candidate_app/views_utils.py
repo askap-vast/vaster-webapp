@@ -561,13 +561,13 @@ def build_candidate_queryset(
         }
         candidates = candidates.filter(**converted)
 
-    # is_best_beam filter
-    if "is_best_beam" in inputs_to_filter:
-        value = inputs_to_filter["is_best_beam"]
-        if value == "true":
-            candidates = candidates.filter(is_best_beam=True)
-        elif value == "false":
-            candidates = candidates.filter(is_best_beam=False)
+    # is_best_beam is read directly from session_data (not inputs_to_filter)
+    # so the default "true" is always honoured, not swallowed by the diff.
+    is_best_beam_value = session_data.get("is_best_beam", "true")
+    if is_best_beam_value == "true":
+        candidates = candidates.filter(is_best_beam=True)
+    elif is_best_beam_value == "false":
+        candidates = candidates.filter(is_best_beam=False)
 
     # Confidence filter
     if "confidence" in inputs_to_filter:
