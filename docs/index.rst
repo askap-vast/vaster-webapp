@@ -19,6 +19,7 @@ The source code for this project can be found on the ADACS `Github <https://gith
    :caption: Web Application:
 
    installation
-   architecture 
+   architecture
    database
+   backup
    logging

@@ -21,7 +21,7 @@ To start the webapp locally in development mode:
 make dev
 ```
 
-This starts the Django and Postgres containers. Once running, the webapp is accessible at `http://localhost:80` with the following default credentials:
+This starts the Django, Postgres, and Firefly containers. Once running, the webapp is accessible at `http://localhost:80` with the following default credentials:
 
 - Username: admin
 - Password: test
@@ -117,3 +117,7 @@ sudo chown -R 999:999 /data/vaster_webapp/volumes/django_media
 ```
 
 Please note that ports 80 and 443 on the host machine must be open for internet traffic to reach the webapp. Refer to this [guide](https://linuxconfig.org/how-to-open-allow-incoming-firewall-port-on-ubuntu-22-04-jammy-jellyfish) on how to open ports on Ubuntu 22.04.
+
+## Backups
+
+For production deployments, it is strongly recommended to set up automated backups of the database and media files. See the [Backup](backup.md) documentation for details.
