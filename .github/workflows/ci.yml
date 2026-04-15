@@ -9,9 +9,9 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
           cache: pip
@@ -38,7 +38,7 @@ jobs:
       DEBUG: 1
       DJANGO_LOG_LEVEL: WARNING
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Build PostgreSQL image with q3c
         run: docker build -t ywangvaster-db -f containers/db/Dockerfile .
@@ -56,7 +56,7 @@ jobs:
       - name: Wait for PostgreSQL to be ready
         run: until docker exec db pg_isready -U postgres; do sleep 1; done
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
           cache: pip
