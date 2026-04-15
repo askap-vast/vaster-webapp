@@ -65,7 +65,7 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -r requirements_dev.txt
-          pip install vendor/django-q3c
+          pip install git+https://dev.aao.org.au/datacentral/public/q3c/django-q3c.git
 
       - name: Django system check
         working-directory: ywangvaster_webapp
