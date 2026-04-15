@@ -7,13 +7,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('candidate_app', '0008_candidate_is_best_beam'),
+        ("candidate_app", "0008_candidate_is_best_beam"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='candidate',
-            name='dynamic_spectra_png',
-            field=models.FileField(blank=True, null=True, upload_to=candidate_app.models.cand_upload_path),
+            model_name="candidate",
+            name="dynamic_spectra_png",
+            field=models.FileField(
+                blank=True, null=True, upload_to=candidate_app.models.cand_upload_path
+            ),
         ),
     ]
