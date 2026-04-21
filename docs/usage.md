@@ -18,6 +18,16 @@ The "Candidates" page is where users can filter (within all or a selected projec
 
 When filtering with the float sliders, they will _only_ show candidates with values between the requested minimums and maximums from sliders. They will exclude candidates that have "nan" or "inf" values for that particular variable. However, the unfiltered defaults will show candidates with all values. Hover over any slider label for a tooltip describing the field.
 
+### Filtering
+
+![Candidate Table - Filtering](./images/usage/candidate_table/filtering.png "Candidate Table - Filtering")
+
+Users can sort the filtered results by the columns of the table by clicking on the column header for that variable/column, in either ascending or descending order.
+
+![Candidate Table - Results](./images/usage/candidate_table/results.png "Candidate Table - Results")
+
+Navigating to a filtered candidate summary page is done by clicking on the "name" of the candidate.
+
 ### Rating status filter
 
 The rating status filter is a three-way selector:
@@ -29,14 +39,6 @@ The rating status filter is a three-way selector:
 ### Best-beam filter
 
 Checking the "Best beam only" checkbox restricts results to candidates flagged as the best-beam detection for their source. For each group of candidates within 5 arcseconds of each other in the same observation, the one with the lowest beam separation angle is marked as the best beam. This filter is useful for de-duplicating candidates that were detected in multiple beams.
-
-![Candidate Table - Filtering](./images/usage/candidate_table/filtering.png "Candidate Table - Filtering")
-
-Users can sort the filtered results by the columns of the table by clicking on the column header for that variable/column, in either ascending or descending order.
-
-![Candidate Table - Results](./images/usage/candidate_table/results.png "Candidate Table - Results")
-
-Navigating to a filtered candidate summary page is done by clicking on the "name" of the candidate.
 
 ## Candidate Rating
 
@@ -84,6 +86,10 @@ On the right side of the candidate rating page there is a ratings modal that all
 Users can submit multiple ratings with different tags and notes for the same candidate. All previous ratings for the candidate are shown on the page. Clicking "Next unrated candidate" will redirect the user to the next candidate that has no ratings from them within the currently selected project(s) and active filters.
 
 ![Rate Candidate Already Rated](images/usage/rate_candidate/already_rated.png "Rate Candidate Already Rated")
+
+A full history of the ratings for a candidate is saved, allowing users to view any previous ratings by any users.
+
+![Rate Candidate Rating History](images/usage/rate_candidate/rating_history.png "Rate Candidate Rating History")
 
 ### Creating a Classification Tag
 
