@@ -118,7 +118,15 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="CandidateMinMaxStats",
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
                 ("min_chi_square", models.FloatField(blank=True, null=True)),
                 ("max_chi_square", models.FloatField(blank=True, null=True)),
                 ("min_chi_square_sigma", models.FloatField(blank=True, null=True)),

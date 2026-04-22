@@ -1,0 +1,12 @@
+services:
+  db:
+    environment:
+      STAGING: True
+
+  web:
+    environment:
+      STAGING: True
+
+  nginx:
+    volumes:
+      - ./containers/nginx/nginx.staging.conf:/etc/nginx/conf.d/default.conf

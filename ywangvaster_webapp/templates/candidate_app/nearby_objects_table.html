@@ -43,10 +43,18 @@
                 <a href="https://www.atnf.csiro.au/research/pulsar/psrcat/proc_form.php?version=1.67&startUserDefined=true&c1_val=&c2_val=&c3_val=&c4_val=&sort_attr=jname&sort_order=asc&condition=&pulsar_names={{ result.name|urlize }}&ephemeris=long&submit_ephemeris=Get+Ephemeris&coords_unit=raj%2Fdecj&radius=&coords_1=&coords_2=&style=Long+with+last+digit+error&no_value=*&fsize=3&x_axis=&x_scale=linear&y_axis=&y_scale=linear&state=query"
                     style="text-decoration:None">{{ result.name }}</a>
 
+                {% elif result.object_url %}
+
+                <a href="{{ result.object_url }}" style="text-decoration:None">{{ result.name }}</a>
+
+                {% else %}
+
+                {{ result.name }}
+
                 {% endif %}
 
             </td>
-            <td class="text-center">{{result.from_db}}</td>
+            <td class="text-center">{{result.from_db}}{% if result.from_db == 'Local' %} - {{result.obs_id}} (beam {{result.beam_index}}){% endif %}</td>
             <td class="text-center">{{result.ra_str}}</td>
             <td class="text-center">{{ result.dec_str }}</td>
             <td class="text-center">{{ result.sep|floatformat:3 }}</td>

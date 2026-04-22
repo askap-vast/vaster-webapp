@@ -1,6 +1,10 @@
 # Uploading candidates
 
-Uploading candidates to the webapp can be done using the `ywangvaster_webapp/upload_cand.py` python script. It uses a number of POST requests to push the candidate data to the webapp.
+All upload scripts live in the `scripts/` directory.
+
+## Uploading candidate data
+
+Uploading candidates to the webapp is done using `scripts/upload_cand.py`. It uses a number of POST requests to push the candidate data to the webapp.
 
 1. Ensure you install or use a Python 3.10 environment with `astropy` installed.
 
@@ -14,12 +18,12 @@ Uploading candidates to the webapp can be done using the `ywangvaster_webapp/upl
    pip3 install -r requirements.txt
    ```
 
-2. Log into the webapp using your credentials and get your upload token from the "User management" button a the top right of the navbar.
+2. Log into the webapp using your credentials and get your upload token from the "User management" button at the top right of the navbar.
 
 3. Use the following Python script to send candidate data to the webapp,
 
    ```bash
-   python3 ywangvaster_webapp/upload_cand.py --base_url http://<webapp_url>:80 --token <your_upload_token> --project_id <project_to_upload_to> --observation_id <the SBID> --data_directory <path_to_candidate_data>
+   python3 scripts/upload_cand.py --base_url https://<webapp_url> --token <your_upload_token> --project_id <project_to_upload_to> --observation_id <the SBID> --data_directory <path_to_candidate_data>
    ```
 
 Notes:
@@ -28,4 +32,28 @@ Notes:
 - If the `project_id` given to the upload script does not match one existing in the webapp's database, the webapp will create a new one and upload the candidate data to that newly created `project_id`. The same goes for Observations, Beams and Candidates records.
 - The `data_directory` path can be relative or absolute but requires the `<SBID>_beam<index>_final.csv` to be present for the upload script to pull the candidate information in for each beam and upload to the webapp.
 - All of the relevant fits files, images, and gifs from the beam and candidate are found by the upload script by their filename and will be uploaded with the associated candidate. If there are no files present, then there will be a placeholder for them on the candidate rating page.
-- You do not need to copy the candidate data to the host machine of the webapp. You should be able to use the python script from a remote machine with an internet connect to send all of the candidate data to the webapp.
+- You do not need to copy the candidate data to the host machine of the webapp. You should be able to use the python script from a remote machine with an internet connection to send all of the candidate data to the webapp.
+
+## Uploading dynamic spectra
+
+A dynamic spectra PNG can be uploaded for an existing candidate using `scripts/upload_dynamic_spectra.py`. The candidate must already exist in the database (uploaded via `upload_cand.py`). The candidate can be identified by name or by its UUID hash ID.
+
+```bash
+python3 scripts/upload_dynamic_spectra.py \
+  --base_url https://<webapp_url> \
+  --token <your_upload_token> \
+  --file /path/to/dynamic_spectra.png \
+  --name <candidate_name>
+```
+
+Or using the hash ID:
+
+```bash
+python3 scripts/upload_dynamic_spectra.py \
+  --base_url https://<webapp_url> \
+  --token <your_upload_token> \
+  --file /path/to/dynamic_spectra.png \
+  --hash <candidate_uuid>
+```
+
+Once uploaded, the dynamic spectra image is displayed in a card on the candidate rating page, above the statistical maps.

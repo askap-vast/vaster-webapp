@@ -1,49 +1,7 @@
-x-environment: &environment
-  PROD: False
-
-  # Postgres DB for Django UI
-
-  # PostgreSQL settings
-  DB_NAME: ywangvaster
-  DB_USERNAME: ywangvaster
-  DB_PASSWORD: vast1234star
-  DB_HOST: db
-  DB_PORT: 5432
-
-  # Do not remove, otherwise postgres container won't initialise properly
-  # Just has to be something that's non-zero
-  POSTGRES_PASSWORD: password
-
-  # DJango settings
-  DEBUG: 1
-  SECRET_KEY: foo
-  DJANGO_LOG_LEVEL: INFO
-  DJANGO_ALLOWED_HOSTS: localhost 0.0.0.0 [::1] *
-  DJANGO_SUPERUSER_USERNAME: admin
-  DJANGO_SUPERUSER_PASSWORD: test
-  DJANGO_SUPERUSER_EMAIL: none@nothing.com
-  DJANGO_SECRET_KEY: devkey
-  PYTHONDONTWRITEBYTECODE: 1
-  PYTHONUNBUFFERED: 1
-
 networks:
   ywang_vaster-network:
     name: ywang_vaster-network
     driver: bridge
-
-volumes:
-  django_media:
-    # driver: local
-    # driver_opts:
-    #   type: "none"
-    #   o: "bind"
-    #   device: "<path-to-volume>/django_media"
-  postgres_data:
-    # driver: local
-    # driver_opts:
-    #   type: "none"
-    #   o: "bind"
-    #   device: "<path-to-volume>/postgres_data"
 
 services:
   db:
@@ -52,7 +10,7 @@ services:
     build:
       context: .
       dockerfile: ./containers/db/Dockerfile
-    environment: *environment
+    env_file: .env
     user: postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -62,19 +20,42 @@ services:
       timeout: 5s
       retries: 3
 
+  firefly:
+    image: ipac/firefly:latest
+    container_name: ywangvaster-firefly
+    volumes:
+      - django_media:/firefly/shared-workarea
+    environment:
+      - VISUALIZE_FITS_SEARCH_PATH=/firefly/shared-workarea
+    mem_limit: 4g
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q --spider http://localhost:8080/firefly/ || exit 1",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
   web:
     hostname: web
     container_name: ywangvaster-web
     build:
       context: .
       dockerfile: ./containers/web/Dockerfile
-    environment: *environment
+    env_file: .env
     volumes:
       - ./ywangvaster_webapp:/ywangvaster_webapp
       - django_media:/ywangvaster_media
       - ./logs:/home/app/logs/
-    ports:
-      - 80:80
+    healthcheck:
+      test: "curl --fail --silent --write-out 'HTTP CODE : %{http_code}\n' --output /dev/null http://127.0.0.1:80/"
+      start_period: 60s
+      interval: 60s
+      timeout: 20s
+      retries: 20
     depends_on:
       db:
         condition: service_healthy

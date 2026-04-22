@@ -14,7 +14,6 @@ confidence_choices = (
 
 
 class CandidateFilterForm(forms.Form):
-
     def __init__(self, *args, **kwargs):
         # Extract the selected project from the kwargs
         selected_project_hash_id = kwargs.pop("selected_project_hash_id", None)
@@ -22,14 +21,17 @@ class CandidateFilterForm(forms.Form):
 
         # Update the choices for observation_id based on the selected project
         if selected_project_hash_id:
-            self.fields["observation"].queryset = models.Observation.objects.filter(project=selected_project_hash_id)
+            self.fields["observation"].queryset = models.Observation.objects.filter(
+                project=selected_project_hash_id
+            )
         else:
             self.fields["observation"].queryset = models.Observation.objects.all()
 
     def _post_clean(self):
         """Additional cleaning step after the form's clean method.
 
-        Used to get the hash_id's out of the model choice fields for serialisation in later steps of the candidate_table page.
+        Used to get the hash_id's out of the model choice fields
+        for serialisation in later steps of the candidate_table page.
         """
         super()._post_clean()
 
@@ -41,7 +43,21 @@ class CandidateFilterForm(forms.Form):
         if observation:
             self.cleaned_data["observation"] = str(observation.hash_id)
 
-    rated = forms.BooleanField(required=False)
+    is_best_beam_choices = (
+        ("", "---"),
+        ("true", "Best beam only"),
+        ("false", "Not best beam"),
+    )
+    is_best_beam = forms.ChoiceField(
+        choices=is_best_beam_choices, required=False, initial="true"
+    )
+
+    rated_choices = (
+        ("", "---"),
+        ("true", "Rated"),
+        ("false", "Unrated"),
+    )
+    rated = forms.ChoiceField(choices=rated_choices, required=False)
 
     ratings_count = forms.IntegerField(required=False)
 
@@ -51,7 +67,9 @@ class CandidateFilterForm(forms.Form):
         required=False,
     )
 
-    confidence = forms.ChoiceField(choices=confidence_choices, required=False, label="Confidence")
+    confidence = forms.ChoiceField(
+        choices=confidence_choices, required=False, label="Confidence"
+    )
 
     observation = forms.ModelChoiceField(
         models.Observation.objects.none(),
@@ -159,7 +177,6 @@ class CreateTagForm(forms.ModelForm):
 
 
 class ProjectSelectForm(forms.Form):
-
     selected_project_hash_id = forms.ModelChoiceField(
         queryset=models.Project.objects.all(),
         to_field_name="hash_id",
@@ -171,7 +188,6 @@ class ProjectSelectForm(forms.Form):
 
 
 class RatingFilterForm(forms.Form):
-
     def __init__(self, *args, **kwargs):
         # Extract the selected project from the kwargs
         selected_project_hash_id = kwargs.pop("selected_project_hash_id", None)
@@ -179,14 +195,17 @@ class RatingFilterForm(forms.Form):
 
         # Update the choices for observation_id based on the selected project
         if selected_project_hash_id:
-            self.fields["observation"].queryset = models.Observation.objects.filter(project=selected_project_hash_id)
+            self.fields["observation"].queryset = models.Observation.objects.filter(
+                project=selected_project_hash_id
+            )
         else:
             self.fields["observation"].queryset = models.Observation.objects.all()
 
     def _post_clean(self):
         """Additional cleaning step after the form's clean method.
 
-        Used to get the hash_id's out of the model choice fields for serialisation in later steps of the candidate_table page.
+        Used to get the hash_id's out of the model choice fields
+        for serialisation in later steps of the candidate_table page.
         """
         super()._post_clean()
 

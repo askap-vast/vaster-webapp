@@ -57,6 +57,7 @@ Table "candidate_app_candidate" {
   "slices_fits" "character varying(100)"
   "deepcutout_png" "character varying(100)"
   "deepcutout_fits" "character varying(100)"
+  "dynamic_spectra_png" "character varying(100)"
   "name" "character varying(100)" [not null]
   "ra_str" "character varying(100)" [not null]
   "dec_str" "character varying(100)" [not null]
@@ -78,6 +79,7 @@ Table "candidate_app_candidate" {
   "deep_ra_deg" doubleprecision [not null]
   "deep_dec_deg" doubleprecision [not null]
   "deep_sep_arcsec" doubleprecision [not null]
+  "is_best_beam" boolean [not null]
   "deep_name" "character varying(100)" [not null]
   "deep_num" integer [not null]
   "deep_peak_flux" doubleprecision [not null]

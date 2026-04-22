@@ -52,7 +52,7 @@ class MultiInputSlider extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return ["num-sliders", "slider-min", "slider-max", "initial-values"];
+    return ["num-sliders", "slider-min", "slider-max", "initial-values", "tooltip"];
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -73,6 +73,18 @@ class MultiInputSlider extends HTMLElement {
     labelDiv.classList.add("multi-input-container-label");
     const inputLabel = this.createElement("h6");
     inputLabel.innerText = sliderLabel;
+    const tooltipText = this.getAttribute("tooltip");
+    if (tooltipText) {
+      const tooltipIcon = document.createElement("span");
+      tooltipIcon.setAttribute("data-bs-toggle", "tooltip");
+      tooltipIcon.setAttribute("data-bs-placement", "top");
+      tooltipIcon.setAttribute("title", tooltipText);
+      tooltipIcon.style.cssText = "margin-left: 4px; cursor: help; vertical-align: middle;";
+      const icon = document.createElement("i");
+      icon.className = "fa-solid fa-circle-info text-secondary";
+      tooltipIcon.appendChild(icon);
+      inputLabel.appendChild(tooltipIcon);
+    }
     labelDiv.appendChild(inputLabel);
     parent.append(labelDiv);
 

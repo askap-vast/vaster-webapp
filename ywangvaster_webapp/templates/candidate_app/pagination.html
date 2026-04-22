@@ -6,7 +6,7 @@
                 {% if page_obj.has_previous %}
                 <li class="page-item">
                     <a class="page-link"
-                        href="?{% for key, value in request.GET.items %}{{ key }}={{ value }}&{% endfor %}page={{ page_obj.first }}"
+                        href="?{% for key, value in request.GET.items %}{{ key }}={{ value }}&{% endfor %}page=1"
                         tabindex="-1">&laquo; First</a>
                 </li>
                 <li class="page-item">

@@ -16,21 +16,37 @@ Please note that the filtering by projects is only saved in the user session dat
 
 The "Candidates" page is where users can filter (within all or a selected project) by observation, beam, deep number, cone searches (candidate, beam, and/or deep coordinates, all in separation in arcmin), or by any of the various float values that were uploaded with the candidate.
 
-When filtering with the float sliders, they will _only_ show candidates with values between the requested minimums and maximums from sliders. They will exclude candidates that have "nan" or "inf" values for that particular variable. However, the unfiltered defaults will show candidates with all values.
+When filtering with the float sliders, they will _only_ show candidates with values between the requested minimums and maximums from sliders. They will exclude candidates that have "nan" or "inf" values for that particular variable. However, the unfiltered defaults will show candidates with all values. Hover over any slider label for a tooltip describing the field.
+
+### Filtering
 
 ![Candidate Table - Filtering](./images/usage/candidate_table/filtering.png "Candidate Table - Filtering")
 
-Users can sort the filtered results by the columns of the table by clicking on the column header for that variable/column, in either ascending or descending order. Sorting of the filtered candidate results currently only works for the list presented on the page, not for all the paginated results.
+Users can sort the filtered results by the columns of the table by clicking on the column header for that variable/column, in either ascending or descending order.
 
 ![Candidate Table - Results](./images/usage/candidate_table/results.png "Candidate Table - Results")
 
 Navigating to a filtered candidate summary page is done by clicking on the "name" of the candidate.
 
+### Rating status filter
+
+The rating status filter is a three-way selector:
+
+- **All** — show all candidates regardless of rating status
+- **Rated** — show only candidates that have been rated
+- **Unrated** — show only candidates not yet rated
+
+### Best-beam filter
+
+Checking the "Best beam only" checkbox restricts results to candidates flagged as the best-beam detection for their source. For each group of candidates within 5 arcseconds of each other in the same observation, the one with the lowest beam separation angle is marked as the best beam. This filter is useful for de-duplicating candidates that were detected in multiple beams.
+
 ## Candidate Rating
 
 ### Summary
 
-When clicking on the name of a candidate from the Candidates page, users will be directed to the page `/candidate_rating/<candidate_hash_id>`. Users will be shown a summary of all candidate data, the deep image and slices gif (if uploaded), a plot in Apache Echarts of the peak lightcurve data, the Aladin Lite plugin (pointed to the candidate coordinates), and the relevant statistical maps of the beam.
+When clicking on the name of a candidate from the Candidates page, users will be directed to the page `/candidate_rating/<candidate_hash_id>`. Users will be shown a summary of all candidate data, the deep image and slices gif (if uploaded), a plot in Apache Echarts of the peak lightcurve data, the Aladin Lite plugin (pointed to the candidate coordinates), the Firefly FITS viewer, and the relevant statistical maps of the beam.
+
+If the candidate is not flagged as the best-beam detection for its source, a warning banner is shown at the top of the page.
 
 ![Rate Candidate - Summary](./images/usage/rate_candidate/summary.png "Rate Candidate Summary")
 
@@ -38,9 +54,24 @@ Users will also be able to pause, play and select individual frames using the sl
 
 All the data is available to download for the candidate and beam from this page, either being the slices fits, deep fits, Lightcurve Peak Flux CSV (with RMS error) and along with the beam STD, Peak, and Chisquared fits files (at the bottom of the page). Download buttons on the page will only be present if there were files uploaded with the candidate data using the upload script.
 
+### Coordinates
+
+A coordinates table is shown on the candidate page displaying the RA and Dec in both decimal degrees and HMS/DMS format. Each coordinate can be copied to the clipboard using the copy button next to it.
+
+### Firefly FITS Viewer
+
+An embedded [Firefly](https://github.com/Caltech-IPAC/firefly) viewer is available on the candidate page for interactive exploration of FITS files (deep and slice images). These files are also available for download to view in external programs.
+
 ### Nearby Objects Search
 
-Users are able to search for nearby objects of x (float) arcmin radius about the candidates coordinates. The webapp queries the ATNF Pulsar database (saved locally for quick access), using a web request to retrieve results from [SIMBAD](https://simbad.u-strasbg.fr/simbad/sim-fcoo), as well as searches the local database (filtered by the same project/s selected from the User Management model). Please note that the search will take longer to load when requesting a relatively large arcmin radius.
+Users are able to search for nearby objects of x (float) arcmin radius about the candidate's coordinates. The webapp queries the following sources:
+
+- **ATNF Pulsar catalogue** — stored locally for fast lookup
+- **SIMBAD** — queried via web request
+- **Radio catalogues via DataCentral DAS API** — NVSS, VLASS, RACS-low, RACS-mid, GLEAM, and SRSC
+- **Local database** — other candidates within the selected project(s), drawn from all observations
+
+Please note that the search will take longer to load when requesting a relatively large arcmin radius. The search radius is capped at 60 arcminutes.
 
 ![Rate Candidate - Nearby Objects](images/usage/rate_candidate/nearby_objects.png "Rate Candidate Nearby Objects")
 
@@ -48,13 +79,17 @@ Users are also able to sort these results by ascending or descending order, but 
 
 ### Rating
 
-On the right side of the candidate rating page, there is the sticky ratings modal that allows users to rate a candidate by selecting a specific "Tag" by using the dropdown form and selecting the options of "True", "False", or "Unsure", as well as adding any notes to the rating.
+On the right side of the candidate rating page there is a ratings modal that allows users to rate a candidate. As well as indicating whether a candidate is a real variable source the user can select a "Tag" to describe the source and include notes.
 
 ![Rate Candidate - Modal](images/usage/rate_candidate/modal.png "Rate Candidate Modal")
 
-Once rated, users will be able to see their previous rating of the candidate, and click on the the "Next unrated random candidate" which will redirect the user to a random candidate within the same selected project or all projects. Users can only create one rating per candidate but have the option of updating their previous rating if required.
+Users can submit multiple ratings with different tags and notes for the same candidate. All previous ratings for the candidate are shown on the page. Clicking "Next unrated candidate" will redirect the user to the next candidate that has no ratings from them within the currently selected project(s) and active filters.
 
 ![Rate Candidate Already Rated](images/usage/rate_candidate/already_rated.png "Rate Candidate Already Rated")
+
+A full history of the ratings for a candidate is saved, allowing users to view any previous ratings by any users.
+
+![Rate Candidate Rating History](images/usage/rate_candidate/rating_history.png "Rate Candidate Rating History")
 
 ### Creating a Classification Tag
 
@@ -66,17 +101,19 @@ Please note that the web application has a number of tags loaded by default on i
 
 `ywangvaster_webapp/candidate_app/migrations/0005_create_tags.py`
 
-Classification tags are global and can be accessed for all projects and users. At the moment, tags can only be deleted from the Django admin page.
+Classification tags are global and can be accessed for all projects and users. At the moment, tags can only be deleted or modified from the Django admin page.
 
 ## Ratings Summary
 
-On this page users can see an overview of all the ratings that have been submitted for candidates by all other users. These ratings are also filtered by project like the rest of the web application.
+On this page users can see an overview of all the ratings that have been submitted for candidates by all other users. These ratings are also filtered by project like the rest of the web application. Users can further filter this page by tag, confidence and user that performed the rating.
 
 The two Echarts plots are simple bar charts for the counts of 'Ratings per User' and 'Ratings per Classification Tag'. These plots are produced from the filtering form below and will change if the user chooses to filter for observation, tag, confidence, etc.
 
 ![Ratings Summary - Summary](images/usage/ratings_summary/summary.png)
 
-The filtered ratings (from the form) can be downloaded in CSV form using the "Download filtered ratings" button. This will download a zip file that contains all of the tags and notes for each tag in a `tags.csv`, as well as the filtered ratings data in a `ratings.csv` file. The filtered rating results also populate the above bar chart plots.
+The table shows only the most recent rating per candidate. A "# ratings" column shows the total number of ratings for each candidate.
+
+The filtered ratings (from the form) can be downloaded in CSV form using the "Download filtered ratings" button. This will download a zip file that contains all of the tags and notes for each tag in a `tags.csv`, as well as the filtered ratings data in a `ratings.csv` file.
 
 ![Ratings Summary - Results](images/usage/ratings_summary/results.png)
 

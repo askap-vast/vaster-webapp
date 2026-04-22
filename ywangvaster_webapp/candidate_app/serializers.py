@@ -8,7 +8,6 @@ from . import models
 
 
 def remove_leading_zero(coord_str: str):
-
     if coord_str.startswith("0"):
         return coord_str[1:]
     elif coord_str.startswith("-0"):
@@ -17,7 +16,6 @@ def remove_leading_zero(coord_str: str):
 
 
 class ObservationSerializer(serializers.ModelSerializer):
-
     hash_id = serializers.UUIDField(required=False)
 
     class Meta:
@@ -37,9 +35,13 @@ class ObservationSerializer(serializers.ModelSerializer):
 
         project = models.Project.objects.get(id=validated_data["proj_id"])
 
-        assert project is not None, f"Failed to find project {validated_data['proj_id']} DB."
+        assert (
+            project is not None
+        ), f"Failed to find project {validated_data['proj_id']} DB."
 
-        return models.Observation.objects.create(upload=upload, project=project, **validated_data)
+        return models.Observation.objects.create(
+            upload=upload, project=project, **validated_data
+        )
 
 
 BEAM_FILE_FIELDS = [
@@ -78,7 +80,9 @@ class BeamSerializer(serializers.ModelSerializer):
 
         proj = models.Project.objects.get(id=validated_data["proj_id"])
 
-        assert proj is not None, f"Failed to find project {validated_data['proj_id']} DB."
+        assert (
+            proj is not None
+        ), f"Failed to find project {validated_data['proj_id']} DB."
 
         obs_id = validated_data.pop("obs_id")
         observation = models.Observation.objects.get(project=proj, id=obs_id)
@@ -97,7 +101,7 @@ class BeamSerializer(serializers.ModelSerializer):
         validated_data["total_file_size_bytes"] = total_file_size_bytes
 
         print(
-            f" ---- Number of files in beam: {total_file_count}. Number of bytes for beam files: {total_file_size_bytes} ---- "
+            f" ---- Number of files in beam: {total_file_count}. Number of bytes for beam files: {total_file_size_bytes} ---- "  # noqa: B950
         )
 
         # Create the Upload metadata
@@ -106,7 +110,9 @@ class BeamSerializer(serializers.ModelSerializer):
             date=timezone.now(),
         )
 
-        return models.Beam.objects.create(observation=observation, project=proj, upload=upload, **validated_data)
+        return models.Beam.objects.create(
+            observation=observation, project=proj, upload=upload, **validated_data
+        )
 
 
 CANDIDATE_FILE_FIELDS = [
@@ -119,7 +125,6 @@ CANDIDATE_FILE_FIELDS = [
 
 
 class CandidateSerializer(serializers.ModelSerializer):
-
     hash_id = serializers.UUIDField(required=False)
 
     class Meta:
@@ -139,7 +144,9 @@ class CandidateSerializer(serializers.ModelSerializer):
             validated_data["hash_id"] = uuid.uuid4()
 
         proj = models.Project.objects.get(id=validated_data["proj_id"])
-        assert proj is not None, f"Failed to find project {validated_data['proj_id']} DB."
+        assert (
+            proj is not None
+        ), f"Failed to find project {validated_data['proj_id']} DB."
 
         obs_id = validated_data.get("obs_id")
         print(f"+++++++++++++++ candidate serializer: OBS ID {obs_id} +++++++++++++++")
@@ -148,9 +155,10 @@ class CandidateSerializer(serializers.ModelSerializer):
 
         beam_index = validated_data.get("beam_index")
         beam = models.Beam.objects.get(index=beam_index, observation=obs, project=proj)
-        print(f"+++++++++++++++ candidate serializer: BEAM INDEX {beam_index} +++++++++++++++")
+        print(
+            f"+++++++++++++++ candidate serializer: BEAM INDEX {beam_index} +++++++++++++++"
+        )
         assert beam is not None, f"Failed to find beam {beam_index} for {obs_id} in DB."
-        # validated_data["cand_obj_id"] = f"{proj.id}_{obs.id}_{beam.index}_{validated_data['name']}"
 
         # Make counts for uploaded files and file sizes.
         total_file_count = 0
@@ -169,10 +177,12 @@ class CandidateSerializer(serializers.ModelSerializer):
             date=timezone.now(),
         )
 
-        return models.Candidate.objects.create(
+        candidate = models.Candidate.objects.create(
             project=proj,
             observation=obs,
             beam=beam,
             upload=upload,
             **validated_data,
         )
+        candidate.rerank_best_beam_group()
+        return candidate

@@ -6,7 +6,6 @@ import csv
 import json
 import argparse
 import requests
-from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 from astropy.io import fits
@@ -14,16 +13,12 @@ from astropy.time import Time
 
 import logging
 
+from script_utils import make_session, setup_logging, validate_url, validate_token
+
 logger = logging.getLogger(__name__)
 
 
-class TokenAuth(requests.auth.AuthBase):
-    def __init__(self, token: str):
-        self.token = str(token)
-
-    def __call__(self, r):
-        r.headers["Authorization"] = self.token
-        return r
+base_directory: str = os.path.dirname(os.path.realpath(__file__))
 
 
 def group_dictionaries(tuples_list):
@@ -137,10 +132,9 @@ def send_observation_request(
     obs_url: str,
     project_id: str,
     obs_id: str,
-    directory: str = os.path.dirname(os.path.realpath(__file__)),
+    directory: str = base_directory,
 ):
-
-    ### Get the observation date from one of the fits files ###
+    # Get the observation date from one of the fits files #
     std_fits_obs_file_path = os.path.join(directory, f"{obs_id}_beam00_std.fits")
     with fits.open(std_fits_obs_file_path) as hdul:
         # Access the primary header
@@ -148,24 +142,24 @@ def send_observation_request(
 
         # Retrieve the value of the 'DATE-OBS' keyword
         _date_obs = header.get("DATE-OBS")
-#        _time_sys = header.get("TIMESYS")
+        #        _time_sys = header.get("TIMESYS")
 
         # Turn datetime into a proper datetime object for
-#        timesys = _time_sys.strip()
-#        datetime_object = datetime.fromisoformat(_date_obs)
-#        if timesys.upper() == "UTC":
-#            datetime_object = datetime_object.replace(tzinfo=timezone.utc)
+        #        timesys = _time_sys.strip()
+        #        datetime_object = datetime.fromisoformat(_date_obs)
+        #        if timesys.upper() == "UTC":
+        #            datetime_object = datetime_object.replace(tzinfo=timezone.utc)
 
-        datetime_object = Time(_date_obs).to_value('isot')
+        datetime_object = Time(_date_obs).to_value("isot")
 
-    ### Send a request to create an observation record in the DB ###
+    # Send a request to create an observation record in the DB #
     r = session.post(
         obs_url,
         data={
             "id": obs_id,
             "proj_id": project_id,
-#            "obs_start": datetime_object.isoformat(),
-            "obs_start": datetime_object, 
+            #            "obs_start": datetime_object.isoformat(),
+            "obs_start": datetime_object,
         },
     )
     print(r.text)
@@ -178,7 +172,7 @@ def send_beam_request(
     project_id: str,
     obs_id: str,
     beam_id: str,
-    directory: str = os.path.dirname(os.path.realpath(__file__)),
+    directory: str = base_directory,
 ):
     """Uploads beam specific files to the ywangvaster webapp."""
 
@@ -186,18 +180,19 @@ def send_beam_request(
     for series_name, fmt_list in [
         ("final", ["csv"]),
         # ("std", ["fits"]),
-       # ("chisquare_cand", ["csv"]),
+        # ("chisquare_cand", ["csv"]),
         ("chisquare_map1", ["png"]),
         ("chisquare_map2", ["png"]),
         # ("chisquare", ["fits"]),
-       #  ("peak_cand", ["csv"]),
+        #  ("peak_cand", ["csv"]),
         ("peak_map1", ["png"]),
         ("peak_map2", ["png"]),
         # ("peak", ["fits"]),
     ]:
-
         for fmt in fmt_list:
-            filename = os.path.join(directory, f"{obs_id}_{beam_id}_{series_name}.{fmt}")
+            filename = os.path.join(
+                directory, f"{obs_id}_{beam_id}_{series_name}.{fmt}"
+            )
             beam_upload_files[f"{series_name}_{fmt}"] = open(filename, "rb")
 
     try:
@@ -229,19 +224,17 @@ def send_cand_request(
     cand: Dict,
     lightcurve_local_rms: Optional[Dict] = None,
     lightcurve_peak_flux: Optional[Dict] = None,
-    directory: str = os.path.dirname(os.path.realpath(__file__)),
+    directory: str = base_directory,
 ):
-
-    # Add the lightcurve data to the candidate, and in error bars and cast as strings for json handling.
+    # Add the lightcurve data to the candidate, and in error bars
+    # and cast as strings for json handling.
     if (
         lightcurve_peak_flux is not None
         and lightcurve_local_rms is not None
         and cand["name"] in lightcurve_peak_flux[0]
     ):
-
         lightcurve = [["Time", cand["name"], "rms_error"]]
         for lc, lc_err in zip(lightcurve_peak_flux, lightcurve_local_rms):
-
             assert (
                 lc["Time"] == lc_err["Time"]
             ), f"Time x-value for the lightcurve data is not the same in CSVs! {cand['name']}"
@@ -256,9 +249,10 @@ def send_cand_request(
         ("slices", ["gif", "fits"]),
         ("deepcutout", ["png", "fits"]),
     ]:
-
         for fmt in fmt_list:
-            filename = os.path.join(directory, f"{obs_id}_{beam_id}_{series_name}_{cand['name']}.{fmt}")
+            filename = os.path.join(
+                directory, f"{obs_id}_{beam_id}_{series_name}_{cand['name']}.{fmt}"
+            )
             if os.path.exists(filename):
                 cand_upload_files[f"{series_name}_{fmt}"] = open(filename, "rb")
 
@@ -281,14 +275,15 @@ def send_cand_request(
 def upload_data(base_url, token, project_id, obs_id, data_directory):
     """Upload a obs/observation to the YWANG-VASTER webapp."""
     # Set up session
-    session = requests.session()
-    session.auth = TokenAuth(token)
+    session = make_session(token)
     obs_url = f"{base_url}/upload_observation/"
     beam_url = f"{base_url}/upload_beam/"
     cand_url = f"{base_url}/upload_candidate/"
 
     # Find all of the beam output files for this observation.
-    beam_final_candidate_files = find_files_with_pattern(rf"{obs_id}_.*_final\.csv", data_directory)
+    beam_final_candidate_files = find_files_with_pattern(
+        rf"{obs_id}_.*_final\.csv", data_directory
+    )
 
     print(f"beam_final_candidate_files: {beam_final_candidate_files}")
 
@@ -303,11 +298,14 @@ def upload_data(base_url, token, project_id, obs_id, data_directory):
 
     # For each beam
     for beam_id in all_beam_ids:
-
         # Upload the metadata, fits and images for each beam
-        send_beam_request(session, beam_url, project_id, obs_id, beam_id, data_directory)
+        send_beam_request(
+            session, beam_url, project_id, obs_id, beam_id, data_directory
+        )
 
-        candidate_csv_path = os.path.join(data_directory, f"{obs_id}_{beam_id}_final.csv")
+        candidate_csv_path = os.path.join(
+            data_directory, f"{obs_id}_{beam_id}_final.csv"
+        )
 
         # List of candidates from the *_final.csv
         candidates = parse_csv_file(candidate_csv_path, "cand_list", project_id)
@@ -316,20 +314,23 @@ def upload_data(base_url, token, project_id, obs_id, data_directory):
 
         # Read in the lightcurve data files
         lightcurve_peak_flux = parse_csv_file(
-            os.path.join(data_directory, f"{obs_id}_{beam_id}_lightcurve_peak_flux.csv"),
+            os.path.join(
+                data_directory, f"{obs_id}_{beam_id}_lightcurve_peak_flux.csv"
+            ),
             "per_cand",
             project_id,
         )
 
         lightcurve_local_rms = parse_csv_file(
-            os.path.join(data_directory, f"{obs_id}_{beam_id}_lightcurve_local_rms.csv"),
+            os.path.join(
+                data_directory, f"{obs_id}_{beam_id}_lightcurve_local_rms.csv"
+            ),
             "per_cand",
             project_id,
         )
 
         # Loop through each possible candidate
         for cand in candidates:
-
             # Remove source_id
             cand.pop("source_id")
 
@@ -396,24 +397,18 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # set up the logger for stand-alone execution
-    formatter = logging.Formatter("%(asctime)s  %(name)s  %(lineno)-4d  %(levelname)-9s :: %(message)s")
-    ch = logging.StreamHandler()
-    ch.setFormatter(formatter)
-
-    # Set up local logger
-    logger.setLevel(args.loglvl)
-    logger.addHandler(ch)
-    logger.propagate = False
+    setup_logging(logger, loglevels[args.loglvl])
 
     # Validate arguments before doing anything
     errors = []
 
-    if not args.base_url.startswith(("http://", "https://")):
-        errors.append(f"--base_url does not look like a valid URL: '{args.base_url}'")
+    url_error = validate_url(args.base_url)
+    if url_error:
+        errors.append(url_error)
 
-    if not re.fullmatch(r"[0-9a-fA-F]{40}", args.token):
-        errors.append("--token must be a 40-character hexadecimal string.")
+    token_error = validate_token(args.token)
+    if token_error:
+        errors.append(token_error)
 
     if not args.project_id.strip():
         errors.append("--project_id must not be empty.")
@@ -434,8 +429,7 @@ if __name__ == "__main__":
 
     if errors:
         parser.error(
-            "The following required arguments are invalid:\n  "
-            + "\n  ".join(errors)
+            "The following required arguments are invalid:\n  " + "\n  ".join(errors)
         )
 
     upload_data(

@@ -20,9 +20,12 @@ function sortTable(tableBodyId, columnN, compareType = "") {
     arrow.classList.remove("sort-asc", "sort-desc");
   });
 
-  // Add new arrow
-  const arrow = document.getElementById(`arrow-${columnN}`);
-  arrow.classList.add(newDirection === "asc" ? "sort-asc" : "sort-desc");
+  // Add new arrow by finding the header cell at the same column index
+  const table = tableBody.closest("table");
+  const headerRow = table && table.querySelector("thead tr");
+  const headerCell = headerRow && headerRow.cells[columnN];
+  const arrow = headerCell && headerCell.querySelector(".sort-arrow");
+  if (arrow) arrow.classList.add(newDirection === "asc" ? "sort-asc" : "sort-desc");
 
   rows.forEach((row) => tableBody.appendChild(row));
 }

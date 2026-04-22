@@ -24,6 +24,7 @@ from candidate_app import views
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", views.home, name="home"),
+    path("aladin_iframe/<str:target>/", views.aladin_iframe, name="aladin_iframe"),
     path("site_admin/", views.site_admin, name="site_admin"),
     path("login/", views.LoginView.as_view(), name="login"),
     path("logout/", views.LogoutView.as_view(), name="logout"),
@@ -31,12 +32,26 @@ urlpatterns = [
     # Candidate pages
     path("ratings_summary/", views.ratings_summary, name="ratings_summary"),
     path("candidates/", views.candidate_table, name="candidates"),
-    path("candidate_random/", views.candidate_random, name="candidate_random"),
-    path("clear_candidates_filter/", views.clear_candidates_filter, name="clear_candidates_filter"),
-    path("clear_ratings_filter/", views.clear_ratings_filter, name="clear_ratings_filter"),
-    path("candidate_rating/<str:cand_hash_id>/", views.candidate_rating, name="candidate_rating"),
+    path("next_candidate/", views.next_candidate, name="next_candidate"),
+    path(
+        "clear_candidates_filter/",
+        views.clear_candidates_filter,
+        name="clear_candidates_filter",
+    ),
+    path(
+        "clear_ratings_filter/", views.clear_ratings_filter, name="clear_ratings_filter"
+    ),
+    path(
+        "candidate_rating/<str:cand_hash_id>/",
+        views.candidate_rating,
+        name="candidate_rating",
+    ),
     path("create_tag/", views.create_tag, name="create_tag"),
-    path("download_lightcurve/<str:cand_hash_id>", views.download_lightcurve_csv, name="download_lightcurve_csv"),
+    path(
+        "download_lightcurve/<str:cand_hash_id>",
+        views.download_lightcurve_csv,
+        name="download_lightcurve_csv",
+    ),
     path("project_select/", views.project_select, name="project_select"),
     # Get nearby objects (all databases in one)
     path("get_nearby_objects/", views.nearby_objects_table, name="get_nearby_objects"),
@@ -46,6 +61,11 @@ urlpatterns = [
     path("upload_observation/", views.upload_observation, name="upload_observation"),
     path("upload_beam/", views.upload_beam, name="upload_beam"),
     path("upload_candidate/", views.upload_candidate, name="upload_candidate"),
+    path(
+        "upload_dynamic_spectra/",
+        views.upload_dynamic_spectra,
+        name="upload_dynamic_spectra",
+    ),
     # Delete records from the DB
     path("delete/", views.delete, name="delete"),
 ]

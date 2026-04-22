@@ -15,7 +15,6 @@ import sys
 import logging
 from pathlib import Path
 
-
 LANGUAGE_CODE = "en-us"
 USE_I18N = True
 USE_TZ = True
@@ -34,17 +33,23 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", None)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", False)
+STAGING = os.environ.get("STAGING", False)
 
 if DEBUG:
     logging.basicConfig(level=logging.DEBUG)
     logging.debug("Settings file loaded")
 
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost").split(" ")
+
+# Trust X-Forwarded-Proto header from nginx so Django recognises HTTPS requests.
+# SECURE_SSL_REDIRECT is intentionally omitted — nginx handles the HTTP→HTTPS redirect.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
-# Maximum size (in bytes) that a request can be before a SuspiciousOperation (RequestDataTooBig) is raised
+# Maximum size (in bytes) that a request can be before a
+# SuspiciousOperation (RequestDataTooBig) is raised
 DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 MB, adjust as necessary
 
 # Maximum size (in bytes) that a single uploaded file can be
@@ -64,7 +69,14 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "candidate_app",
     "ywangvaster_webapp",
+    "crispy_forms",
+    "crispy_bootstrap5",
 ]
+
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
+CRISPY_FAIL_SILENTLY = True
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -146,6 +158,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "candidate_app.context_processors.site_settings",
                 "candidate_app.context_processors.header_forms",
             ],
         },
@@ -189,7 +202,7 @@ LOGGING = {
         },
         "django.template": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": "DEBUG" if DEBUG else "WARNING",
         },
     },
 }

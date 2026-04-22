@@ -1,12 +1,20 @@
-"""This is loaded into the context for every page and needs to be added to settings.py for each addition to the page context dictionary."""
+"""This is loaded into the context for every page and needs to be
+added to settings.py for each addition to the page context dictionary."""
 
 from . import models, forms
 
+from django.conf import settings
 from django.contrib.auth.forms import PasswordChangeForm as DjangoPasswordChangeForm
 
 
-def header_forms(request):
+def site_settings(request):
+    return {
+        "staging": settings.STAGING,
+        "debug": settings.DEBUG,
+    }
 
+
+def header_forms(request):
     project_form = forms.ProjectSelectForm()
 
     # Get current selected project and put it on the header of each rendered page.
@@ -16,7 +24,9 @@ def header_forms(request):
         selected_project_id = "All projects"
         selected_projects = models.Project.objects.all()
     else:
-        selected_projects = [models.Project.objects.get(hash_id=selected_project_hash_id)]
+        selected_projects = [
+            models.Project.objects.get(hash_id=selected_project_hash_id)
+        ]
         selected_project_id = selected_projects[0].id
 
     # Empty pw reset form for header

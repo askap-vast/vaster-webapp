@@ -1,6 +1,7 @@
 {% extends 'candidate_app/header.html' %}
 
 {% load utils %}
+{% load static %}
 
 {% block content %}
 
@@ -51,50 +52,49 @@
 
     <div class='col-lg-auto order-1 order-lg-2' id='rating-card-container'>
       <div id='rating-side-card'>
-        <div class='card' style="margin-top: 2.25%; padding: 1.5%">
+        <div class='card mt-3'>
           <div class='card-body'>
-            <h4>Rate: {{candidate.name}} </h4>
+            <button class="btn p-0 border-0 w-100 d-flex justify-content-between align-items-center" type="button"
+              data-bs-toggle="collapse" data-bs-target="#ratingCardBody"
+              aria-expanded="true" aria-controls="ratingCardBody">
+              <h4 class="mb-0">Rate: {{candidate.name}}</h4>
+              <span class="d-lg-none text-secondary rating-collapse-icon"><i class="fa-solid fa-chevron-down"></i></span>
+            </button>
+
+            <div class="collapse show" id="ratingCardBody">
 
             <hr />
 
             {% if prev_rating %}
             <div id='prev_rating-{{prev_rating.hash_id}}' style="padding: 10px">
-
-              <text>Your previous rating for this candidate:</text>
-
-              <div class='vstack gap-2'>
-
+              <div class='vstack gap-2' style="padding-top: 8px">
                 <div class='hstack gap-2 d-flex'>
-                  <label class='fw-bold'>Real variable? </label>
-                  <text> {{ prev_rating.rating|get_label_mapping:CONFIDENCE_MAPPING }}</text>
+                  <label class='fw-bold'>User:</label>
+                  {{ prev_rating.user }}
                 </div>
-
                 <div class='hstack gap-2 d-flex'>
-                  <label class='fw-bold'>Tag: </label>
-                  <text> {{ prev_rating.tag }} </text>
+                  <label class='fw-bold'>Real variable?</label>
+                  {{ prev_rating.rating|get_label_mapping:CONFIDENCE_MAPPING }}
                 </div>
-
                 <div class='hstack gap-2 d-flex'>
-                  <label class='fw-bold'>Date: </label>
-                  <text> {{ prev_rating.date }}</text>
+                  <label class='fw-bold'>Tag:</label>
+                  {{ prev_rating.tag }}
                 </div>
-
                 <div class='hstack gap-2 d-flex'>
-                  <label class='fw-bold'>Notes: </label>
-                  {% if prev_rating.notes|length > 0 %}
-                  <div style="max-width: 300px; max-height: 200px; overflow-y: auto">
-                    <text>
-                      {{ prev_rating.notes }}</text>
+                  <label class='fw-bold'>Date:</label>
+                  {{ prev_rating.date }}
+                </div>
+                <div class='vstack gap-1'>
+                  <label class='fw-bold'>Notes:</label>
+                  {% if prev_rating.notes %}
+                  <div style="max-height: 150px; overflow-y: auto; word-break: break-word">
+                    {{ prev_rating.notes }}
                   </div>
                   {% endif %}
                 </div>
-
               </div>
-
             </div>
-
             <hr />
-
             {% endif %}
 
             <form type='POST' method="POST" action="{% url 'candidate_rating' candidate.hash_id %}">
@@ -127,30 +127,88 @@
                   Update rating
                 </button>
 
-                <a class='btn btn-success' id='next-unrated-candidate' href="{% url 'candidate_random' %}">
-                  Next unrated random candidate &rsaquo;
+                {% if next_candidate_available %}
+                <a class='btn btn-success' id='next-unrated-candidate' href="{% url 'next_candidate' %}" autofocus>
+                  Next unrated candidate{% if next_candidate_is_filtered %} (filtered){% endif %} &rsaquo;
                 </a>
+                {% else %}
+                <a class='btn btn-secondary disabled' id='next-unrated-candidate' tabindex="-1" aria-disabled="true">
+                  No unrated candidates{% if next_candidate_is_filtered %} (filtered){% endif %}
+                </a>
+                {% endif %}
 
                 {% else %}
-                <button class='btn btn-primary' id='submit-rating' type='submit'>
-                  Rate
+                <button class='btn btn-primary' id='submit-rating' type='submit' autofocus>
+                  Rate &amp; next &rsaquo;
                 </button>
                 {% endif %}
               </div>
             </form>
+
+            {% with history=prev_ratings|slice:"1:" %}
+            {% if history %}
+            <hr />
+            <div class="accordion" id="ratingHistoryAccordion">
+              <div class="accordion-item">
+                <h2 class="accordion-header" id="ratingHistoryHeading" style="padding: 0">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#ratingHistoryCollapse" aria-expanded="false"
+                    aria-controls="ratingHistoryCollapse">
+                    Rating history
+                  </button>
+                </h2>
+                <div id="ratingHistoryCollapse" class="accordion-collapse collapse"
+                  aria-labelledby="ratingHistoryHeading" data-bs-parent="#ratingHistoryAccordion">
+                  <div class="accordion-body" style="padding: 10px">
+                    {% for r in history %}
+                    <div id='prev_rating-{{r.hash_id}}' class='vstack gap-2' style="border-top: 1px solid #ccc; padding-top: 8px; margin-top: 8px">
+                      <div class='hstack gap-2 d-flex'>
+                        <label class='fw-bold'>User:</label>
+                        {{ r.user }}
+                      </div>
+                      <div class='hstack gap-2 d-flex'>
+                        <label class='fw-bold'>Real variable?</label>
+                        {{ r.rating|get_label_mapping:CONFIDENCE_MAPPING }}
+                      </div>
+                      <div class='hstack gap-2 d-flex'>
+                        <label class='fw-bold'>Tag:</label>
+                        {{ r.tag }}
+                      </div>
+                      <div class='hstack gap-2 d-flex'>
+                        <label class='fw-bold'>Date:</label>
+                        {{ r.date }}
+                      </div>
+                      <div class='vstack gap-1'>
+                        <label class='fw-bold'>Notes:</label>
+                        {% if r.notes %}
+                        <div style="max-height: 150px; overflow-y: auto; word-break: break-word">
+                          {{ r.notes }}
+                        </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            </div><!-- end #ratingCardBody -->
 
           </div>
         </div>
       </div>
     </div>
 
-    <div class='col-lg order-2 order-lg-1' id='mainContent'>
-      <div id="mainContent">
+    <div class='col-lg order-2 order-lg-1 main-scroll-col' id='mainContent'>
+      <div id="mainContentInner">
 
         <div class="container-fluid">
 
           <!-- This the summary of the candidate -->
-          <div class="row" style="padding: 1.5%">
+          <div class="row py-3">
             <div class='card'>
               <div class='card-body'>
 
@@ -231,23 +289,28 @@
                       <div class='vstack gap-4 justify-content-center align-items-center'>
 
                         <div class='container'>
+                          {% if not candidate.is_best_beam %}
+                          <div class="alert alert-warning" role="alert">
+                            <strong>Not best beam:</strong> another detection of this source in this observation has a smaller beam separation.
+                          </div>
+                          {% endif %}
                           <h3 style="padding-bottom: 20px;">Summary</h3>
                           <div class='hstack gap-2'>
 
 
                             <div class='vstack gap-2 justify-content-center align-items-center'>
                               <h5>Project</h5>
-                              <text> {{candidate.project.id}} </text>
+                               {{candidate.project.id}} 
                             </div>
 
                             <div class='vstack gap-2 justify-content-center align-items-center'>
                               <h5>SBID</h5>
-                              <text> {{candidate.observation.id}} </text>
+                               {{candidate.observation.id}} 
                             </div>
 
                             <div class='vstack gap-2 justify-content-center align-items-center'>
                               <h5>Beam index</h5>
-                              <text>{{candidate.beam.index}}</text>
+                              {{candidate.beam.index}}
                             </div>
                           </div>
 
@@ -256,12 +319,26 @@
                           <div class='hstack gap-2'>
                             <div class='vstack gap-2 justify-content-center align-items-center'>
                               <h5>Coordinates</h5>
-                              <text>RA {{candidate.ra_str}}</text>
-                              <text>Dec {{ candidate.dec_str }}</text>
+                              <table class="table table-sm table-borderless mb-0 w-100">
+                                <tbody>
+                                  <tr>
+                                    <td class="text-muted fw-bold text-uppercase">RA, Dec</td>
+                                    <td>{{ coord_decimal }} <button type="button" class="copy-coord-btn" data-value="{{ coord_decimal }}" title="Copy" style="background:none;border:none;padding:0 4px;cursor:pointer;opacity:0.3;transition:opacity 0.15s;vertical-align:middle;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.3'"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="vertical-align:2px"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button></td>
+                                  </tr>
+                                  <tr>
+                                    <td class="text-muted fw-bold text-uppercase">RA, Dec</td>
+                                    <td>{{ coord_hmsdms }} <button type="button" class="copy-coord-btn" data-value="{{ coord_hmsdms }}" title="Copy" style="background:none;border:none;padding:0 4px;cursor:pointer;opacity:0.3;transition:opacity 0.15s;vertical-align:middle;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.3'"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="vertical-align:2px"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button></td>
+                                  </tr>
+                                  <tr>
+                                    <td class="text-muted fw-bold text-uppercase">Gl, Gb</td>
+                                    <td>{{ coord_galactic }} <button type="button" class="copy-coord-btn" data-value="{{ coord_galactic }}" title="Copy" style="background:none;border:none;padding:0 4px;cursor:pointer;opacity:0.3;transition:opacity 0.15s;vertical-align:middle;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.3'"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="vertical-align:2px"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button></td>
+                                  </tr>
+                                </tbody>
+                              </table>
                             </div>
                             <div class='vstack gap-2 justify-content-center align-items-center'>
                               <h5>Observation Time</h5>
-                              <text>{{candidate.observation.obs_start}}</text>
+                              {{candidate.observation.obs_start}}
                             </div>
                           </div>
 
@@ -279,15 +356,15 @@
                           <tbody>
                             <tr>
                               <td class="text-center">Chi^2</td>
-                              <td class="text-center">{{ candidate.chi_square|floatformat:3 }}</td>
-                              <td class="text-center">{{ candidate.chi_square_sigma|floatformat:3 }}</td>
-                              <td class="text-center">{{ candidate.chi_square_log_sigma|floatformat:3 }}</td>
+                              <td class="text-center">{{ candidate.chi_square|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The value of the chi-squared map at the source position." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
+                              <td class="text-center">{{ candidate.chi_square_sigma|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The significance of the chi-square value, expressed in sigma, assuming a theoretical chi-squared distribution." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
+                              <td class="text-center">{{ candidate.chi_square_log_sigma|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The significance of the chi-square value in log space, measured relative to the overall chi-square map distribution." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
                             </tr>
                             <tr>
                               <td class="text-center">Peak map</td>
-                              <td class="text-center">{{ candidate.peak_map|floatformat:3}}</td>
-                              <td class="text-center">{{ candidate.peak_map_sigma|floatformat:3 }}</td>
-                              <td class="text-center">{{ candidate.peak_map_log_sigma|floatformat:3 }}</td>
+                              <td class="text-center">{{ candidate.peak_map|floatformat:3}} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The value of the peak map at the source position." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
+                              <td class="text-center">{{ candidate.peak_map_sigma|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The significance of the peak-map value, expressed in sigma, assuming the expected theoretical distribution." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
+                              <td class="text-center">{{ candidate.peak_map_log_sigma|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The significance of the peak-map value in log space, measured relative to the overall peak-map distribution." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
                             </tr>
                             <tr>
                               <td class="text-center">Gaussian map</td>
@@ -297,13 +374,13 @@
                             </tr>
                             <tr>
                               <td class="text-center">Standard deviation</td>
-                              <td class="text-center">{{ candidate.std_map|floatformat:3}}</td>
+                              <td class="text-center">{{ candidate.std_map|floatformat:3}} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The value of the standard-deviation map at the source position." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
                               <td class="text-center">-</td>
                               <td class="text-center">-</td>
                             </tr>
                             <tr>
                               <td class="text-center">Modulation index</td>
-                              <td class="text-center">{{ candidate.md_deep|floatformat:3 }}</td>
+                              <td class="text-center">{{ candidate.md_deep|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="A measure of variability, defined as the ratio between the standard deviation and the deep-image peak flux." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
                               <td class="text-center">-</td>
                               <td class="text-center">-</td>
                             </tr>
@@ -337,9 +414,9 @@
 
                             <tr>
                               <td class="text-center">Sep</td>
-                              <td class="text-center">{{ candidate.deep_sep_arcsec|floatformat:4 }} (arcsec)</td>
-                              <td class="text-center">{{ candidate.beam_sep_deg|floatformat:4 }} (degrees)</td>
-                              <td class="text-center">{{ candidate.bright_sep_arcmin|floatformat:4 }} (arcmin)</td>
+                              <td class="text-center">{{ candidate.deep_sep_arcsec|floatformat:4 }} (arcsec) <span data-bs-toggle="tooltip" data-bs-placement="top" title="The distance, in arcseconds, to the nearest source in the deep (full-integration) image." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
+                              <td class="text-center">{{ candidate.beam_sep_deg|floatformat:4 }} (degrees) <span data-bs-toggle="tooltip" data-bs-placement="top" title="The distance, in degrees, from the source to the beam centre." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
+                              <td class="text-center">{{ candidate.bright_sep_arcmin|floatformat:4 }} (arcmin) <span data-bs-toggle="tooltip" data-bs-placement="top" title="The distance, in arcminutes, to the nearest bright source (> 50 mJy)." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
                             </tr>
                           </tbody>
                         </table>
@@ -362,11 +439,11 @@
                             </tr>
                             <tr>
                               <td class="text-center">Peak Flux</td>
-                              <td class="text-center">{{ candidate.deep_peak_flux|floatformat:3 }}</td>
+                              <td class="text-center">{{ deep_peak_flux_mjy|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The peak flux density of the nearest source in the deep (full-integration) image, in mJy." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
                             </tr>
                             <tr>
                               <td class="text-center">Int Flux</td>
-                              <td class="text-center">{{ candidate.deep_int_flux|floatformat:3 }}</td>
+                              <td class="text-center">{{ deep_int_flux_mjy|floatformat:3 }} <span data-bs-toggle="tooltip" data-bs-placement="top" title="The integrated flux density of the nearest source in the deep (full-integration) image, in mJy." style="cursor:help;"><i class="fa-solid fa-circle-info text-secondary"></i></span></td>
                             </tr>
                           </tbody>
 
@@ -388,12 +465,25 @@
                           <h5>Deep</h5>
                           {% if candidate.deepcutout_png %}
 
-                          <div class='vstack gap-1 justify-content-center align-items-center' id='gif-and-buttons'>
-
-                            <img src="{{ candidate.deepcutout_png.url }}"
-                              style="width: 100%; height: 100%; max-width: 600px; max-height: 600px; min-width: 500px; min-height: 500px">
-
+                          {% if candidate.deepcutout_fits %}
+                          <div class="btn-group btn-group-sm mb-2" role="group">
+                            <button class="btn btn-outline-secondary" id="deepTogglePng">PNG</button>
+                            <button class="btn btn-secondary" id="deepToggleFirefly">Firefly</button>
                           </div>
+                          {% endif %}
+
+                          <div id="deepPngPanel" style="display:none;">
+                            <div class='vstack gap-1 justify-content-center align-items-center'>
+                              <img src="{{ candidate.deepcutout_png.url }}"
+                                style="width: 100%; height: 100%; max-width: 600px; max-height: 600px; min-width: 500px; min-height: 500px">
+                            </div>
+                          </div>
+
+                          {% if candidate.deepcutout_fits %}
+                          <div id="deepFireflyPanel" style="width:500px; height:600px;">
+                            <div id="fireflyDeep" style="width:100%; height:100%;"></div>
+                          </div>
+                          {% endif %}
 
                           {% else %}
                           <div class='image-placeholder'
@@ -413,16 +503,31 @@
                           <h5>Slices</h5>
                           {% if candidate.slices_gif %}
 
-                          <div class='vstack gap-1 justify-content-center align-items-center' id='gif-and-buttons'>
-
-                            <canvas class="d-flex" id="gifCanvas" style="padding-left: 40px"></canvas>
-                            <div class="controls">
-                              <button class='btn btn-primary' id="playPauseBtn">Pause</button>
-                              <input type="range" id="frameSlider" min="0" step="1">
-                              <span id="frameCounter">0 / 0</span>
-                            </div>
-
+                          {% if candidate.slices_fits %}
+                          <div class="btn-group btn-group-sm mb-2" role="group">
+                            <button class="btn btn-secondary" id="slicesToggleGif">GIF</button>
+                            <button class="btn btn-outline-secondary" id="slicesToggleFirefly">Firefly</button>
                           </div>
+                          {% endif %}
+
+                          <div id="slicesGifPanel">
+                            <div class='vstack gap-1 justify-content-center align-items-center' id='gif-and-buttons'>
+
+                              <canvas class="d-flex" id="gifCanvas" style="padding-left: 40px"></canvas>
+                              <div class="controls">
+                                <button class='btn btn-primary' id="playPauseBtn">Pause</button>
+                                <input type="range" id="frameSlider" min="0" step="1">
+                                <span id="frameCounter">0 / 0</span>
+                              </div>
+
+                            </div>
+                          </div>
+
+                          {% if candidate.slices_fits %}
+                          <div id="slicesFireflyPanel" style="display:none; width:500px; height:600px;">
+                            <div id="fireflySlices" style="width:100%; height:100%;"></div>
+                          </div>
+                          {% endif %}
 
                           {% else %}
                           <div class='image-placeholder'
@@ -449,13 +554,10 @@
 
                         <div class='col-lg order-1 order-lg-1'>
 
-                          <div id="aladin-lite-div" class="hstack gap-2 justify-content-center align-items-center p-3"
-                            style="min-width: 450px; height: 600px;">
-                            Loading Adlian Lite plugin
-                            <div class="spinner-border text-primary" role="status">
-                              <span class="visually-hidden" />
-                            </div>
-                          </div>
+                          <iframe src="{% url 'aladin_iframe' candidate.name %}"
+                            style="width: 100%; height: 600px; min-width: 450px; border: none;"
+                            loading="lazy">
+                          </iframe>
 
                         </div>
 
@@ -464,7 +566,15 @@
                         <div class='col-lg order-2 order-lg-2'>
 
                           {% if lightcurve_data %}
-                          <div id="lightcurve_echarts" style="height: 600px; min-width: 505px; padding: 0px"></div>
+                          <div style="position: relative;">
+                            <div id="lightcurve_toggle_buttons" style="position: absolute; top: 4px; right: 10%; z-index: 10;">
+                              <div class="btn-group btn-group-sm" role="group">
+                                <button id="lightcurve_zoom_fixed" class="btn btn-secondary">FIXED</button>
+                                <button id="lightcurve_zoom_auto" class="btn btn-outline-secondary">AUTO</button>
+                              </div>
+                            </div>
+                            <div id="lightcurve_echarts" style="height: 600px; min-width: 505px; padding: 0px"></div>
+                          </div>
                           {% else %}
                           <div class='image-placeholder'
                             style=" width: 100%; height: 600px; background: grey; border: 2px solid black;">
@@ -487,7 +597,7 @@
           </div>
 
           <!-- This is the list of nearby sources for the candidate -->
-          <div class="row" style="padding: 1.5%">
+          <div class="row py-3">
             <h3>Nearby objects</h3>
             <div class='card'>
               <div class='card-body'>
@@ -495,7 +605,7 @@
                 <div class="hstack gap-2 justify-content-center" style="padding-bottom: 17px">
                   <form id="searchForm" onsubmit="return handleFormSubmit(event)">
                     <label for='arcmin-input'>Search nearby within arcmin </label>
-                    <input id="arcmin-input" type="text" name="arcmin" value="{{arcmin_search}}" size="2">
+                    <input id="arcmin-input" type="number" name="arcmin" value="{{arcmin_search}}" min="0" max="60" size="2">
 
                     <button type="submit" class="btn btn-primary">Search</button>
                   </form>
@@ -514,8 +624,28 @@
             </div>
           </div>
 
+          {% if candidate.dynamic_spectra_png %}
+          <div class="row py-3">
+            <h3>Dynamic Spectra</h3>
+            <div class='card'>
+              <div class='card-body'>
+                <div class='container-fluid'>
+                  <div class='row'>
+                    <div class='col-lg'>
+                      <div class='vstack gap-1 justify-content-center align-items-center'>
+                        <img src="{{ candidate.dynamic_spectra_png.url }}"
+                          style="max-width: 50%; height: auto;">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
           <!-- This is the summary of the beam that found the candidate-->
-          <div class="row" style="padding: 1.5%">
+          <div class="row py-3">
             <h3>Statistical Maps</h3>
             <div class='card'>
               <div class='card-body'>
@@ -696,115 +826,232 @@
   // Remove title, make chart min/max from error values
   values.shift();
   errValues.shift();
-  let minValue = -0.5;
+  const FIXED_MIN = -0.5;
+  let minValue = FIXED_MIN;
   let maxValue = 1.01 * (Math.max(...values) + Math.max(...errValues));
 
-  // Function to render the error bars
-  function renderErrorBar(params, api) {
-    const xValue = api.value(0);
-    const yValue = api.value(1);
-    const err = parseFloat(api.value(2)); // Not sure parse to float is needed.
+  let autoZoom = false;
 
-    const highPoint = api.coord([xValue, yValue + err]);
-    const lowPoint = api.coord([xValue, yValue - err]);
-
-    const style = api.style({
-      stroke: '#5470C6',
-      fill: null,
-    });
-
+  function buildYAxis(yMin, yMax) {
     return {
-      type: 'group',
-      children: [{
-        type: 'line',
-        shape: {
-          x1: highPoint[0],
-          y1: highPoint[1],
-          x2: lowPoint[0],
-          y2: lowPoint[1]
+      type: 'value',
+      min: yMin,
+      max: yMax,
+      axisLabel: {
+        formatter: function (input) {
+          return Number(input).toFixed(2);
         },
-        style: style
-      }]
+      },
+      name: 'Peak Flux Density (mJy/beam)',
+      nameLocation: 'middle',
+      nameGap: 50
     };
   }
+
+  // Draw error bars using ECharts' graphic component rather than a custom series.
+  //
+  // Background: ECharts custom series use a renderItem callback that is supposed to be
+  // re-called whenever the coordinate system changes (e.g. when the y-axis range is
+  // updated). In practice, ECharts does not reliably re-invoke renderItem when only the
+  // axis range changes with no data change, so old error bars would remain on screen.
+  //
+  // Instead, we call this function explicitly after every axis or zoom change. It uses
+  // convertToPixel() to translate data coordinates into canvas pixel coordinates using
+  // the chart's current state, then pushes the result as graphic elements.
+  //
+  // Arguments:
+  //   yMin, yMax — the current y-axis range (used to clamp error bar endpoints)
+  function drawErrorBars(yMin, yMax) {
+    // Convert the y-axis data bounds to pixel coordinates.
+    // Note: pixel y increases downward, so pxTop (data yMax) < pxBottom (data yMin).
+    const pxBottom = lightcurveChart.convertToPixel({ yAxisIndex: 0 }, yMin);
+    const pxTop    = lightcurveChart.convertToPixel({ yAxisIndex: 0 }, yMax);
+
+    // Determine the visible x range from the current dataZoom state.
+    // dataZoom exposes either absolute values (startValue/endValue, ms timestamps) or
+    // percentages (start/end, 0–100). We prefer absolute values when available.
+    const opt = lightcurveChart.getOption();
+    const dz = opt.dataZoom[0];
+    const allTimes = lightcurve_data.slice(1).map(row => new Date(row[0]).getTime());
+    const tMin = Math.min(...allTimes);
+    const tMax = Math.max(...allTimes);
+    const visStart = dz.startValue != null ? dz.startValue : tMin + (dz.start / 100) * (tMax - tMin);
+    const visEnd   = dz.endValue   != null ? dz.endValue   : tMin + (dz.end   / 100) * (tMax - tMin);
+
+    // Build one graphic element per data row (skipping the header row at index 0).
+    // We always produce the same number of elements so that ECharts can match them
+    // by index on subsequent calls — if we skipped invisible elements, the count
+    // would vary and stale elements from a previous render could remain.
+    const elements = lightcurve_data.slice(1).map(row => {
+      const t    = new Date(row[0]).getTime();
+      const yVal = Number(row[1]);
+      const yErr = Number(row[2]);
+
+      // Points outside the current x zoom window are hidden rather than removed,
+      // keeping the element count stable.
+      if (t < visStart || t > visEnd) {
+        return { type: 'line', invisible: true, shape: { x1: 0, y1: 0, x2: 0, y2: 0 } };
+      }
+
+      const xPx    = lightcurveChart.convertToPixel({ xAxisIndex: 0 }, t);
+      // Convert the top and bottom of the error bar (value ± error) to pixel y.
+      const rawTop = lightcurveChart.convertToPixel({ yAxisIndex: 0 }, yVal + yErr);
+      const rawBot = lightcurveChart.convertToPixel({ yAxisIndex: 0 }, yVal - yErr);
+
+      // Clamp pixel y to the plot area so error bars don't overflow the axis bounds.
+      // Math.max(pxTop, ...) prevents drawing above the chart top;
+      // Math.min(pxBottom, ...) prevents drawing below the chart bottom.
+      const yHigh = Math.max(pxTop, Math.min(pxBottom, rawTop));
+      const yLow  = Math.max(pxTop, Math.min(pxBottom, rawBot));
+
+      return {
+        type: 'line',
+        // If both ends clamped to the same pixel the bar is fully outside the axis
+        // range — mark invisible rather than drawing a zero-length line.
+        invisible: yHigh === yLow,
+        shape: { x1: xPx, y1: yHigh, x2: xPx, y2: yLow },
+        style: { stroke: '#5470C6', lineWidth: 1 },
+        silent: true,  // don't capture mouse events
+      };
+    });
+
+    // Wrap all elements in a single named group so ECharts replaces the whole set
+    // atomically on each update rather than trying to merge individual elements.
+    lightcurveChart.setOption({ graphic: [{ type: 'group', id: 'errorbars', children: elements }] });
+  }
+
+  const startTimeMs = new Date(lightcurve_data[0][0]).getTime();
+  const endTimeMs = new Date(lightcurve_data[lightcurve_data.length - 1][0]).getTime();
 
   let option = {
     tooltip: {
       trigger: 'axis',
-      valueFormatter: function (input) {
-        let value = Number(input)
-        return value.toFixed(2);
+      formatter: function (params) {
+        const p = params[0];
+        const time = p.axisValueLabel;
+        const flux = Number(p.data[1]).toFixed(2);
+        const err = Number(p.data[2]).toFixed(2);
+        const image = p.dataIndex + 1;
+        const startTime = new Date(lightcurve_data[0][0]);
+        const currentTime = new Date(p.data[0]);
+        const diffSec = Math.round((currentTime - startTime) / 1000);
+        const hh = String(Math.floor(diffSec / 3600)).padStart(2, '0');
+        const mm = String(Math.floor((diffSec % 3600) / 60)).padStart(2, '0');
+        const ss = String(diffSec % 60).padStart(2, '0');
+        return `${time}<br/>Flux: <b>${flux}</b> \u00b1 ${err}<br/>Image ${image}<br/>T + ${hh}:${mm}:${ss}`;
       },
     },
     animation: false,
     dataZoom: [{
       type: 'slider',
-      xAxisIndex: [0],
+      xAxisIndex: [0, 1],
       filterMode: 'filter',
     }],
+    grid: { right: '10%' },
     height: 450,
     title: {
       text: 'Lightcurve Peak Flux',
       position: "center"
     },
-    xAxis: {
-      type: 'time',
-      datazoom: true,
-      name: 'Time (UTC)',
-      nameLocation: 'middle',
-      nameGap: 25
-    },
-    yAxis: {
-      type: 'value',
-      min: minValue,
-      max: maxValue,
-      axisLabel: {
-        formatter: function (input) {
-          let value = Number(input)
-          return value.toFixed(2);
-        },
-        minInterval: 1,
-      },
-      name: 'Peak Flux Density (mJy/beam)',
-      nameLocation: 'middle',
-      nameGap: 50
-    },
-    series: [{
-        data: lightcurve_data,
-        dimensions: ["Time", "{{candidate.name}}", "Error bars"],
-        encode: {
-          x: 0,
-          y: 1,
-          tooltip: 1,
-        },
-        type: 'line',
-        smooth: false,
-        lineStyle: {
-          color: '#5470C6'
-        }
+    xAxis: [
+      {
+        type: 'time',
+        datazoom: true,
+        name: 'Time (UTC)',
+        nameLocation: 'middle',
+        nameGap: 25
       },
       {
-        type: 'custom',
-        name: 'error',
-        renderItem: (params, api) => renderErrorBar(params, api),
-        dimensions: ["Time", "{{candidate.name}}", "Error bars"],
-        encode: {
-          x: 0,
-          y: 1,
-          tooltip: 2,
+        type: 'time',
+        position: 'top',
+        min: startTimeMs,
+        max: endTimeMs,
+        interval: 3600 * 1000,
+        axisLabel: {
+          formatter: function (value) {
+            const diffMin = Math.floor((value - startTimeMs) / 60000);
+            const hh = String(Math.floor(diffMin / 60)).padStart(2, '0');
+            const mm = String(diffMin % 60).padStart(2, '0');
+            return `${hh}:${mm}`;
+          }
         },
-        data: lightcurve_data,
-        z: 100
-      },
+        name: 'Time since observation start',
+        nameLocation: 'middle',
+        nameGap: 35
+      }
     ],
+    yAxis: buildYAxis(minValue, maxValue),
+    series: [{
+      data: lightcurve_data,
+      dimensions: ["Time", "{{candidate.name}}", "Error bars"],
+      encode: { x: 0, y: 1, tooltip: 1 },
+      type: 'line',
+      smooth: false,
+      lineStyle: { color: '#5470C6' }
+    }],
   };
 
   // Set the options to the chart
   lightcurveChart.setOption(option);
+  drawErrorBars(minValue, maxValue);
+
+  // Returns [yMin, yMax] for the data points visible within the given x range (ms timestamps)
+  function getYRangeForXRange(startMs, endMs) {
+    const dataRows = lightcurve_data.slice(1); // skip header
+    const visible = dataRows.filter(row => {
+      const t = new Date(row[0]).getTime();
+      return t >= startMs && t <= endMs;
+    });
+    if (visible.length === 0) return [FIXED_MIN, maxValue];
+    const lows = visible.map(row => Number(row[1]) - Number(row[2]));
+    const highs = visible.map(row => Number(row[1]) + Number(row[2]));
+    const dataMin = Math.min(...lows);
+    const dataMax = Math.max(...highs);
+    const padding = (dataMax - dataMin) * 0.15 || 0.5;
+    return [dataMin - padding, dataMax + padding];
+  }
+
+  function applyYAxis() {
+    let yMin, yMax;
+    if (!autoZoom) {
+      yMin = FIXED_MIN;
+      yMax = maxValue;
+    } else {
+      const opt = lightcurveChart.getOption();
+      const dz = opt.dataZoom[0];
+      const allTimes = lightcurve_data.slice(1).map(row => new Date(row[0]).getTime());
+      const tMin = Math.min(...allTimes);
+      const tMax = Math.max(...allTimes);
+      const startMs = dz.startValue != null ? dz.startValue : tMin + (dz.start / 100) * (tMax - tMin);
+      const endMs = dz.endValue != null ? dz.endValue : tMin + (dz.end / 100) * (tMax - tMin);
+      [yMin, yMax] = getYRangeForXRange(startMs, endMs);
+    }
+    lightcurveChart.setOption({ yAxis: buildYAxis(yMin, yMax) });
+    drawErrorBars(yMin, yMax);
+  }
+
+  lightcurveChart.on('dataZoom', function () {
+    if (autoZoom) {
+      applyYAxis();
+    } else {
+      drawErrorBars(FIXED_MIN, maxValue);
+    }
+  });
+
+  function setZoomMode(zoom) {
+    autoZoom = zoom;
+    document.getElementById('lightcurve_zoom_fixed').className = zoom ? 'btn btn-sm btn-outline-secondary' : 'btn btn-sm btn-secondary';
+    document.getElementById('lightcurve_zoom_auto').className = zoom ? 'btn btn-sm btn-secondary' : 'btn btn-sm btn-outline-secondary';
+    applyYAxis();
+  }
+
+  document.getElementById('lightcurve_zoom_fixed').addEventListener('click', () => setZoomMode(false));
+  document.getElementById('lightcurve_zoom_auto').addEventListener('click', () => setZoomMode(true));
 
   // Add event listener for window resize
   window.addEventListener("resize", () => {
     lightcurveChart.resize();
+    applyYAxis();
   });
 </script>
 
@@ -838,7 +1085,6 @@
           dec_str: '{{ candidate.dec_str }}',
           dist_arcmin: arcmin,
           exclude_id: '{{ candidate.hash_id }}',
-          selected_project_hash_id: '{{ candidate.project.hash_id }}'
         })
       });
       const data = await response.text();
@@ -854,7 +1100,7 @@
 
 <script type="module">
 
-  // TODO: Make this a proper html component and import 
+  // TODO: Make this a proper html component and import
 
   // This gif script is quite hastily put together and needs to be cleaned up.
 
@@ -938,33 +1184,97 @@
 
 {% endif %}
 
-<!-- Aladin sky applet -->
-<script type="text/javascript" src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8"
-  defer>
-</script>
+<!-- Firefly loaded directly - Aladin is now in an iframe so no conflicts -->
+{% if candidate.deepcutout_fits or candidate.slices_fits %}
+<script src="/firefly/firefly_loader.js"></script>
+{% endif %}
 
 <script>
-  window.onload = function () {
-    makeAladinWindow()
-  }
-
-  async function makeAladinWindow() {
-
-    // Remove the loading spinner in the div 
-    let aladinDiv = document.getElementById('aladin-lite-div')
-    aladinDiv.innerHTML = ''
-
-    A.init.then(() => {
-      let aladin = A.aladin('#aladin-lite-div', {
-        showCooGridControl: true,
-        showSimbadPointerControl: true,
-        showCooGrid: false,
-        // survey: "P/DSS2/color",
-        fov: 2 / 60, // 1, // degress of field of view
-        target: "{{candidate.name}}",
+  document.querySelectorAll('.copy-coord-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var value = btn.getAttribute('data-value');
+      var clipboardSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="vertical-align:2px"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>';
+      var checkSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="green" viewBox="0 0 16 16" style="vertical-align:2px"><path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/></svg>';
+      navigator.clipboard.writeText(value).then(function() {
+        btn.innerHTML = checkSvg;
+        btn.style.opacity = '1';
+        setTimeout(function() {
+          btn.innerHTML = clipboardSvg;
+          btn.style.opacity = '0.3';
+        }, 1500);
       });
+    });
+  });
+</script>
+
+{% if candidate.deepcutout_fits or candidate.slices_fits %}
+<script>
+
+  function onFireflyLoaded() {
+    // Set default stretch to Z-scale linear using raw integer constants from Firefly's RangeValues.js.
+    // The documented string API (serializeSimple) has no 'zscale' alias — 'zscale' is absent from
+    // the boundsStrToConst lookup map, so it silently falls back to percentage stretch.
+    // The only way to get Z-scale is via RangeValues.make() with the raw constants:
+    //   lowerWhich=91 (ZSCALE), upperWhich=91 (ZSCALE), algorithm=44 (STRETCH_LINEAR)
+    // Source: https://github.com/Caltech-IPAC/firefly/blob/dev/src/firefly/js/visualize/RangeValues.js
+    const zscaleLinear = firefly.util.image.RangeValues.make(91, 0, 91, 0, NaN, 2, 44).toJSON();
+    firefly.showImage('fireflyDeep', {
+      FILE: '/firefly/shared-workarea/{{ candidate.deepcutout_fits.name }}',
+      RangeValues: zscaleLinear,
+    });
+    firefly.showImage('fireflySlices', {
+      FILE: '/firefly/shared-workarea/{{ candidate.slices_fits.name }}',
+      RangeValues: zscaleLinear,
     });
   }
 </script>
+
+{% if candidate.deepcutout_fits %}
+<script>
+  const deepTogglePng     = document.getElementById('deepTogglePng');
+  const deepToggleFirefly = document.getElementById('deepToggleFirefly');
+  const deepPngPanel      = document.getElementById('deepPngPanel');
+  const deepFireflyPanel  = document.getElementById('deepFireflyPanel');
+  let fireflyDeepLoaded = true;
+
+  function deepShowPanel(activePanel, activeBtn) {
+    [deepPngPanel, deepFireflyPanel].forEach(p => p.style.display = 'none');
+    [deepTogglePng, deepToggleFirefly].forEach(b => b.className = 'btn btn-outline-secondary');
+    activePanel.style.display = '';
+    activeBtn.className = 'btn btn-secondary';
+  }
+
+  deepTogglePng.addEventListener('click', () => deepShowPanel(deepPngPanel, deepTogglePng));
+
+  deepToggleFirefly.addEventListener('click', () => {
+    deepShowPanel(deepFireflyPanel, deepToggleFirefly);
+  });
+</script>
+{% endif %}
+
+{% if candidate.slices_fits %}
+<script>
+  const slicesToggleGif     = document.getElementById('slicesToggleGif');
+  const slicesToggleFirefly = document.getElementById('slicesToggleFirefly');
+  const slicesGifPanel      = document.getElementById('slicesGifPanel');
+  const slicesFireflyPanel  = document.getElementById('slicesFireflyPanel');
+  let fireflySlicesLoaded = false;
+
+  function slicesShowPanel(activePanel, activeBtn) {
+    [slicesGifPanel, slicesFireflyPanel].forEach(p => p.style.display = 'none');
+    [slicesToggleGif, slicesToggleFirefly].forEach(b => b.className = 'btn btn-outline-secondary');
+    activePanel.style.display = '';
+    activeBtn.className = 'btn btn-secondary';
+  }
+
+  slicesToggleGif.addEventListener('click', () => slicesShowPanel(slicesGifPanel, slicesToggleGif));
+
+  slicesToggleFirefly.addEventListener('click', () => {
+    slicesShowPanel(slicesFireflyPanel, slicesToggleFirefly);
+  });
+</script>
+{% endif %}
+
+{% endif %}
 
 {% endblock %}

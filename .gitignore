@@ -1,4 +1,6 @@
 *.pyc
+.env
+docker-compose.volumes.yml
 .env.prod
 .env.prod.db
 env/*
@@ -8,3 +10,5 @@ env/*
 *dev310
 
 example_data*
+vendor
+staging-details.html
