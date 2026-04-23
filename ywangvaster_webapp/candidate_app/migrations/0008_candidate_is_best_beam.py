@@ -49,6 +49,16 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # Drop trigger BEFORE AddField to prevent materialized view refresh
+        # on every row update during the bulk operations
+        migrations.RunSQL(
+            "DROP TRIGGER refresh_candidate_min_max_stats_trigger ON candidate_app_candidate;",
+            reverse_sql="""
+                CREATE TRIGGER refresh_candidate_min_max_stats_trigger
+                AFTER INSERT OR UPDATE OR DELETE ON candidate_app_candidate
+                FOR EACH STATEMENT EXECUTE FUNCTION refresh_candidate_min_max_stats();
+            """,
+        ),
         migrations.AddField(
             model_name="candidate",
             name="is_best_beam",
@@ -57,5 +67,14 @@ class Migration(migrations.Migration):
         migrations.RunPython(
             compute_is_best_beam,
             reverse_compute_is_best_beam,
+        ),
+        # Recreate trigger after all updates complete
+        migrations.RunSQL(
+            """
+                CREATE TRIGGER refresh_candidate_min_max_stats_trigger
+                AFTER INSERT OR UPDATE OR DELETE ON candidate_app_candidate
+                FOR EACH STATEMENT EXECUTE FUNCTION refresh_candidate_min_max_stats();
+            """,
+            reverse_sql="DROP TRIGGER refresh_candidate_min_max_stats_trigger ON candidate_app_candidate;",
         ),
     ]

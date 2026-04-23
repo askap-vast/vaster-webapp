@@ -27,6 +27,23 @@ and simply start the containers again with
 make prod
 ```
 
+## Candidate min/max stats materialized view
+
+The `candidate_min_max_stats` materialized view (created in migration `0004`) stores precomputed `MIN`/`MAX` values for all filterable float fields on the `candidate_app_candidate` table. It is used to set the bounds of the filter sliders on the candidate table page.
+
+The view is kept up to date by a pair of database objects also created in `0004`:
+
+- **`refresh_candidate_min_max_stats()`** — a PL/pgSQL (Procedural Language/PostgreSQL) function that calls `REFRESH MATERIALIZED VIEW candidate_min_max_stats`.
+- **`refresh_candidate_min_max_stats_trigger`** — a statement-level trigger that fires `AFTER INSERT OR UPDATE OR DELETE` on `candidate_app_candidate` and calls the function above.
+
+On the Django side, `CandidateMinMaxStats` is a `managed = False` model mapped to this view, so Django can query it via the ORM without attempting to manage its schema.
+
+### Migrations that modify the candidate table
+
+Because the trigger fires on every `INSERT`, `UPDATE`, and `DELETE` statement against `candidate_app_candidate`, any migration that performs bulk row operations (e.g. adding a column and backfilling data) will repeatedly refresh the materialized view — once per statement — which can be extremely slow.
+
+To avoid this, such migrations should drop the trigger before the bulk work and recreate it afterwards. See migration `0008` for the canonical example of this pattern.
+
 ## ATNF Pulsars
 
 The full ATNF pulsar [catalogue](https://www.atnf.csiro.au/research/pulsar/psrcat/) is imported into the webapp on first start-up. This is done to make the searching of the database much quicker rather than making a web request for each search on the candidate rating page.
